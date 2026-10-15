@@ -8673,7 +8673,39 @@ function pintarPortal(modoP,error){
 }
 function cerrarPortal(){
  $('portal').hidden=true; document.body.style.overflow='';
+ setTimeout(aplicarEnlaceSGD,0);
 }
+/* Enlace desde la plataforma de gestión (SGD): ?proyecto=CODIGO&servicios=a,b&alcance=alc2.
+   Se lee al arrancar y se aplica cuando hay sesión abierta. El SGD manda los servicios contratados. */
+var ENLACE_SGD=null;
+function leerEnlaceSGD(){
+ try{
+  var q=new URLSearchParams(location.search), c=(q.get('proyecto')||'').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
+  if(!c)return;
+  var sv=(q.get('servicios')||'').split(',').filter(function(x){return SERVICIOS.some(function(s){return s[0]===x;});});
+  var al=q.get('alcance'); if(!ALCANCES.some(function(a){return a[0]===al;}))al=null;
+  ENLACE_SGD={codigo:c,servicios:sv,alcance:al};
+  history.replaceState(null,'',location.pathname+location.hash);
+ }catch(e){}
+}
+function aplicarEnlaceSGD(){
+ var E=ENLACE_SGD; if(!E||!SES)return; ENLACE_SGD=null;
+ var f=proyectosVisibles().find(function(p){return p.codigo===E.codigo;});
+ if(f){
+  if(f.id!==PRY)abrirProyecto(f.id,true);
+  if(E.servicios.length&&E.servicios.join(',')!==serviciosProyecto().join(',')&&puedeEditar()){
+   var ant=serviciosProyecto().join(',');
+   S.perfil.servicios=E.servicios; marcar('org/perfil');
+   anotar('dato','Servicios contratados (desde la plataforma de gestión)',ant,E.servicios.join(','));
+  }
+  vista='portada'; pintar(); pintarNav();
+  msg('Proyecto '+E.codigo+' abierto desde la plataforma de gestión');
+ }else{
+  ENLACE_NUEVO=E; vista='pry'; pintar(); pintarNav();
+  msg((ORGS&&ORGS.length)?('El proyecto '+E.codigo+' todavía no existe en ARRAIGO: revise los datos precargados y créelo'):('Para crear el proyecto '+E.codigo+', registre primero la organización; los datos del SGD quedan precargados'));
+ }
+}
+var ENLACE_NUEVO=null;
 async function crearAccesoPortal(){
  var u=($('pa-u').value||'').trim()||'admin';
  var c1=$('pa-c1').value||'', c2=$('pa-c2').value||'';
@@ -13663,14 +13695,14 @@ function tarjetaAltaPry(){
   '<div class="campo ancho"><label for="np-org">Organización</label><select id="np-org">'+
    ov.map(function(o){return '<option value="'+esc(o.id)+'">'+esc(o.nombre||o.codigo)+' · '+esc(o.pais||'')+'</option>';}).join('')+
    '</select></div>'+
-  '<div class="campo"><label for="np-codigo">Código del proyecto</label><input id="np-codigo" type="text" value="'+esc(codigoLibre())+'"></div>'+
+  '<div class="campo"><label for="np-codigo">Código del proyecto</label><input id="np-codigo" type="text" value="'+esc((ENLACE_NUEVO&&ENLACE_NUEVO.codigo)||codigoLibre())+'"></div>'+
   '<div class="campo"><label for="np-ciclo">Ciclo</label><input id="np-ciclo" type="text" value="2026-2027"></div>'+
   '</div>'+
   '<h4 class="sub-tit">Servicios contratados</h4>'+
   '<p>Marque solo lo que el cliente contrató. El menú del proyecto muestra únicamente los módulos de esos servicios; se puede ampliar después sin perder nada.</p>'+
   '<div class="opciones-alc">'+
    SERVICIOS.map(function(x){
-    return '<label class="opc-alc activa"><input type="checkbox" name="np-servicio" value="'+x[0]+'" checked>'+
+    return '<label class="opc-alc activa"><input type="checkbox" name="np-servicio" value="'+x[0]+'"'+((!ENLACE_NUEVO||!ENLACE_NUEVO.servicios.length||ENLACE_NUEVO.servicios.indexOf(x[0])>=0)?' checked':'')+'>'+
      '<span class="opc-cuerpo"><b>'+esc(x[1])+'</b><span>'+esc(x[2])+'</span></span></label>';
    }).join('')+
   '</div>'+
@@ -13678,8 +13710,9 @@ function tarjetaAltaPry(){
   '<p>Es lo que decide qué se mide y qué se declara. No es una etiqueta: determina los renglones del catálogo que entran, la unidad en que se expresa el resultado y hasta dónde llega el límite del sistema. Se puede cambiar después, pero entonces hay que revisar todo lo capturado.</p>'+
   '<div class="opciones-alc">'+
    ALCANCES.map(function(a,i){
-    return '<label class="opc-alc'+(i===1?' activa':'')+'">'+
-     '<input type="radio" name="np-alcance" value="'+esc(a[0])+'"'+(i===1?' checked':'')+'>'+
+    var sel=(ENLACE_NUEVO&&ENLACE_NUEVO.alcance)?(a[0]===ENLACE_NUEVO.alcance):(i===1);
+    return '<label class="opc-alc'+(sel?' activa':'')+'">'+
+     '<input type="radio" name="np-alcance" value="'+esc(a[0])+'"'+(sel?' checked':'')+'>'+
      '<span class="opc-cuerpo"><b>'+esc(a[1])+'</b>'+
      '<span>'+esc(a[2])+'</span>'+
      '<span class="opc-uni">Unidad declarada: '+esc(a[3])+' · '+plural(renglonesDelAlcance(a[0]),'renglón del catálogo','renglones del catálogo')+'</span></span></label>';
@@ -27123,6 +27156,7 @@ if(a==='pry-crear'){
   var nue=nuevoProyecto({empresa:org.nombre,codigo:($('np-codigo').value||'').trim(),
    registro:org.registro,pais:org.pais,cultivo:org.cultivo,
    ciclo:($('np-ciclo').value||'').trim(),responsable:org.responsable,contacto:org.contacto});
+  ENLACE_NUEVO=null;
   nue.orgId=org.id; nue.alcance=alc; guardarIndice(); marcar('__pry__/'+nue.id);
   abrirProyecto(nue.id,true);
   S.perfil.alcance=alc;
@@ -27728,6 +27762,7 @@ function arrancar(){
  leerLocal();
  var fa=pryActual();
  if(fa&&!fa.empresa&&S.perfil.organizacion){fa.empresa=S.perfil.organizacion;guardarIndice();}
+ leerEnlaceSGD();
  pintarPortal(ACC.portal?'entrar':'crear','');
  ir('portada');
  usarCap('sample').then(function(x){ if(x){ muestreo=x; if(vista==='asi')pintar(); return; }
