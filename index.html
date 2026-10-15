@@ -8759,6 +8759,10 @@ function salir(porInactividad){
  SES=null;
  guardarLocal();
  pintarPortal('entrar',porInactividad?'La sesión se cerró sola por inactividad. Vuelva a entrar.':'');
+ /* Cierre voluntario: también se cierra la sesión del servidor y se vuelve a la pantalla de acceso */
+ if(!porInactividad&&/^https?:$/.test(location.protocol)&&window.fetch){
+  fetch('/api/sesion',{method:'DELETE',credentials:'same-origin'}).catch(function(){}).then(function(){ location.replace('/login.html'); });
+ }
 }
 function reiniciarInactividad(){
  clearTimeout(INACT);

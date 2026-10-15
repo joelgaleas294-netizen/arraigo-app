@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0E3A5F">
+<title>ARRAIGO · Acceso</title>
+<link rel="icon" href="/icons/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/icono-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+ :root{--fondo:#0E3A5F;--tarjeta:#ffffff;--tinta:#13241d;--tinta2:#4b5b54;--acento:#1C6B43;--linea:#d5ddd8;--error:#a3261d}
+ @media (prefers-color-scheme:dark){:root{--tarjeta:#13201b;--tinta:#e8efe9;--tinta2:#a9b8b0;--acento:#5FE3A8;--linea:#2c3b34;--error:#ff8a80}}
+ *{box-sizing:border-box}
+ html,body{margin:0;min-height:100%;background:var(--fondo);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tinta)}
+ main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+ .caja{width:100%;max-width:380px;background:var(--tarjeta);border-radius:16px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+ .marca{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+ .marca img{width:44px;height:44px;border-radius:10px}
+ .marca b{display:block;font-size:1.15rem;letter-spacing:.02em}
+ .marca span{font-size:.8rem;color:var(--tinta2)}
+ h1{font-size:1.05rem;margin:0 0 6px}
+ p{margin:0 0 18px;color:var(--tinta2);font-size:.9rem;line-height:1.45}
+ label{display:block;font-size:.8rem;font-weight:600;margin:12px 0 6px}
+ input{width:100%;padding:12px;border:1px solid var(--linea);border-radius:10px;font:inherit;background:transparent;color:inherit}
+ input:focus{outline:2px solid var(--acento);outline-offset:1px}
+ button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:var(--acento);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+ @media (prefers-color-scheme:dark){button{color:#0b1f17}}
+ button[disabled]{opacity:.6;cursor:wait}
+ .msg{min-height:1.2em;margin-top:12px;font-size:.85rem;color:var(--error)}
+ small{display:block;margin-top:16px;font-size:.75rem;color:var(--tinta2);text-align:center}
+</style>
+</head>
+<body>
+<main>
+ <form class="caja" id="f" autocomplete="on">
+  <div class="marca"><img src="/icons/icono-192.png" alt=""><div><b>ARRAIGO</b><span>JJ Global S.A.</span></div></div>
+  <h1>Acceso restringido</h1>
+  <p>Ingrese con su cuenta de la plataforma de gestión de JJ Global.</p>
+  <label for="email">Correo electrónico</label>
+  <input id="email" name="email" type="email" autocomplete="username" required>
+  <label for="clave">Contraseña</label>
+  <input id="clave" name="clave" type="password" autocomplete="current-password" required>
+  <button id="b" type="submit">Ingresar</button>
+  <div class="msg" id="m" role="alert"></div>
+  <small>¿No tiene acceso? Solicítelo a JJ Global: info@jjglobalsa.com</small>
+ </form>
+</main>
+<script>
+(function(){
+ var f=document.getElementById('f'), b=document.getElementById('b'), m=document.getElementById('m');
+ function destino(){
+  var r=new URLSearchParams(location.search).get('r')||'/';
+  return (r.charAt(0)==='/'&&r.charAt(1)!=='/'&&r.indexOf('\\')<0)?r:'/';
+ }
+ f.addEventListener('submit',function(ev){
+  ev.preventDefault(); m.textContent=''; b.disabled=true; b.textContent='Comprobando…';
+  fetch('/api/sesion',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',
+   body:JSON.stringify({email:f.email.value,clave:f.clave.value})})
+  .then(function(r){return r.json().catch(function(){return {};}).then(function(d){return {r:r,d:d};});})
+  .then(function(x){
+   if(x.r.ok&&x.d.ok){ location.replace(destino()); return; }
+   m.textContent=x.d.error||'No se pudo iniciar sesión.'; b.disabled=false; b.textContent='Ingresar'; f.clave.value=''; f.clave.focus();
+  })
+  .catch(function(){ m.textContent='Sin conexión. Intente de nuevo.'; b.disabled=false; b.textContent='Ingresar'; });
+ });
+})();
+</script>
+</body>
+</html>
