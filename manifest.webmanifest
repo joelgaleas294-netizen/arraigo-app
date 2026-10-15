@@ -1,0 +1,16 @@
+{
+  "name": "Programa ARRAIGO",
+  "short_name": "ARRAIGO",
+  "description": "Medición de carbono en café y cacao: huella, carbono neutral, insetting y créditos.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0E3A5F",
+  "theme_color": "#0E3A5F",
+  "icons": [
+    { "src": "/icons/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icono.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

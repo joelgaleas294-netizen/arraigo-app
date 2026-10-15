@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0E3A5F">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/icono-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script>if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});</script>
 <script>
 /* ─── Copia dedicada a una empresa ───────────────────────────────────────────
    Deje la comilla vacía para la aplicación matriz de JJ Global, con varias
@@ -3377,7 +3382,30 @@ var ALCANCES=[
 ];
 function alcance(){ var a=S.perfil.alcance; return (a==='alc1'||a==='alc3')?a:'alc2'; }
 /* Qué módulos tienen sentido en cada ruta del ALC-00 */
-function moduloEnAlcance(id){
+var SERVICIOS=[['huella','Huella de carbono','Inventario de emisiones de la organización y huella del producto (ISO 14064-1, ISO 14067).'],
+ ['neutral','Carbono neutral','Ruta de reducción y declaración de neutralidad sobre una huella cuantificada (ISO 14068-1). Incluye la huella.'],
+ ['insetting','Insetting (Alcance 3)','Reducciones y remociones en la cadena de suministro del comprador, con trazabilidad por lote.'],
+ ['creditos','Créditos de carbono','Proyectos de reducción o remoción para un estándar (JJ Carbon System: Verra, Gold Standard, Plan Vivo y otros).']];
+var MOD_SERV={pai:['huella','neutral','insetting'],tal:['huella','neutral','insetting'],ins:['huella','neutral','insetting'],ben:['huella','neutral','insetting'],
+ pod:['huella','insetting','creditos'],lot:['huella','insetting'],mit:['huella','neutral','insetting'],neu:['neutral'],
+ mue:['insetting','creditos'],ppm:['insetting','creditos'],est:['insetting','creditos'],ctr:['insetting'],vcu:['insetting'],
+ dia:['huella','insetting','creditos'],ods:['huella','insetting','creditos'],bos:['creditos'],niv:['creditos']};
+function serviciosProyecto(){var s=S.perfil&&S.perfil.servicios; if(!Array.isArray(s)||!s.length)return SERVICIOS.map(function(x){return x[0];}); s=s.slice(); if(s.indexOf('neutral')>=0&&s.indexOf('huella')<0)s.push('huella'); return s;}
+function serviciosTodos(){var s=S.perfil&&S.perfil.servicios; return !Array.isArray(s)||!s.length||s.length>=SERVICIOS.length;}
+function moduloEnServicio(id){var r=MOD_SERV[id]; if(!r)return true; var s=serviciosProyecto(); return r.some(function(x){return s.indexOf(x)>=0;});}
+function moduloEnAlcance(id){return moduloEnAlcanceBase(id)&&moduloEnServicio(id);}
+function tarjetaServicios(){
+ var s=serviciosProyecto(), ed=puedeEditar(), dec=(S.perfil&&Array.isArray(S.perfil.servicios))?S.perfil.servicios:[];
+ return '<div class="tarjeta"><h3>Servicios contratados</h3><div class="cuerpo">'+
+  '<p>Cada cliente usa solo los servicios que contrató. Lo que no está activo desaparece del menú, pero los datos ya capturados no se borran ni se dejan de calcular. Carbono neutral se apoya en la huella, por eso la activa.</p>'+
+  '<div class="clases" style="grid-template-columns:1fr">'+
+  SERVICIOS.map(function(x){
+   var on=s.indexOf(x[0])>=0, impl=on&&x[0]==='huella'&&dec.length&&dec.indexOf('huella')<0;
+   return '<button type="button" class="clase" data-accion="srv-alternar" data-srv="'+x[0]+'" aria-pressed="'+(on?'true':'false')+'"'+(ed&&!impl?'':' disabled')+'>'+
+    '<b>'+esc(x[1])+(impl?' (requerida por carbono neutral)':'')+'</b><span>'+esc(x[2])+'</span></button>';
+  }).join('')+'</div></div></div>';
+}
+function moduloEnAlcanceBase(id){
  var A=alcance();
  if(A==='alc1')return id!=='ben';
  if(A==='alc3'&&!hayFincas())return ['fincas','est','pod','ins','dia'].indexOf(id)<0;
@@ -13638,6 +13666,14 @@ function tarjetaAltaPry(){
   '<div class="campo"><label for="np-codigo">Código del proyecto</label><input id="np-codigo" type="text" value="'+esc(codigoLibre())+'"></div>'+
   '<div class="campo"><label for="np-ciclo">Ciclo</label><input id="np-ciclo" type="text" value="2026-2027"></div>'+
   '</div>'+
+  '<h4 class="sub-tit">Servicios contratados</h4>'+
+  '<p>Marque solo lo que el cliente contrató. El menú del proyecto muestra únicamente los módulos de esos servicios; se puede ampliar después sin perder nada.</p>'+
+  '<div class="opciones-alc">'+
+   SERVICIOS.map(function(x){
+    return '<label class="opc-alc activa"><input type="checkbox" name="np-servicio" value="'+x[0]+'" checked>'+
+     '<span class="opc-cuerpo"><b>'+esc(x[1])+'</b><span>'+esc(x[2])+'</span></span></label>';
+   }).join('')+
+  '</div>'+
   '<h4 class="sub-tit">Alcance del proyecto</h4>'+
   '<p>Es lo que decide qué se mide y qué se declara. No es una etiqueta: determina los renglones del catálogo que entran, la unidad en que se expresa el resultado y hasta dónde llega el límite del sistema. Se puede cambiar después, pero entonces hay que revisar todo lo capturado.</p>'+
   '<div class="opciones-alc">'+
@@ -14084,6 +14120,7 @@ function vistaConfig(){
  h+='<div class="rejilla2"><div class="col">';
  if(pc==='pry'){
   h+=cfg_organizacion();
+  h+=tarjetaServicios();
   h+=tarjetaAlcance();
   h+=tarjetaUnidadesOp();
   h+='</div><div class="col">';
@@ -19915,18 +19952,20 @@ function contextoAsistente(){
  var R=resumenGlobal(), D=odsDeclarables(), L=[];
  L.push('DATOS CAPTURADOS EN LA APLICACIÓN DEL PROGRAMA ARRAIGO');
  var fpc=pryActual();
- L.push('Proyecto: '+((fpc&&fpc.codigo)||'sin declarar')+((fpc&&fpc.empresa)?(' · '+fpc.empresa):'')+'. Solo se incluyen los datos de este proyecto.');
- L.push('Organización: '+(S.perfil.organizacion||'sin declarar')+'. Ciclo: '+(S.perfil.ciclo||'sin declarar')+'. País: '+(S.perfil.pais||'')+'. Cultivo: '+(S.perfil.cultivo||''));
+ L.push('Proyecto: '+((fpc&&fpc.codigo)||'sin declarar')+'. Solo se incluyen los datos de este proyecto. Personas y organizaciones van solo por código.');
+ L.push('Servicios contratados: '+serviciosProyecto().map(function(k){return (SERVICIOS.filter(function(x){return x[0]===k;})[0]||[k,k])[1];}).join(', '));
+ var MEDC={}, medN=0, medCod=function(n){ if(!n)return '?'; if(!MEDC[n])MEDC[n]='MED-'+String(++medN).padStart(2,'0'); return MEDC[n]; };
+ L.push('Organización: la del proyecto. Ciclo: '+(S.perfil.ciclo||'sin declarar')+'. País: '+(S.perfil.pais||'')+'. Cultivo: '+(S.perfil.cultivo||''));
  L.push('Parámetros de cálculo: modelo de altura '+textoModeloAltura()+'; relación raíz-vástago='+S.perfil.rs+'; fracción de carbono='+S.perfil.fc);
  L.push('RESUMEN: emisiones '+fmt(R.emisiones)+' t CO2e; remociones '+fmt(R.remociones)+'; balance '+fmt(R.emisiones-R.remociones)+'; existencias del estrato '+fmt(R.existencia)+'; superficie '+fmt(R.superficie,1)+' ha; árboles '+R.individuos);
  L.push('FINCAS:');
  S.fincas.forEach(function(f){var C=calcularFinca(f),T=totalInsumos('finca',f.id),P=emisPodasDe(f.id);
-  L.push(' - '+(f.codigo||'')+' ('+(f.productor||'')+'): '+fmt(nv(f.superficie),1)+' ha total, '+fmt(C.superficieSombra,1)+' ha bajo sombra, '+
+  L.push(' - '+(f.codigo||'sin código')+': '+fmt(nv(f.superficie),1)+' ha total, '+fmt(C.superficieSombra,1)+' ha bajo sombra, '+
    C.parcelas+' parcelas ('+C.medidas+' medidas), '+C.individuos+' árboles, '+fmt(C.densidad,0)+' ind/ha, '+
    fmt(C.co2ha,1)+' tCO2e/ha, existencia '+fmt(C.existencia)+' tCO2e, emisiones '+fmt(T.emis+P)+' tCO2e, consentimiento '+(f.consentimiento||'?'));});
  L.push('PARCELAS:');
  S.parcelas.forEach(function(p){var r=calcularParcela(p);var fi=S.fincas.find(function(x){return x.id===p.fincaId;});
-  L.push(' - '+((fi&&fi.codigo)||'')+'/'+(p.codigo||'')+': '+fmt(r.sup,0)+' m2, '+r.n+' árboles, '+fmt(r.densidad,0)+' ind/ha, '+fmt(r.co2ha,2)+' tCO2e/ha, medida el '+(p.fecha||'?')+' por '+(p.medidor||'?'));});
+  L.push(' - '+((fi&&fi.codigo)||'')+'/'+(p.codigo||'')+': '+fmt(r.sup,0)+' m2, '+r.n+' árboles, '+fmt(r.densidad,0)+' ind/ha, '+fmt(r.co2ha,2)+' tCO2e/ha, medida el '+(p.fecha||'?')+' por '+medCod(p.medidor));});
  var esp={};
  S.parcelas.forEach(function(p){(p.individuos||[]).forEach(function(i){var k=(i.nombre||i.especie);esp[k]=(esp[k]||0)+1;});});
  L.push('ESPECIES DEL ESTRATO: '+(Object.keys(esp).map(function(k){return k+' ('+esp[k]+')';}).join('; ')||'ninguna'));
@@ -19946,7 +19985,7 @@ function contextoAsistente(){
  var txt=L.join('\n');
  return txt.length>14000?(txt.slice(0,14000)+'\n[...datos truncados]'):txt;
 }
-var PREAMBULO='Eres el asistente técnico de la aplicación del Programa ARRAIGO, un programa de certificación climática para café y cacao de pequeños productores en Centroamérica, que aplica ISO 14064-1, el modelo de biomasa de Chave y colaboradores de 2014 y la tabla de descuentos por intervención de sombra del apartado M5.3.3 del protocolo.\n\nReglas que debes cumplir siempre:\n1. Responde en español, de forma directa y breve, sin encabezados innecesarios.\n2. Usa únicamente los datos capturados que se te entregan abajo. Si algo no está en esos datos, dilo con claridad en vez de suponerlo.\n3. No inventes cifras, factores ni nombres. Si una cifra no se puede calcular con lo capturado, explica qué dato falta.\n4. Recuerda cuando corresponda que se trata de una medición propia de la organización, pendiente de evaluación por un organismo de certificación independiente, y que ninguna cifra constituye declaración de neutralidad.\n5. No expreses co-beneficios en toneladas de CO2 equivalente ni los sumes al resultado climático.\n6. Emisiones y remociones se presentan siempre por separado: el balance es una resta, no una emisión.\n7. Si detectas una inconsistencia en los datos, señálala.\n8. Estructura la respuesta para que se pueda llevar a un informe: empieza por la respuesta en una o dos frases y después el detalle. Usa viñetas cuando enumeres y una tabla en formato de barras verticales cuando compares tres o más cosas con dos o más atributos. No uses encabezados para respuestas de menos de cinco líneas.\n9. Cuando des una cifra, di de qué módulo sale, por ejemplo MOD-EST para el estrato de sombra, MOD-MUE para el muestreo o MOD-ARC para el archivo, de modo que quien lea pueda ir a comprobarla.\n10. Termina con una línea que diga qué haría falta para mejorar la respuesta, solo si falta algo; si no falta nada, no la pongas.';
+var PREAMBULO='Eres el asistente técnico de la aplicación del Programa ARRAIGO, un programa de certificación climática para café y cacao de pequeños productores en Centroamérica, que aplica ISO 14064-1, el modelo de biomasa de Chave y colaboradores de 2014 y la tabla de descuentos por intervención de sombra del apartado M5.3.3 del protocolo.\n\nReglas que debes cumplir siempre:\n1. Responde en español, de forma directa y breve, sin encabezados innecesarios.\n2. Usa únicamente los datos capturados que se te entregan abajo. Si algo no está en esos datos, dilo con claridad en vez de suponerlo.\n3. No inventes cifras, factores ni nombres. Si una cifra no se puede calcular con lo capturado, explica qué dato falta.\n4. Recuerda cuando corresponda que se trata de una medición propia de la organización, pendiente de evaluación por un organismo de certificación independiente, y que ninguna cifra constituye declaración de neutralidad.\n5. No expreses co-beneficios en toneladas de CO2 equivalente ni los sumes al resultado climático.\n6. Emisiones y remociones se presentan siempre por separado: el balance es una resta, no una emisión.\n7. Si detectas una inconsistencia en los datos, señálala.\n8. Estructura la respuesta para que se pueda llevar a un informe: empieza por la respuesta en una o dos frases y después el detalle. Usa viñetas cuando enumeres y una tabla en formato de barras verticales cuando compares tres o más cosas con dos o más atributos. No uses encabezados para respuestas de menos de cinco líneas.\n9. Cuando des una cifra, di de qué módulo sale, por ejemplo MOD-EST para el estrato de sombra, MOD-MUE para el muestreo o MOD-ARC para el archivo, de modo que quien lea pueda ir a comprobarla.\n10. Termina con una línea que diga qué haría falta para mejorar la respuesta, solo si falta algo; si no falta nada, no la pongas.\n11. Las fincas, los productores, los medidores y la organización aparecen solo por código. Refiérete a ellos por ese código y no intentes deducir nombres.';
 /* ====== asistente ========================================================
    Un asistente técnico se juzga por tres cosas: que diga qué está leyendo,
    que responda con una estructura que se pueda llevar a un informe, y que
@@ -20149,7 +20188,7 @@ function vistaAjustes(){
 function vistaAsistente(){
  var h=cabModulo('asi','<p class="vista-sub">Un asistente técnico sobre los datos de este ciclo. Lee lo capturado y responde con ello; cuando un dato no está, lo dice en vez de suponerlo, y no puede cambiar nada.</p>');
  if(!muestreo){
-  h+='<div class="aviso"><b>El asistente no está disponible en esta vista.</b> Funciona en la versión publicada de la aplicación, no en el archivo independiente, y requiere conexión. Todo lo demás sigue funcionando igual.</div>';
+  h+='<div class="aviso"><b>El asistente no está disponible en esta vista.</b> Funciona en la versión publicada de la aplicación cuando el despliegue tiene la IA configurada, no en el archivo independiente, y requiere conexión. Todo lo demás sigue funcionando igual.</div>';
   return h;
  }
  var V=loQueVeElAsistente();
@@ -20195,6 +20234,22 @@ function vistaAsistente(){
  return h;
 }
 var muestreo=null;
+/* Fuera del entorno Claude, el asistente se sirve desde la función /api/asistente
+   del mismo despliegue. Solo viajan códigos: ver contextoAsistente(). */
+function asistenteServidor(){
+ if(!/^https?:$/.test(location.protocol)||!window.fetch)return Promise.resolve(null);
+ return fetch('/api/asistente',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
+  if(!o||!o.disponible)return null;
+  return async function(turnos,op){
+   op=op||{};
+   var r=await fetch('/api/asistente',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({turnos:turnos}),signal:op.signal});
+   if(!r.ok){var e={code:'error',text:'No se pudo completar la consulta.'}; try{e=await r.json();}catch(x){} throw e;}
+   var lec=r.body.getReader(), dec=new TextDecoder(), txt='';
+   for(;;){var c=await lec.read(); if(c.done)break; txt+=dec.decode(c.value,{stream:true}); if(op.onText)op.onText({text:txt});}
+   return {text:txt};
+  };
+ }).catch(function(){return null;});
+}
 async function chatEnviar(texto){
  if(!muestreo||pensando)return;
  var q=(texto||'').trim(); if(!q)return;
@@ -26360,7 +26415,7 @@ document.addEventListener('click',function(ev){
   return;}
  if(b.dataset.ajuAspecto){ var ba=$('btn-aspecto'); if(ba)ba.click(); return;}
  if(b.dataset.ajuPiel){ var bp=$('btn-piel'); if(bp)bp.click(); return;}
- if(b.classList.contains('clase')){
+ if(b.classList.contains('clase')&&!b.dataset.accion){
   Array.prototype.forEach.call(b.parentNode.children,function(x){x.setAttribute('aria-pressed','false');});
   b.setAttribute('aria-pressed','true'); previa(); return;
  }
@@ -27071,6 +27126,8 @@ if(a==='pry-crear'){
   nue.orgId=org.id; nue.alcance=alc; guardarIndice(); marcar('__pry__/'+nue.id);
   abrirProyecto(nue.id,true);
   S.perfil.alcance=alc;
+  var srvs=[].slice.call(document.querySelectorAll('input[name="np-servicio"]:checked')).map(function(x){return x.value;});
+  S.perfil.servicios=srvs.length?srvs:SERVICIOS.map(function(x){return x[0];});
   S.perfil.organizacion=org.nombre; S.perfil.ciclo=nue.ciclo; S.perfil.pais=org.pais; S.perfil.cultivo=org.cultivo;
   S.demo=false; marcar('org/perfil'); guardarLocal(); pintar(); pintarNav(); sincronizar(true);
   anotar('dato','Alcance declarado al crear el proyecto','',nomAlcance(alc));
@@ -27405,6 +27462,13 @@ if(a==='pry-crear'){
   msg('Se quitó el último árbol: '+(fuera.nombre||fuera.especie||''));
   return;}
  if(a==='arbol-fotos'){var k=parseInt(b.dataset.i,10); sel.arbol=(sel.arbol===k)?null:k; pintar(); return;}
+ if(a==='srv-alternar'){
+  var sv=b.dataset.srv, cur=serviciosProyecto().slice(), ix=cur.indexOf(sv), ant=cur.join(',');
+  if(ix>=0){ if(cur.length===1){msg('El proyecto necesita al menos un servicio');return;} cur.splice(ix,1);} else cur.push(sv);
+  S.perfil.servicios=SERVICIOS.map(function(x){return x[0];}).filter(function(x){return cur.indexOf(x)>=0;});
+  marcar('org/perfil'); anotar('dato','Servicios contratados',ant,S.perfil.servicios.join(','));
+  pintar(); pintarNav(); msg('Servicios del proyecto: '+S.perfil.servicios.length+' de '+SERVICIOS.length);
+  return;}
  if(a==='alc-fijar'){
   var na=b.dataset.alc, va=alcance();
   if(na===va)return;
@@ -27666,7 +27730,8 @@ function arrancar(){
  if(fa&&!fa.empresa&&S.perfil.organizacion){fa.empresa=S.perfil.organizacion;guardarIndice();}
  pintarPortal(ACC.portal?'entrar':'crear','');
  ir('portada');
- usarCap('sample').then(function(x){ muestreo=x; if(vista==='asi')pintar(); });
+ usarCap('sample').then(function(x){ if(x){ muestreo=x; if(vista==='asi')pintar(); return; }
+  asistenteServidor().then(function(f){ if(f){ muestreo=f; if(vista==='asi')pintar(); } }); });
  usarCap('assets').then(function(x){ assets=x; if(assets)setTimeout(function(){subirPendientes(true);},2500); });
  usarCap('db').then(function(x){
   db=x; pintarSync();
