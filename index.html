@@ -1742,6 +1742,10 @@ function nuevaOrg(d){
   registro:d.registro||'',pais:d.pais||S.perfil.pais||'Honduras',cultivo:d.cultivo||'Café',
   representante:d.representante||'',responsable:d.responsable||'',contacto:d.contacto||'',
   direccion:d.direccion||'',usuarios:[],estado:'activa',creada:hoy(),_m:Date.now()};
+ /* vínculo con la empresa del SGD: quien no es administrador del programa solo da de alta para su propia empresa */
+ var emp=d.sgdEmpresaId||'';
+ if(CENTRAL&&!CENTRAL.superadmin)emp=CENTRAL.empresaId||'';
+ if(emp)o.sgdEmpresaId=emp;
  ORGS.push(o); guardarOrgs();
  return o;
 }
@@ -1821,7 +1825,7 @@ function abrirProyecto(id,silencio){
  var fichasPend={};
  Object.keys(pendientes||{}).forEach(function(k){ if(k.indexOf('__pry__/')===0)fichasPend[k]=true; });
  pendientes=fichasPend; rechazos={};
- if(db)cargarDeLaBase().then(function(){pintar();});
+ if(db)cargarDeLaBase().then(function(){pintar(); subirLocalACentral();});
  if(!silencio)msg('Proyecto abierto: '+((f&&(f.empresa||f.codigo))||''));
  return hab;
 }
@@ -2263,7 +2267,78 @@ function numAmbiguo(x){
 function nv(x){ return numDe(x); }
 function uid(p){return p+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);}
 function hoy(){var d=new Date();return d.toISOString().slice(0,10);}
-function usarCap(n){try{return (window.claude&&window.claude.use)?window.claude.use(n):Promise.resolve(null);}catch(e){return Promise.resolve(null);}}
+function usarCapBase(n){try{return (window.claude&&window.claude.use)?window.claude.use(n):Promise.resolve(null);}catch(e){return Promise.resolve(null);}}
+/* ====== base central en la plataforma de gestión (SGD) ======
+   Fuera del entorno de artefactos no hay capacidad «db»: en su lugar se conecta
+   la base central del SGD por medio de /api/db. Misma forma (doc, collection,
+   where), de modo que la sincronización, los pendientes y los permisos de la
+   aplicación funcionan igual. Sin señal no se conecta: se trabaja en el equipo
+   y, al volver la conexión, se conecta y sube lo pendiente.                   */
+var CENTRAL=null; /* {empresas:[{id,nombre,siglas}], superadmin, empresaId} */
+function errDb(code,t){ var e=new Error(t||code); e.code=code; return e; }
+async function llamarDb(cuerpo){
+ var r;
+ try{ r=await fetch('/api/db',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpo),credentials:'same-origin',cache:'no-store'}); }
+ catch(e){ throw errDb('unavailable','Sin conexión con la base central'); }
+ var d={}; try{ d=await r.json(); }catch(e){}
+ if(r.status===403||d.code==='invalid_argument')throw errDb('invalid_argument',d.error);
+ if(r.status===401)throw errDb('unauthenticated','Sesión vencida');
+ if(!r.ok||d.ok===false)throw errDb('unavailable',d.error||('Error '+r.status));
+ return d;
+}
+function consultaDb(col,where){
+ return {
+  where:function(campo,op,valor){ return consultaDb(col,{campo:campo,valor:valor}); },
+  get:async function(){ var d=await llamarDb({op:'list',col:col,where:where||undefined}); return {docs:(d.docs||[]).map(function(x){return {id:x.id,data:x.data};})}; }
+ };
+}
+var dbCentral={
+ doc:function(ruta){ return {
+  get:async function(){ var d=await llamarDb({op:'get',ruta:ruta}); return {id:String(ruta).split('/')[1],exists:!!d.exists,data:d.data}; },
+  set:async function(data){ await llamarDb({op:'set',ruta:ruta,data:JSON.parse(JSON.stringify(data))}); },
+  delete:async function(){ await llamarDb({op:'delete',ruta:ruta}); }
+ }; },
+ collection:function(col){ return consultaDb(col,null); },
+ central:true
+};
+async function conectarCentral(){
+ if(location.protocol==='file:'||(typeof navigator!=='undefined'&&navigator.onLine===false))return null;
+ try{ var d=await llamarDb({op:'empresas'}); CENTRAL={empresas:d.empresas||[],superadmin:!!d.superadmin,empresaId:d.empresaId||null}; return dbCentral; }
+ catch(e){ return null; }
+}
+function usarCap(n){
+ if(n==='db'&&!(window.claude&&window.claude.use))return conectarCentral();
+ return usarCapBase(n);
+}
+function empresaSgdDe(id){ return ((CENTRAL&&CENTRAL.empresas)||[]).find(function(x){return x.id===id;})||null; }
+/* Primera conexión de este equipo con la base: lo que ya estaba capturado aquí
+   se sube una vez (organizaciones, fichas y datos del proyecto abierto).      */
+var LCEN='arraigo-central-subido-v1';
+function subidoCentral(){ try{return JSON.parse(localStorage.getItem(LCEN)||'{}');}catch(e){return {};} }
+function marcarSubidoCentral(k){ var v=subidoCentral(); v[k]=hoy(); try{localStorage.setItem(LCEN,JSON.stringify(v));}catch(e){} }
+async function subirLocalACentral(){
+ if(!db||!db.central)return;
+ var v=subidoCentral();
+ if(!v.orgs&&(ORGS||[]).length){
+  if(CENTRAL&&!CENTRAL.superadmin&&CENTRAL.empresaId)ORGS.forEach(function(o){ if(!o.sgdEmpresaId)o.sgdEmpresaId=CENTRAL.empresaId; });
+  try{localStorage.setItem(LSO,JSON.stringify(ORGS));}catch(e){}
+  /* las organizaciones van primero y se esperan: los permisos de los proyectos dependen de ellas */
+  for(var i=0;i<ORGS.length;i++){ try{ await db.doc('organizaciones/'+ORGS[i].id).set({organizacion:ORGS[i],actualizado:new Date().toISOString()}); }catch(e){} }
+  marcarSubidoCentral('orgs');
+ }
+ PROY.forEach(function(p){ if(!v['f:'+p.id]){ pendientes['__pry__/'+p.id]=true; marcarSubidoCentral('f:'+p.id); } });
+ if(PRY&&!S.demo&&!v['p:'+PRY]&&hayDatos()){
+  ['org/perfil','beneficio/actual','ods/declaracion','bitacora/registro','nc/registro','gestion/declaraciones',
+   'gestion/muestreo','gestion/cargas','gestion/archivo','gestion/nivel3','gestion/cultivo','gestion/cohortes','gestion/control',
+   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo'].forEach(function(r){pendientes[r]=true;});
+  S.fincas.forEach(function(x){ pendientes['fincas/'+x.id]=true; pendientes['insumos/'+x.id]=true; });
+  S.parcelas.forEach(function(x){ pendientes['parcelas/'+x.id]=true; });
+  S.podas.forEach(function(x){ pendientes['podas/'+x.id]=true; });
+  (S.lotes||[]).forEach(function(x){ pendientes['lotes/'+x.id]=true; });
+  marcarSubidoCentral('p:'+PRY);
+ }
+ if(Object.keys(pendientes).length)sincronizar(true);
+}
 var tMsg=null;
 function msg(t){var m=$('msg');m.textContent=t;m.classList.add('ver');clearTimeout(tMsg);tMsg=setTimeout(function(){m.classList.remove('ver');},2200);}
 
@@ -13623,6 +13698,7 @@ function vistaOrganizaciones(){
    campoOrg('Responsable del protocolo','responsable',o.responsable)+
    campoOrg('Teléfono o correo','contacto',o.contacto,'ancho')+
    campoOrg('Dirección','direccion',o.direccion,'ancho')+
+   campoEmpresaSgd(o)+
    '</div>'+
    '<div class="acciones">'+
    '<button type="button" class="primario" data-accion="org-proyecto">Crear un proyecto para esta organización</button>'+
@@ -13644,11 +13720,27 @@ function vistaOrganizaciones(){
   '<div class="campo"><label for="no-c">Cultivo</label><select id="no-c"><option>Café</option><option>Cacao</option><option>Café y cacao</option></select></div>'+
   '<div class="campo ancho"><label for="no-r">Responsable del protocolo</label><input id="no-r" type="text"></div>'+
   '<div class="campo ancho"><label for="no-ct">Teléfono o correo</label><input id="no-ct" type="text"></div>'+
+  (CENTRAL?('<div class="campo ancho"><label for="no-sgd">Empresa en la plataforma de gestión (SGD)</label><select id="no-sgd"'+(CENTRAL.superadmin?'':' disabled')+'>'+
+    opcionesEmpresaSgd(CENTRAL.superadmin?'':(CENTRAL.empresaId||''))+'</select></div>'):'')+
   '</div><div class="acciones"><button type="button" class="primario" data-accion="org-crear">Dar de alta</button></div>'+
   '<p class="pista" style="margin-top:10px">El país que elija aquí decide con qué tabla de factores se calculan sus proyectos.</p>'+
   '</div></div>';
  h+='</div></div>';
  return h;
+}
+function opcionesEmpresaSgd(val){
+ var L=(CENTRAL&&CENTRAL.empresas)||[], h='';
+ if(!CENTRAL||CENTRAL.superadmin)h+='<option value="">Sin vincular</option>';
+ L.forEach(function(e){ h+='<option value="'+esc(e.id)+'"'+(e.id===val?' selected':'')+'>'+esc(e.nombre+(e.siglas?' · '+e.siglas:''))+'</option>'; });
+ if(val&&!empresaSgdDe(val))h+='<option value="'+esc(val)+'" selected>Empresa vinculada ('+esc(val)+')</option>';
+ return h;
+}
+function campoEmpresaSgd(o){
+ if(!CENTRAL)return '';
+ var ed=puedeEditar()&&CENTRAL.superadmin;
+ return '<div class="campo ancho"><label for="of-sgd">Empresa en la plataforma de gestión (SGD)</label>'+
+  '<select id="of-sgd" data-org="sgdEmpresaId"'+(ed?'':' disabled')+'>'+opcionesEmpresaSgd(o.sgdEmpresaId||'')+'</select>'+
+  '<span class="pista">'+(o.sgdEmpresaId?'Vinculada: sus proyectos y resultados se ven también en el SGD.':'Sin vincular: el SGD no ve esta organización.')+'</span></div>';
 }
 function campoOrg(et,campo,val,ancho){
  return '<div class="campo'+(ancho==='ancho'?' ancho':'')+'"><label for="of-'+campo+'">'+esc(et)+'</label>'+
@@ -25817,6 +25909,7 @@ document.addEventListener('input',function(ev){
  if(t.dataset.org){
   var oo=orgDe(sel.org); if(!oo)return;
   oo[t.dataset.org]=t.value; oo._m=Date.now(); guardarOrgs();
+  if(t.dataset.org==='sgdEmpresaId'){ pintar(); msg(t.value?('Organización vinculada a '+((empresaSgdDe(t.value)||{}).nombre||'la empresa del SGD')):'Organización desvinculada del SGD'); return; }
   /* el país y el cultivo bajan a los proyectos de esa organización */
   if(t.dataset.org==='pais'||t.dataset.org==='cultivo'||t.dataset.org==='nombre'){
    proyectosDeOrg(oo.id).forEach(function(pp){
@@ -26752,7 +26845,8 @@ document.addEventListener('click',function(ev){
   var nom=($('no-n').value||'').trim();
   if(!nom){msg('Escriba el nombre de la organización');$('no-n').focus();return;}
   var o=nuevaOrg({nombre:nom,codigo:($('no-cod').value||'').trim(),registro:($('no-reg').value||'').trim(),
-   pais:$('no-p').value,cultivo:$('no-c').value,responsable:($('no-r').value||'').trim(),contacto:($('no-ct').value||'').trim()});
+   pais:$('no-p').value,cultivo:$('no-c').value,responsable:($('no-r').value||'').trim(),contacto:($('no-ct').value||'').trim(),
+   sgdEmpresaId:($('no-sgd')&&$('no-sgd').value)||''});
   sel.org=o.id; pintar(); pintarNav(); msg('Organización '+o.codigo+' dada de alta');
   return;}
  if(a==='org-abrir'){ sel.org=b.dataset.id; pintar(); return;}
@@ -27773,7 +27867,16 @@ function arrancar(){
  usarCap('sample').then(function(x){ if(x){ muestreo=x; if(vista==='asi')pintar(); return; }
   asistenteServidor().then(function(f){ if(f){ muestreo=f; if(vista==='asi')pintar(); } }); });
  usarCap('assets').then(function(x){ assets=x; if(assets)setTimeout(function(){subirPendientes(true);},2500); });
- usarCap('db').then(function(x){
+ usarCap('db').then(conectarBase);
+ window.addEventListener('online',function(){ if(!db)usarCap('db').then(conectarBase); else sincronizar(true); });
+ setTimeout(pausarSiHaceFalta,60);
+ window.addEventListener('beforeunload',function(ev){
+  var enRiesgo=(Object.keys(pendientes).length&&db)||(!lsOk&&!db&&hayDatos()&&!S.demo);
+  if(enRiesgo){ev.preventDefault();ev.returnValue='';}
+ });
+ setInterval(function(){ if(Object.keys(pendientes).length&&db)sincronizar(true); },20000);
+}
+function conectarBase(x){
   db=x; pintarSync();
   if(!db)return;
   resolverModo().then(function(){
@@ -27785,18 +27888,22 @@ function arrancar(){
   }).then(function(){
    if(!PRY)return null;
    return cargarDeLaBase();
-  }).then(function(){ if(S.fincas.length&&S.fincas[0].id.indexOf('f-demo')!==0)S.demo=false; pintar(); sincronizar(true); });
- });
- setTimeout(pausarSiHaceFalta,60);
- window.addEventListener('beforeunload',function(ev){
-  var enRiesgo=(Object.keys(pendientes).length&&db)||(!lsOk&&!db&&hayDatos()&&!S.demo);
-  if(enRiesgo){ev.preventDefault();ev.returnValue='';}
- });
- setInterval(function(){ if(Object.keys(pendientes).length&&db)sincronizar(true); },20000);
+  }).then(function(){ if(S.fincas.length&&S.fincas[0].id.indexOf('f-demo')!==0)S.demo=false; pintar(); sincronizar(true); subirLocalACentral(); });
 }
 /* volcado técnico, para verificación y para exportar el ejemplo */
 /* Punto de comprobación para la batería de pruebas. El apartado M7.2 pide
    verificación aritmética independiente: esto es lo que la hace posible.   */
+/* Punto de comprobación de la base central (solo lectura, más las acciones que ya ofrece la interfaz) */
+window.__central={
+ estado:function(){ return {conectada:!!db, central:!!(db&&db.central), modo:modo, pendientes:Object.keys(pendientes).length,
+  empresas:CENTRAL?CENTRAL.empresas.map(function(e){return e.siglas||e.nombre;}):null, superadmin:CENTRAL?CENTRAL.superadmin:null,
+  orgs:(ORGS||[]).map(function(o){return {codigo:o.codigo,nombre:o.nombre,sgd:o.sgdEmpresaId||''};}),
+  proyectos:PROY.map(function(p){return {id:p.id,codigo:p.codigo,org:p.orgId||'',alcance:p.alcance||''};}),
+  abierto:PRY, servicios:(S.perfil&&S.perfil.servicios)||[], fincas:S.fincas.length}; },
+ ir:function(v){ ir(v); }, abrir:function(id){ return abrirProyecto(id,true); },
+ sincronizar:function(){ return sincronizar(true).then(function(){ guardarSnapshotAui(); }); },
+ cargarEjemplo:function(){ return cargarOccidente(); }
+};
 window.__nucleo=(function(){ var O={
  resumenBosque:function(){return resumenBosque();},
  listaVM0048:function(){return listaVM0048();},
