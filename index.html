@@ -3458,25 +3458,33 @@ var ALCANCES=[
 ];
 function alcance(){ var a=S.perfil.alcance; return (a==='alc1'||a==='alc3')?a:'alc2'; }
 /* Qué módulos tienen sentido en cada ruta del ALC-00 */
-var SERVICIOS=[['huella','Huella de carbono','Inventario de emisiones de la organización y huella del producto (ISO 14064-1, ISO 14067).'],
- ['neutral','Carbono neutral','Ruta de reducción y declaración de neutralidad sobre una huella cuantificada (ISO 14068-1). Incluye la huella.'],
+var SERVICIOS=[['gei','Inventario GEI de la organización','Emisiones y remociones de la organización por categoría, con sus límites de organización y de informe (ISO 14064-1).'],
+ ['huella','Huella de carbono de producto','Huella por unidad de producto, p. ej. por quintal, con unidad funcional, límite del sistema y regla de asignación declarados (ISO 14067).'],
+ ['neutral','Carbono neutral','Ruta de reducción y declaración de neutralidad (ISO 14068-1) sobre una cuantificación previa: el inventario de la organización o la huella del producto.'],
  ['insetting','Insetting (Alcance 3)','Reducciones y remociones en la cadena de suministro del comprador, con trazabilidad por lote.'],
  ['creditos','Créditos de carbono','Proyectos de reducción o remoción para un estándar (JJ Carbon System: Verra, Gold Standard, Plan Vivo y otros).']];
-var MOD_SERV={pai:['huella','neutral','insetting'],tal:['huella','neutral','insetting'],ins:['huella','neutral','insetting'],ben:['huella','neutral','insetting'],
- pod:['huella','insetting','creditos'],lot:['huella','insetting'],mit:['huella','neutral','insetting'],neu:['neutral'],
+var MOD_SERV={pai:['gei','huella','neutral','insetting'],tal:['gei','huella','neutral','insetting'],ins:['gei','huella','neutral','insetting'],ben:['gei','huella','neutral','insetting'],
+ pod:['gei','huella','insetting','creditos'],lot:['huella','insetting'],mit:['gei','huella','neutral','insetting'],neu:['neutral'],
  mue:['insetting','creditos'],ppm:['insetting','creditos'],est:['insetting','creditos'],ctr:['insetting'],vcu:['insetting'],
- dia:['huella','insetting','creditos'],ods:['huella','insetting','creditos'],bos:['creditos'],niv:['creditos']};
-function serviciosProyecto(){var s=S.perfil&&S.perfil.servicios; if(!Array.isArray(s)||!s.length)return SERVICIOS.map(function(x){return x[0];}); s=s.slice(); if(s.indexOf('neutral')>=0&&s.indexOf('huella')<0)s.push('huella'); return s;}
+ dia:['gei','huella','insetting','creditos'],ods:['gei','huella','insetting','creditos'],bos:['creditos'],niv:['creditos']};
+/* ISO 14064-1 (organización) e ISO 14067 (producto) son servicios separados. Los proyectos anteriores a la separación
+   tenían ambos bajo «huella»: se leen como los dos hasta que alguien vuelva a guardar los servicios.
+   Carbono neutral necesita al menos una de las dos cuantificaciones; si no hay ninguna, se activan ambas. */
+function serviciosProyecto(){var s=S.perfil&&S.perfil.servicios; if(!Array.isArray(s)||!s.length)return SERVICIOS.map(function(x){return x[0];}); s=s.slice();
+ if(!S.perfil.servSep&&s.indexOf('huella')>=0&&s.indexOf('gei')<0)s.push('gei');
+ if(s.indexOf('neutral')>=0&&s.indexOf('gei')<0&&s.indexOf('huella')<0){s.push('gei');s.push('huella');}
+ return SERVICIOS.map(function(x){return x[0];}).filter(function(x){return s.indexOf(x)>=0;});}
 function serviciosTodos(){var s=S.perfil&&S.perfil.servicios; return !Array.isArray(s)||!s.length||s.length>=SERVICIOS.length;}
 function moduloEnServicio(id){var r=MOD_SERV[id]; if(!r)return true; var s=serviciosProyecto(); return r.some(function(x){return s.indexOf(x)>=0;});}
 function moduloEnAlcance(id){return moduloEnAlcanceBase(id)&&moduloEnServicio(id);}
 function tarjetaServicios(){
  var s=serviciosProyecto(), ed=puedeEditar(), dec=(S.perfil&&Array.isArray(S.perfil.servicios))?S.perfil.servicios:[];
  return '<div class="tarjeta"><h3>Servicios contratados</h3><div class="cuerpo">'+
-  '<p>Cada cliente usa solo los servicios que contrató. Lo que no está activo desaparece del menú, pero los datos ya capturados no se borran ni se dejan de calcular. Carbono neutral se apoya en la huella, por eso la activa.</p>'+
+  '<p>Cada cliente usa solo los servicios que contrató. Lo que no está activo desaparece del menú, pero los datos ya capturados no se borran ni se dejan de calcular. El inventario de la organización (ISO 14064-1) y la huella de producto (ISO 14067) son servicios distintos. Carbono neutral necesita al menos uno de los dos.</p>'+
   '<div class="clases" style="grid-template-columns:1fr">'+
   SERVICIOS.map(function(x){
-   var on=s.indexOf(x[0])>=0, impl=on&&x[0]==='huella'&&dec.length&&dec.indexOf('huella')<0;
+   var on=s.indexOf(x[0])>=0, cuant=(x[0]==='gei'||x[0]==='huella'), otra=x[0]==='gei'?'huella':'gei';
+   var impl=on&&cuant&&s.indexOf('neutral')>=0&&s.indexOf(otra)<0;
    return '<button type="button" class="clase" data-accion="srv-alternar" data-srv="'+x[0]+'" aria-pressed="'+(on?'true':'false')+'"'+(ed&&!impl?'':' disabled')+'>'+
     '<b>'+esc(x[1])+(impl?' (requerida por carbono neutral)':'')+'</b><span>'+esc(x[2])+'</span></button>';
   }).join('')+'</div></div></div>';
@@ -8771,7 +8779,7 @@ function aplicarEnlaceSGD(){
   if(f.id!==PRY)abrirProyecto(f.id,true);
   if(E.servicios.length&&E.servicios.join(',')!==serviciosProyecto().join(',')&&puedeEditar()){
    var ant=serviciosProyecto().join(',');
-   S.perfil.servicios=E.servicios; marcar('org/perfil');
+   S.perfil.servicios=E.servicios; S.perfil.servSep=true; marcar('org/perfil');
    anotar('dato','Servicios contratados (desde la plataforma de gestión)',ant,E.servicios.join(','));
   }
   vista='portada'; pintar(); pintarNav();
@@ -27260,7 +27268,8 @@ if(a==='pry-crear'){
   abrirProyecto(nue.id,true);
   S.perfil.alcance=alc;
   var srvs=[].slice.call(document.querySelectorAll('input[name="np-servicio"]:checked')).map(function(x){return x.value;});
-  S.perfil.servicios=srvs.length?srvs:SERVICIOS.map(function(x){return x[0];});
+  S.perfil.servicios=srvs.length?srvs:SERVICIOS.map(function(x){return x[0];}); S.perfil.servSep=true;
+  var spN=serviciosProyecto(); S.esq=S.esq||{}; S.esq.i14064=spN.indexOf('gei')>=0; S.esq.i14067=spN.indexOf('huella')>=0; marcar('gestion/declaraciones');
   S.perfil.organizacion=org.nombre; S.perfil.ciclo=nue.ciclo; S.perfil.pais=org.pais; S.perfil.cultivo=org.cultivo;
   S.demo=false; marcar('org/perfil'); guardarLocal(); pintar(); pintarNav(); sincronizar(true);
   anotar('dato','Alcance declarado al crear el proyecto','',nomAlcance(alc));
@@ -27597,9 +27606,14 @@ if(a==='pry-crear'){
  if(a==='arbol-fotos'){var k=parseInt(b.dataset.i,10); sel.arbol=(sel.arbol===k)?null:k; pintar(); return;}
  if(a==='srv-alternar'){
   var sv=b.dataset.srv, cur=serviciosProyecto().slice(), ix=cur.indexOf(sv), ant=cur.join(',');
-  if(ix>=0){ if(cur.length===1){msg('El proyecto necesita al menos un servicio');return;} cur.splice(ix,1);} else cur.push(sv);
-  S.perfil.servicios=SERVICIOS.map(function(x){return x[0];}).filter(function(x){return cur.indexOf(x)>=0;});
+  if(ix>=0){ if(cur.length===1){msg('El proyecto necesita al menos un servicio');return;}
+   if((sv==='gei'||sv==='huella')&&cur.indexOf('neutral')>=0&&cur.indexOf(sv==='gei'?'huella':'gei')<0){msg('Carbono neutral necesita el inventario de la organización o la huella de producto');return;}
+   cur.splice(ix,1);} else cur.push(sv);
+  S.perfil.servicios=SERVICIOS.map(function(x){return x[0];}).filter(function(x){return cur.indexOf(x)>=0;}); S.perfil.servSep=true;
   marcar('org/perfil'); anotar('dato','Servicios contratados',ant,S.perfil.servicios.join(','));
+  /* El servicio contratado declara su norma en el ciclo abierto: ISO 14064-1 para el inventario y ISO 14067 para el producto */
+  if((sv==='gei'||sv==='huella')&&!cicloCerrado()){var k=sv==='gei'?'i14064':'i14067', on=S.perfil.servicios.indexOf(sv)>=0;
+   S.esq=S.esq||{}; if(!!S.esq[k]!==on){S.esq[k]=on; marcar('gestion/declaraciones'); anotar('esquema','Esquema declarado: '+k+' (por servicio contratado)',on?'no':'sí',on?'sí':'no');}}
   pintar(); pintarNav(); msg('Servicios del proyecto: '+S.perfil.servicios.length+' de '+SERVICIOS.length);
   return;}
  if(a==='alc-fijar'){
