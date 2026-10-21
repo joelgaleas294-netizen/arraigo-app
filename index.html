@@ -836,6 +836,9 @@ table.hoja .cel-vacia{color:var(--ink-3);opacity:.6}
 .nv-grupo{display:block;font-size:var(--t-0);letter-spacing:.18em;text-transform:uppercase;color:var(--lat-ink-2);
  font-weight:700;padding:14px 10px 5px;opacity:.72}
 nav button.nv-panel{margin-bottom:var(--e-0)}
+.nv-comp{display:flex;gap:4px;padding:8px 6px 2px}
+nav .nv-comp button{flex:1;display:block;text-align:center;font-size:.72rem;line-height:1.2;padding:7px 4px;border-radius:8px;border:1px solid color-mix(in srgb,var(--lat-ink) 25%,transparent);background:transparent;color:var(--lat-ink-2);white-space:normal}
+nav .nv-comp button[aria-pressed="true"]{background:var(--lat-marca);color:#fff;border-color:var(--lat-marca);font-weight:700}
 nav button[aria-current="page"]{background:linear-gradient(90deg,color-mix(in srgb,var(--mod,var(--lat-marca)) 22%,transparent),transparent 82%);
  color:var(--lat-ink);font-weight:600;box-shadow:inset 2px 0 0 var(--mod,var(--lat-marca))}
 .jjg.viva{overflow:visible}
@@ -1653,6 +1656,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--mod,var(--acento));
    <section id="v-tal" hidden></section>
    <section id="v-fincas" hidden></section>
    <section id="v-bib" hidden></section>
+   <section id="v-lae" hidden></section>
+   <section id="v-lfe" hidden></section>
    <section id="v-mue" hidden></section>
    <section id="v-ppm" hidden></section>
    <section id="v-est" hidden></section>
@@ -3463,7 +3468,7 @@ var SERVICIOS=[['gei','Inventario GEI de la organización','Emisiones y remocion
  ['neutral','Carbono neutral','Ruta de reducción y declaración de neutralidad (ISO 14068-1) sobre una cuantificación previa: el inventario de la organización o la huella del producto.'],
  ['insetting','Insetting (Alcance 3)','Reducciones y remociones en la cadena de suministro del comprador, con trazabilidad por lote.'],
  ['creditos','Créditos de carbono','Proyectos de reducción o remoción para un estándar (JJ Carbon System: Verra, Gold Standard, Plan Vivo y otros).']];
-var MOD_SERV={pai:['gei','huella','neutral','insetting'],tal:['gei','huella','neutral','insetting'],ins:['gei','huella','neutral','insetting'],ben:['gei','huella','neutral','insetting'],
+var MOD_SERV={lfe:['gei','huella','neutral','insetting'],lae:['insetting','creditos'],pai:['gei','huella','neutral','insetting'],tal:['gei','huella','neutral','insetting'],ins:['gei','huella','neutral','insetting'],ben:['gei','huella','neutral','insetting'],
  pod:['gei','huella','insetting','creditos'],lot:['huella','insetting'],mit:['gei','huella','neutral','insetting'],neu:['neutral'],
  mue:['insetting','creditos'],ppm:['insetting','creditos'],est:['insetting','creditos'],ctr:['insetting'],vcu:['insetting'],
  dia:['gei','huella','insetting','creditos'],ods:['gei','huella','insetting','creditos'],bos:['creditos'],niv:['creditos']};
@@ -5738,6 +5743,10 @@ var MODULOS=[
   des:'El ciclo de una organización. Aquí se abre, se cierra y se entrega.'},
  {id:'pai',scol:'s1',codigo:'MOD-PAI',nom:'Factores de emisión por país',col:'m1',etapa:'preparar',paso:3,
   des:'Qué factor usa cada país de origen, de dónde sale y de qué año es.'},
+ {id:'lfe',scol:'s1',codigo:'MOD-LFE',nom:'Biblioteca de factores de emisión',col:'m1',etapa:'preparar',paso:3,
+  des:'Los factores de cada renglón, cargados desde un documento con su fuente, año y nivel. Solo lo aprobado entra al cálculo.'},
+ {id:'lae',scol:'s3',codigo:'MOD-LAE',nom:'Biblioteca de ecuaciones alométricas',col:'m3',etapa:'preparar',paso:3,
+  des:'Las ecuaciones de cada especie, cargadas desde un documento con su fuente. Solo lo aprobado entra al registro del cálculo.'},
  {id:'bib',scol:'s8',codigo:'MOD-BIB',nom:'Biblioteca documental',col:'m8',etapa:'preparar',paso:3,
   des:'De qué documento sale cada factor y cada ecuación, en qué estado de cotejo está ese documento, y qué datos del inventario todavía no se apoyan en ninguno.'},
  {id:'cfg',scol:'s2',codigo:'MOD-CFG',nom:'Configuración del cálculo',col:'m2',etapa:'preparar',paso:4,
@@ -5832,6 +5841,8 @@ function datoModulo(m){
   if(proyectoBloqueado())return [String((f&&f.codigo)||''),'proyecto de esta sesión', true];
   return [String(vv.length),(vv.length===1?'proyecto':'proyectos')+(f?' · abierto '+(f.codigo||''):''), !!f];}
  if(m.id==='cfg')return [S.perfil.ciclo||'sin ciclo','ciclo declarado', !!S.perfil.organizacion];
+ if(m.id==='lae'||m.id==='lfe'){var LL=m.id==='lae'?libEcu():libFac(), ap=LL.filter(function(x){return x.estado==='aprobada';}).length, rv=LL.filter(function(x){return x.estado==='revision';}).length;
+  return [String(ap),'aprobadas'+(rv?' · '+rv+' en revisión':''), ap>0];}
  if(m.id==='bos'){ var Rb=resumenBosque();
   return [(Rb.haDeclarada>0?fmt(Rb.haDeclarada,0):'0'),
    (Rb.haDeclarada>0?'ha de bosque · ':'sin área declarada · ')+plural(Rb.parcelas,'parcela','parcelas'),
@@ -5925,14 +5936,181 @@ function cabModulo(id,extra){
   '<button type="button" class="mini volver" data-vista="portada">Módulos</button></div>'+
   (extra?extra:'')+avisoCongelado();
 }
+ICO.lae=ICO.est||ICO.bib||''; ICO.lfe=ICO.pai||ICO.bib||'';
 var ICO_INICIO='<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/>';
+/* ====== Dos componentes del programa ======================================
+   Huella y neutralidad: inventario de la organización (ISO 14064-1), huella
+   de producto (ISO 14067), carbono neutral (ISO 14068-1) e insetting. Trabaja
+   con datos de actividad por factor de emisión.
+   Remociones y créditos: estrato de sombra, bosque, parcelas permanentes,
+   muestreo y unidades de carbono. Trabaja con mediciones por ecuación.
+   La base (organizaciones, fincas, evidencias, bibliotecas) es común. Las
+   existencias y los flujos no se suman ni se compensan entre sí: por eso cada
+   componente tiene su menú y sus cifras.                                    */
+var COMPONENTES=[['H','Huella y neutralidad','Inventario, huella de producto, neutralidad e insetting'],
+ ['R','Remociones y créditos','Estrato de sombra, bosque, parcelas y unidades de carbono']];
+var COMP_MOD={pai:'H',lfe:'H',tal:'H',pod:'H',ins:'H',ben:'H',res:'H',ctr:'H',lot:'H',mit:'H',vcu:'H',neu:'H',
+ lae:'R',mue:'R',bos:'R',ppm:'R',est:'R',niv:'R'};
+function compDisponible(c){ return MODULOS.some(function(m){return COMP_MOD[m.id]===c&&moduloEnAlcance(m.id);}); }
+function compEfectivo(){
+ var c=''; try{c=localStorage.getItem('arraigo.comp')||'';}catch(e){}
+ if(c!=='H'&&c!=='R'){var s=serviciosProyecto(); c=(s.indexOf('creditos')>=0&&!['gei','huella','neutral','insetting'].some(function(x){return s.indexOf(x)>=0;}))?'R':'H';}
+ var o=c==='H'?'R':'H';
+ return (!compDisponible(c)&&compDisponible(o))?o:c;
+}
+function moduloVisible(id){ return moduloEnAlcance(id)&&(!COMP_MOD[id]||COMP_MOD[id]===compEfectivo()); }
+function selectorComponente(){
+ if(!compDisponible('H')||!compDisponible('R'))return '';
+ var a=compEfectivo();
+ return '<div class="nv-comp" role="group" aria-label="Componente del programa">'+COMPONENTES.map(function(c){
+  return '<button type="button" data-accion="comp-fijar" data-comp="'+c[0]+'" aria-pressed="'+(a===c[0]?'true':'false')+'" title="'+esc(c[2])+'">'+esc(c[1])+'</button>';
+ }).join('')+'</div>';
+}
+
+/* ====== Bibliotecas cargadas desde un documento aparte =====================
+   Ecuaciones alométricas por especie y factores de emisión por renglón. Se
+   cargan desde una hoja de cálculo con su fuente, quedan en revisión y solo lo
+   aprobado entra al registro del cálculo. Aprobar no es verificar: la ecuación
+   aprobada sigue con el descuento por orden mientras su campo de verificación
+   contra la publicación original esté vacío (M5.4.4).                       */
+var LIB_ECU_COLS=['Especie','Nombre común','Estrato','Forma','a','b','c','d','e','Expresión','Variables y unidades','Diámetro mínimo (cm)','Diámetro máximo (cm)','País o zona','Muestra (n)','R²','Orden (1 a 5)','Fuente (cita completa)','Enlace o DOI'];
+var LIB_FAC_COLS=['Código del renglón','Renglón','Ámbito','Factor','Unidad','Nivel (nacional, regional o defecto)','País','Año','Fuente (cita completa)','Documento o enlace'];
+function libEcu(){ S.perfil.libEcu=S.perfil.libEcu||[]; return S.perfil.libEcu; }
+function libFac(){ S.perfil.libFac=S.perfil.libFac||[]; return S.perfil.libFac; }
+function normTxt(x){ return String(x==null?'':x).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim(); }
+function colDe(cab,nombre){ var n=normTxt(nombre).split(' (')[0]; for(var i=0;i<cab.length;i++){ if(normTxt(cab[i]).split(' (')[0]===n)return i; } return -1; }
+function estratoDe(x){ var n=normTxt(x); var e=ESTRATOS.filter(function(s){return s[0]===n||normTxt(s[1])===n||normTxt(s[1]).indexOf(n)===0;})[0]; return e?e[0]:''; }
+function validarEcu(r){
+ var err=[];
+ if(!r.especie)err.push('falta la especie');
+ if(!r.estrato)err.push('estrato no reconocido (sombra, cacao, cafe, rodal o bosque)');
+ if(!FORMAS_ECU.some(function(f){return f[0]===r.forma;}))err.push('forma no reconocida ('+FORMAS_ECU.map(function(f){return f[0];}).join(', ')+')');
+ if(!isFinite(numOpc(r.a))||!isFinite(numOpc(r.b)))err.push('coeficientes a y b numéricos');
+ var mn=numOpc(r.dmin), mx=numOpc(r.dmax);
+ if(!isFinite(mn)||!isFinite(mx)||mn>=mx)err.push('rango de diámetro válido');
+ if(String(r.fuente||'').length<15)err.push('fuente completa (autor, año y publicación)');
+ var o=numOpc(r.orden); if(!(o>=1&&o<=5))err.push('orden entre 1 y 5');
+ return err;
+}
+function validarFac(r){
+ var err=[], L=lineasUnicas().filter(function(x){return x.l.id===r.linea;})[0];
+ if(!L)err.push('código de renglón inexistente');
+ if(!isFinite(numOpc(r.f))||numOpc(r.f)<0)err.push('factor numérico');
+ if(['nacional','regional','defecto'].indexOf(r.nivel)<0)err.push('nivel: nacional, regional o defecto');
+ if(!/^\d{4}$/.test(String(r.anio||'')))err.push('año de cuatro cifras');
+ if(String(r.fuente||'').length<10)err.push('fuente completa');
+ return err;
+}
+function plantillaEcu(){
+ var f=[LIB_ECU_COLS];
+ f.push(['Inga punctata','Cuje','sombra','ln','-1,5','2,3','','','','ln AGB = a + b · ln D','D en cm a 1,30 m; AGB en kg de materia seca','5','45','Nicaragua','40','0,95','2','Autor, A. y colaboradores (año). Título del artículo. Revista volumen:páginas.','https://doi.org/...']);
+ bajar('ARRAIGO-plantilla-ecuaciones-alometricas.csv',aCsv(f));
+}
+function plantillaFac(){
+ var f=[LIB_FAC_COLS];
+ lineasUnicas().forEach(function(x){ var a=admisibleFactor(x.l);
+  f.push([x.l.id,x.l.et||'',x.amb||'',a.ok?String(a.f).replace('.',','):'',x.l.unTec?('kg CO₂e por '+x.l.unTec):'',a.nivel||'defecto',paisProyecto(),a.anio||'',a.fuente||'','']); });
+ bajar('ARRAIGO-plantilla-factores-'+paisProyecto()+'.csv',aCsv(f));
+}
+function importarLib(cual,file){
+ if(!puedeEditar()){msg('Su acceso no permite cargar a la biblioteca');return;}
+ msg('Leyendo '+file.name+'…');
+ leerArchivoCarga(file).then(function(res){
+  var h=(res.hojas||[])[0]; if(!h){msg('El archivo no trae ninguna hoja');return;}
+  var T=leerTabla(h.tsv||''), cab=T.cab||[], filas=T.filas||[], n=0, malas=0;
+  var cols=cual==='ecu'?LIB_ECU_COLS:LIB_FAC_COLS, ix=cols.map(function(c){return colDe(cab,c);});
+  if(ix[0]<0){msg('No se reconocen los encabezados: use la plantilla de la biblioteca');return;}
+  var v=function(fila,k){ var i=ix[k]; return i>=0?String(fila[i]==null?'':fila[i]).trim():''; };
+  var carga={archivo:file.name,fecha:new Date().toISOString(),por:quienEdita()};
+  filas.forEach(function(fila){
+   if(!fila.some(function(c){return String(c||'').trim();}))return;
+   var r;
+   if(cual==='ecu'){
+    r={id:uid('le'),especie:v(fila,0),comun:v(fila,1),estrato:estratoDe(v(fila,2)),forma:normTxt(v(fila,3)),a:v(fila,4),b:v(fila,5),c:v(fila,6),d:v(fila,7),e:v(fila,8),
+     expr:v(fila,9),vars:v(fila,10),dmin:v(fila,11),dmax:v(fila,12),zona:v(fila,13),nind:v(fila,14),r2:v(fila,15),orden:v(fila,16)||'3',fuente:v(fila,17),enlace:v(fila,18)};
+    r.errores=validarEcu(r); libEcu().push(r);
+   }else{
+    r={id:uid('lf'),linea:v(fila,0),nom:v(fila,1),amb:v(fila,2),f:v(fila,3),unidad:v(fila,4),nivel:normTxt(v(fila,5)),pais:v(fila,6),anio:v(fila,7),fuente:v(fila,8),doc:v(fila,9)};
+    r.errores=validarFac(r); libFac().push(r);
+   }
+   r.estado='revision'; r.carga=carga; n++; if(r.errores.length)malas++;
+  });
+  marcar('org/perfil'); tocaEstado();
+  anotar('dato',cual==='ecu'?'Ecuaciones cargadas a la biblioteca':'Factores cargados a la biblioteca','',n+' filas de '+file.name);
+  pintar(); msg(n+' filas en revisión'+(malas?(' · '+malas+' con datos por corregir'):'')+'. Solo las aprobadas entran al cálculo.');
+ }).catch(function(e){ msg('No se pudo leer: '+(e&&e.message||e)); });
+}
+function aprobarEcuLib(r){
+ var n={id:uid('ecu'),orden:Math.round(numOpc(r.orden))||3,estrato:r.estrato,forma:r.forma,a:r.a,b:r.b,c:r.c,d:r.d,e:r.e,cf:'',activa:true,
+  idint:'LIB-'+normTxt(r.especie).replace(/[^a-z0-9]+/g,'-').toUpperCase().slice(0,40),
+  expr:r.expr||(FORMAS_ECU.filter(function(f){return f[0]===r.forma;})[0]||[])[1]||'',vars:r.vars,
+  ambito:r.especie+(r.comun?(' ('+r.comun+')'):''),dmin:r.dmin,dmax:r.dmax,zona:r.zona,nind:r.nind,r2:r.r2,err:'',
+  pub:r.fuente+(r.enlace?(' '+r.enlace):''),verif:'',especies:r.especie,origenLib:r.id};
+ ecuaciones().push(n);
+ r.estado='aprobada'; r.aprobada={fecha:new Date().toISOString(),por:quienEdita(),ecu:n.id};
+}
+function aprobarFacLib(r){
+ var prev=regFactores()[r.linea];
+ regFactores()[r.linea]={f:numOpc(r.f),nivel:r.nivel,fuente:r.fuente+(r.doc?(' · '+r.doc):''),anio:r.anio,unidad:r.unidad,lib:r.id,fecha:new Date().toISOString()};
+ libFac().forEach(function(x){ if(x!==r&&x.linea===r.linea&&x.estado==='aprobada')x.estado='reemplazada'; });
+ r.estado='aprobada'; r.aprobada={fecha:new Date().toISOString(),por:quienEdita(),antes:prev?prev.f:null};
+}
+function filaEstadoLib(r){
+ var c={revision:'est',aprobada:'ok',rechazada:'mal',reemplazada:''}[r.estado]||'';
+ var t={revision:'En revisión',aprobada:'Aprobada',rechazada:'Rechazada',reemplazada:'Reemplazada'}[r.estado]||r.estado;
+ return '<span class="etq '+c+'">'+t+'</span>'+(r.errores&&r.errores.length?'<br><span class="pista" style="color:var(--mal,#b3261e)">Falta: '+esc(r.errores.join('; '))+'</span>':'');
+}
+function accionesLib(cual,r,i){
+ if(!puedeEditar())return '';
+ var h='';
+ if(r.estado==='revision'&&!(r.errores||[]).length&&puedeGestionar())h+='<button type="button" class="mini" data-accion="lib-aprobar" data-lib="'+cual+'" data-i="'+i+'">Aprobar</button> ';
+ if(r.estado==='revision')h+='<button type="button" class="mini peligro" data-accion="lib-rechazar" data-lib="'+cual+'" data-i="'+i+'">Rechazar</button>';
+ return h;
+}
+function cabLib(cual){
+ var L=cual==='ecu'?libEcu():libFac(), rev=L.filter(function(x){return x.estado==='revision';}).length, ok=L.filter(function(x){return x.estado==='aprobada';}).length;
+ return '<dl class="cifras">'+tarjetaCifra('Cargadas',String(L.length),'filas recibidas de documentos')+tarjetaCifra('En revisión',String(rev),'no entran al cálculo')+
+  tarjetaCifra('Aprobadas',String(ok),'en el registro del cálculo')+'</dl>'+
+  '<div class="tarjeta no-imprimir"><h3>Cargar desde un documento</h3><div class="cuerpo">'+
+  '<p>'+(cual==='ecu'?'Una fila por especie y ecuación, con sus coeficientes, su rango de diámetro, la muestra y la cita completa de la publicación.':'Una fila por renglón del inventario, con el factor, su unidad, el nivel de la jerarquía, el año y la fuente. La plantilla trae los renglones del proyecto con el factor que hoy se usa, para corregirlo donde haga falta.')+
+  ' Acepta Excel (xlsx), LibreOffice (ods) o CSV. Lo cargado queda en revisión y solo lo aprobado por quien gestiona el programa entra al cálculo.</p>'+
+  '<div class="acciones"><button type="button" class="mini" data-accion="lib-plantilla" data-lib="'+cual+'">Descargar la plantilla</button>'+
+  (puedeEditar()?'<label class="boton mini" style="cursor:pointer">Cargar el documento<input type="file" hidden accept=".xlsx,.ods,.csv,.txt" data-libcarga="'+cual+'"></label>':'')+'</div></div></div>';
+}
+function vistaLibEcu(){
+ var h=cabModulo('lae','<p class="vista-sub">Las ecuaciones alométricas de cada especie, cargadas desde un documento aparte con su fuente. Al aprobarse pasan al registro de ecuaciones del cálculo de remociones.</p>')+cabLib('ecu');
+ var L=libEcu();
+ h+='<div class="tarjeta"><h3>Ecuaciones cargadas</h3><div class="tabla-caja"><table><thead><tr><th>Especie</th><th>Estrato</th><th>Forma y coeficientes</th><th>Rango, cm</th><th>Orden</th><th>Fuente</th><th>Estado</th><th></th></tr></thead><tbody>';
+ if(!L.length)h+='<tr><td colspan="8"><p class="vacio">Todavía no se ha cargado ningún documento de ecuaciones.</p></td></tr>';
+ L.forEach(function(r,i){
+  h+='<tr><td><b>'+esc(r.especie||'—')+'</b>'+(r.comun?'<br><span class="pista">'+esc(r.comun)+'</span>':'')+'</td><td>'+esc(r.estrato||'?')+'</td>'+
+   '<td>'+esc(r.forma||'?')+'<br><span class="pista">a '+esc(r.a)+' · b '+esc(r.b)+(r.c?' · c '+esc(r.c):'')+(r.d?' · d '+esc(r.d):'')+'</span></td>'+
+   '<td class="n">'+esc((r.dmin||'?')+' a '+(r.dmax||'?'))+'</td><td class="n">'+esc(r.orden)+'</td>'+
+   '<td style="white-space:normal;max-width:320px">'+esc(r.fuente||'—')+(r.zona?'<br><span class="pista">'+esc(r.zona)+(r.nind?' · n = '+esc(r.nind):'')+(r.r2?' · R² '+esc(r.r2):'')+'</span>':'')+'</td>'+
+   '<td>'+filaEstadoLib(r)+'</td><td>'+accionesLib('ecu',r,i)+'</td></tr>';
+ });
+ return h+'</tbody></table></div></div>';
+}
+function vistaLibFac(){
+ var h=cabModulo('lfe','<p class="vista-sub">Los factores de emisión de cada renglón del inventario, cargados desde un documento aparte con su fuente, su año y su nivel. Al aprobarse pasan al registro de factores del proyecto y sustituyen al valor por defecto.</p>')+cabLib('fac');
+ var L=libFac();
+ h+='<div class="tarjeta"><h3>Factores cargados</h3><div class="tabla-caja"><table><thead><tr><th>Renglón</th><th>Factor</th><th>Nivel</th><th>Año</th><th>Fuente</th><th>Estado</th><th></th></tr></thead><tbody>';
+ if(!L.length)h+='<tr><td colspan="7"><p class="vacio">Todavía no se ha cargado ningún documento de factores.</p></td></tr>';
+ L.forEach(function(r,i){
+  h+='<tr><td><b>'+esc(r.linea)+'</b>'+(r.nom?'<br><span class="pista">'+esc(r.nom)+(r.amb?' · '+esc(r.amb):'')+'</span>':'')+'</td>'+
+   '<td class="n">'+esc(r.f)+' <span class="pista">'+esc(r.unidad||'')+'</span></td><td>'+esc(r.nivel)+'</td><td class="n">'+esc(r.anio)+'</td>'+
+   '<td style="white-space:normal;max-width:340px">'+esc(r.fuente||'—')+(r.doc?'<br><span class="pista">'+esc(r.doc)+'</span>':'')+'</td>'+
+   '<td>'+filaEstadoLib(r)+'</td><td>'+accionesLib('fac',r,i)+'</td></tr>';
+ });
+ return h+'</tbody></table></div></div>';
+}
 function pintarNav(){
  var n=$('nav');
  var h='<button type="button" class="nv-panel" data-vista="portada"'+(vista==='portada'?' aria-current="page"':'')+' style="--mod:var(--lat-marca)">'+
   '<span class="nv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICO_INICIO+'</svg></span>'+
-  '<span class="nv-txt">Panel</span></button>';
+  '<span class="nv-txt">Panel</span></button>'+selectorComponente();
  ETAPAS.forEach(function(e){
-  var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloEnAlcance(m.id);});
+  var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);});
   if(!ms.length)return;
   h+='<span class="nv-grupo">'+esc(e[1])+'</span>';
   ms.forEach(function(m){
@@ -6885,7 +7063,7 @@ function vistaPrimerPaso(){
   '<span class="hb-nota">Un proyecto es una empresa. Créelo primero y dentro se captura todo lo demás.</span></div></div></div>'+
   '<div class="rejilla3">'+
   ETAPAS.map(function(e,i){return '<div class="tarjeta"><h3>'+(i+1)+' · '+esc(e[1])+'</h3><div class="cuerpo"><p>'+esc(e[2])+'</p>'+
-   '<p class="pista">'+MODULOS.filter(function(m){return m.etapa===e[0]&&moduloEnAlcance(m.id);}).map(function(m){return esc(nomMod(m));}).join(' · ')+'</p></div></div>';}).join('')+
+   '<p class="pista">'+MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);}).map(function(m){return esc(nomMod(m));}).join(' · ')+'</p></div></div>';}).join('')+
   '</div>';
 }
 /* ====== lo siguiente ====================================================
@@ -7061,7 +7239,7 @@ function vistaPortada(){
  h+='<h2 class="tit-seccion">El ciclo, en cuatro etapas</h2>';
  h+='<div class="etapas">';
  ETAPAS.forEach(function(e,ie){
-  var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloEnAlcance(m.id);});
+  var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);});
   var listos=ms.filter(function(m){return datoModulo(m)[2];}).length;
   var pct=ms.length?Math.round(listos*100/ms.length):0;
   h+='<section class="etapa"><header class="et-cab"><span class="et-n">'+(ie+1)+'</span>'+
@@ -25751,6 +25929,8 @@ function pintar(){
   var ci=$('chat-in'); if(ci&&!pensando)ci.focus();
   var cc=$('chat'); if(cc)cc.scrollTop=cc.scrollHeight;}
  else if(vista==='car')$('v-car').innerHTML=vistaCarga();
+ else if(vista==='lae')$('v-lae').innerHTML=vistaLibEcu();
+ else if(vista==='lfe')$('v-lfe').innerHTML=vistaLibFac();
  else if(vista==='dia')$('v-dia').innerHTML=vistaDiagnostico();
  else if(vista==='vqr')$('v-vqr').innerHTML=vistaVerificaQR();
  else if(vista==='ctr')$('v-ctr').innerHTML=vistaContratos();
@@ -26195,6 +26375,7 @@ document.addEventListener('change',function(ev){
    fr.onerror=function(){msg('No se pudo leer el archivo');}; fr.readAsText(fj);}
   t.value=''; return;
  }
+ if(t.dataset.libcarga){ var fL=t.files&&t.files[0]; t.value=''; if(fL)importarLib(t.dataset.libcarga,fL); return; }
  if(t.dataset.ctrAlta){
   var fA=t.files&&t.files[0]; t.value='';
   if(!fA)return;
@@ -27604,6 +27785,16 @@ if(a==='pry-crear'){
   msg('Se quitó el último árbol: '+(fuera.nombre||fuera.especie||''));
   return;}
  if(a==='arbol-fotos'){var k=parseInt(b.dataset.i,10); sel.arbol=(sel.arbol===k)?null:k; pintar(); return;}
+ if(a==='comp-fijar'){var cc=b.dataset.comp; try{localStorage.setItem('arraigo.comp',cc);}catch(e){}
+  if(COMP_MOD[vista]&&COMP_MOD[vista]!==cc)vista='portada'; pintar(); pintarNav(); msg('Componente: '+((COMPONENTES.filter(function(x){return x[0]===cc;})[0]||[])[1]||'')); return;}
+ if(a==='lib-plantilla'){ if(b.dataset.lib==='ecu')plantillaEcu(); else plantillaFac(); return;}
+ if(a==='lib-aprobar'||a==='lib-rechazar'){var Lx=b.dataset.lib==='ecu'?libEcu():libFac(), rx=Lx[parseInt(b.dataset.i,10)]; if(!rx||rx.estado!=='revision')return;
+  if(a==='lib-aprobar'){ if(!puedeGestionar()){msg('Aprobar requiere acceso de gestión del programa');return;} if((rx.errores||[]).length){msg('Corrija la fila en el documento y vuelva a cargarla');return;}
+   if(b.dataset.lib==='ecu')aprobarEcuLib(rx); else aprobarFacLib(rx);
+   anotar('dato',b.dataset.lib==='ecu'?'Ecuación aprobada desde la biblioteca':'Factor aprobado desde la biblioteca','',b.dataset.lib==='ecu'?rx.especie:(rx.linea+' = '+rx.f));
+   msg(b.dataset.lib==='ecu'?'Aprobada: pasó al registro de ecuaciones. Llene su verificación contra la publicación para quitar el descuento por orden':'Aprobado: el renglón '+rx.linea+' ya calcula con este factor');}
+  else { rx.estado='rechazada'; rx.rechazada={fecha:new Date().toISOString(),por:quienEdita()}; anotar('dato','Fila rechazada en la biblioteca','',b.dataset.lib==='ecu'?rx.especie:rx.linea); }
+  marcar('org/perfil'); tocaEstado(); pintar(); pintarNav(); return;}
  if(a==='srv-alternar'){
   var sv=b.dataset.srv, cur=serviciosProyecto().slice(), ix=cur.indexOf(sv), ant=cur.join(',');
   if(ix>=0){ if(cur.length===1){msg('El proyecto necesita al menos un servicio');return;}
