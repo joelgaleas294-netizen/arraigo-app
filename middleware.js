@@ -2,7 +2,7 @@
 // La sesión se valida contra la plataforma de gestión (SGD); ARRAIGO no guarda contraseñas.
 // Sin sesión: la página pide usuario y contraseña (/login.html) y no se descarga nada del programa.
 export const config = {
-  matcher: ['/', '/index.html', '/api/asistente'],
+  matcher: ['/', '/index.html', '/api/asistente', '/api/leer-factura'],
 };
 
 const SGD = (process.env.SGD_URL || 'https://sgd.jjglobalsa.com').replace(/\/$/, '');

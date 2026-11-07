@@ -1581,6 +1581,57 @@ input:focus,select:focus,textarea:focus{border-color:var(--mod,var(--acento));
 /* --- 7 · la barra de arriba --------------------------------------------- */
 .topbar{border-bottom:1px solid color-mix(in srgb,var(--mod,var(--acento)) 22%,var(--line));
  background:color-mix(in srgb,var(--surface) 86%,transparent)}
+
+/* ====== MOD-CAP · captura de facturas y calculadora trazable ====== */
+.cap-pasos{list-style:none;margin:0 0 var(--e-6);padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--e-3)}
+.cap-pasos li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-1);padding:var(--e-4) var(--e-5);display:grid;grid-template-columns:auto 1fr;column-gap:var(--e-4);align-items:center}
+.cap-pasos li span{grid-row:span 2;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--surface-3);color:var(--ink-2)}
+.cap-pasos li b{font-size:var(--t-3)} .cap-pasos li small{color:var(--ink-3);font-size:var(--t-1)}
+.cap-pasos li.act{border-color:var(--mod,var(--acento));box-shadow:var(--brillo)} .cap-pasos li.act span{background:var(--mod,var(--acento));color:#fff}
+.cap-pasos li.hecho span{background:var(--acento-2);color:#fff}
+.cap-amb{display:flex;gap:var(--e-6);flex-wrap:wrap}
+.cap-zona{display:flex;flex-direction:column;align-items:center;gap:var(--e-2);padding:var(--e-9) var(--e-6);margin:var(--e-5) 0;border:2px dashed var(--line-fuerte);border-radius:var(--r-2);background:var(--surface-2);cursor:pointer;text-align:center}
+.cap-zona:hover{border-color:var(--mod,var(--acento));background:var(--acento-suave)}
+.cap-zona.off{opacity:.5;cursor:not-allowed}
+.cap-zona-ico{font-size:30px;line-height:1;color:var(--mod,var(--acento))} .cap-zona b{font-size:var(--t-4)} .cap-zona small{color:var(--ink-3)}
+.cap-alt,.cap-lector{font-size:var(--t-2);color:var(--ink-2)} .cap-alt{align-items:center;gap:var(--e-4)}
+.cap-zona,.cap-zona *{text-transform:none;letter-spacing:normal}
+.cap-items td:nth-child(4) select{min-width:130px}.cap-items td:nth-child(5) select{min-width:210px}
+.cap-leyendo{font-size:var(--t-4);padding:var(--e-6) 0}
+.cap-leyendo::before{content:"";display:inline-block;width:14px;height:14px;margin-right:10px;border:2px solid var(--line);border-top-color:var(--mod,var(--acento));border-radius:50%;animation:cap-giro .8s linear infinite;vertical-align:-2px}
+@keyframes cap-giro{to{transform:rotate(360deg)}}
+.cap-rev-g{display:grid;grid-template-columns:120px 1fr;gap:var(--e-6);align-items:start;margin-bottom:var(--e-5)}
+.cap-mini{display:block;width:120px;height:150px;border:1px solid var(--line);border-radius:var(--r-1);overflow:hidden;background:var(--surface-2)}
+.cap-mini img{width:100%;height:100%;object-fit:cover;object-position:top}
+.cap-pdf{display:grid;place-items:center;text-align:center;font-weight:700;color:var(--ink-2);padding:var(--e-3)}
+.cap-cab{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--e-5)}
+.cap-items{width:100%;border-collapse:collapse;font-size:var(--t-2)}
+.cap-items th{text-align:left;font-size:var(--t-1);color:var(--ink-3);padding:var(--e-2) var(--e-3);border-bottom:1px solid var(--line)}
+.cap-items td{padding:var(--e-2) var(--e-3);border-bottom:1px solid var(--line);vertical-align:top}
+.cap-items input:not([type=checkbox]),.cap-items select{width:100%;min-width:90px}
+.cap-items .cap-num{max-width:110px;text-align:right} .cap-items .cap-conv{max-width:150px}
+.cap-items tr.cap-baja td{background:color-mix(in srgb,var(--aviso) 8%,transparent)}
+.cap-conf{display:block;color:var(--aviso);font-size:var(--t-0);margin-top:2px}
+.cap-entra{white-space:nowrap}
+.cap-filtro{max-width:320px;margin-bottom:var(--e-5)}
+.cap-linea{border:1px solid var(--line);border-radius:var(--r-1);margin-bottom:var(--e-3);background:var(--surface)}
+.cap-linea summary{display:grid;grid-template-columns:1fr auto;gap:2px var(--e-6);padding:var(--e-4) var(--e-5);cursor:pointer}
+.cap-ln{font-weight:600} .cap-lt{font-weight:700;text-align:right;color:var(--mod,var(--acento))} .cap-le{grid-column:1/-1;font-size:var(--t-1);color:var(--ink-3)}
+.cap-linea[open] summary{border-bottom:1px solid var(--line)}
+.cap-linea>div,.cap-linea>ul,.cap-linea>p{margin-left:var(--e-5);margin-right:var(--e-5)}
+.cap-act{margin-top:var(--e-4);font-size:var(--t-2)}
+.cap-regs{font-size:var(--t-1);color:var(--ink-2);padding-left:var(--e-7)}
+.cap-formula{display:flex;flex-wrap:wrap;align-items:stretch;gap:var(--e-2);margin:var(--e-5) 0 var(--e-2)}
+.cap-f{display:flex;flex-direction:column;justify-content:center;padding:var(--e-3) var(--e-4);border:1px solid var(--line);border-radius:var(--r-1);background:var(--surface-2);min-width:84px}
+.cap-f b{font-size:var(--t-4);font-variant-numeric:tabular-nums} .cap-f small{font-size:var(--t-0);color:var(--ink-3)}
+.cap-res{background:var(--mod,var(--acento));border-color:transparent} .cap-res b,.cap-res small{color:#fff}
+.cap-op{align-self:center;font-weight:700;color:var(--ink-3);padding:0 2px}
+.cap-fuente{font-size:var(--t-1);color:var(--ink-3);margin-top:0}
+.cap-total{text-align:right;font-size:var(--t-4);margin-top:var(--e-5)}
+.cap-tabla tr.cap-anulado td{color:var(--ink-3);text-decoration:line-through}
+.cap-tabla tr.cap-anulado td:last-child{text-decoration:none}
+.falta{color:var(--grave)}
+@media (max-width:720px){.cap-pasos{grid-template-columns:1fr 1fr}.cap-rev-g{grid-template-columns:1fr}.cap-mini{width:100%;height:180px}}
 </style>
 </head>
 <body>
@@ -1657,6 +1708,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--mod,var(--acento));
    <section id="v-bib" hidden></section>
    <section id="v-lfe" hidden></section>
    <section id="v-pod" hidden></section>
+   <section id="v-cap" hidden></section>
    <section id="v-ins" hidden></section>
    <section id="v-ben" hidden></section>
    <section id="v-cal" hidden></section>
@@ -5205,6 +5257,7 @@ function odsDeclarables(){
 
 /* ====== módulos ====== */
 var ICO={
+ cap:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M12.5 17v-6"/><path d="M10 13.5l2.5-2.5 2.5 2.5"/>',
  bos:'<path d="M12 21v-5"/><path d="M12 16 6.5 12.5h3L5 8.5h3L12 4l4 4.5h3l-4.5 4h3z"/><path d="M8 21h8"/>',
  aju:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 .97-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47.97H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47.97z"/>',
  arc:'<path d="M3 7.5a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 11.5h18"/>',
@@ -5259,6 +5312,8 @@ var MODULOS=[
   des:'Quién captura, qué ciclo es y con qué parámetros y factores se calcula.'},
  {id:'tal',scol:'s4',codigo:'MOD-TAL',nom:'Inventario de fuentes',col:'m4',etapa:'preparar',paso:4,
   des:'Las veintitrés fuentes de emisión que el protocolo obliga a buscar. De cada una hay que decir si ocurre y se cuantifica, si no existe en esta operación, o si se excluye y por qué. Una fuente sin pronunciamiento es un olvido, y el verificador no puede distinguirla de un cero medido.'},
+ {id:'cap',scol:'s3',codigo:'MOD-CAP',nom:'Subir facturas y calcular',col:'m3',etapa:'campo',paso:5,
+  des:'El camino corto: se sube la factura, la aplicación la lee, se confirma y se ve el cálculo paso a paso, con su respaldo y su sello.'},
  {id:'fincas',scol:'s2',codigo:'MOD-FIN',nom:'Fincas y productores',col:'m2',etapa:'campo',paso:5,
   des:'El catálogo de unidades productivas. Todo lo demás se cuelga de aquí.'},
  {id:'pod',scol:'s4',codigo:'MOD-POD',nom:'Emisiones por poda de sombra',col:'m4',etapa:'campo',paso:7,
@@ -5331,6 +5386,7 @@ function datoModulo(m){
  if(m.id==='cfg')return [S.perfil.ciclo||'sin ciclo','ciclo declarado', !!S.perfil.organizacion];
  if(m.id==='lfe'){var LL=libFac(), ap=LL.filter(function(x){return x.estado==='aprobada';}).length, rv=LL.filter(function(x){return x.estado==='revision';}).length;
   return [String(ap),'aprobadas'+(rv?' · '+rv+' en revisión':''), ap>0];}
+ if(m.id==='cap'){var rv=(S.registros||[]).filter(function(x){return x.estado!=='anulado';}).length; return [String(rv),(rv===1?'factura registrada':'facturas registradas'), rv>0];}
  if(m.id==='fincas')return [String(S.fincas.length),(S.fincas.length===1?'unidad productiva':'unidades productivas'), S.fincas.length>0];
  if(m.id==='bib'){var Cb=coberturaBiblio();
   return [Cb.pct+' %','de los datos con documento cotejado', Cb.sinDoc===0&&Cb.pct>=80];}
@@ -5423,7 +5479,7 @@ var ICO_INICIO='<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x
    componente tiene su menú y sus cifras.                                    */
 var COMPONENTES=[['H','Huella y neutralidad','Inventario, huella de producto, neutralidad e insetting'],
  ['R','Remociones y créditos','Estrato de sombra, bosque, parcelas y unidades de carbono']];
-var COMP_MOD={pai:'H',lfe:'H',tal:'H',pod:'H',ins:'H',ben:'H',res:'H',ctr:'H',lot:'H',mit:'H',vcu:'H',neu:'H',
+var COMP_MOD={cap:'H',pai:'H',lfe:'H',tal:'H',pod:'H',ins:'H',ben:'H',res:'H',ctr:'H',lot:'H',mit:'H',vcu:'H',neu:'H',
  lae:'R',mue:'R',bos:'R',ppm:'R',est:'R',niv:'R'};
 function compDisponible(c){ return MODULOS.some(function(m){return COMP_MOD[m.id]===c&&moduloEnAlcance(m.id);}); }
 function compEfectivo(){
@@ -5666,6 +5722,7 @@ function completarEstado(o){
  S.excl=S.excl||[]; S.mit=S.mit||{}; S.comp=S.comp||{}; S.verif=S.verif||{}; S.unidades=S.unidades||[];
  S.unidadesOp=S.unidadesOp||[]; S.apart=S.apart||[]; S.pron=S.pron||{}; S.publicaciones=S.publicaciones||[]; S.aui=S.aui||{}; S.taller=S.taller||{};
  S.esq=S.esq||{i14064:true,i14067:false,credito:false,i9001:true};
+ S.registros=S.registros||[]; S.capBase=S.capBase||{};
  S.lotes=S.lotes||[]; S.proy=S.proy||{}; S.cargas=S.cargas||[]; S.contratos=S.contratos||[];
  S.archivo=S.archivo||{docs:[]}; S.archivo.docs=S.archivo.docs||[];
  migrarUnidades();
@@ -6740,7 +6797,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['portada','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['portada','cap','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 function ir(v){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
  if(VISTAS.indexOf(v)<0)v='portada';
@@ -22858,6 +22915,513 @@ function equilibrar(sec){
  });
 }
 
+/* ==========================================================================
+   MOD-CAP · Captura de facturas y calculadora trazable
+   Un solo camino para entrar datos: se sube la factura (foto o PDF), la
+   aplicación la lee y propone qué dice; la persona revisa y confirma; queda un
+   registro con su respaldo y su sello; y la calculadora muestra, paso a paso,
+   cómo ese dato se vuelve toneladas de CO₂e. Nada entra al cálculo sin la
+   confirmación de una persona.
+   Modelo de datos (S.registros): un renglón de factura confirmado.
+     {id, fecha, numero, proveedor, cat 'org'|'finca', fid, linea, lineaNom,
+      cantidad, unidad, conversion, cantidadLinea, unidadLinea, adjuntoId,
+      hash, metHash, origen 'ia'|'manual', confianza, por, cuando, nota,
+      estado 'vigente'|'anulado', motivoAnula, anuladoPor, anuladoEn}
+   El valor del renglón del inventario se deriva: lo que ya estaba anotado
+   antes de la primera factura (o a mano después) más la suma de los
+   registros vigentes. S.capBase guarda por renglón la última suma escrita,
+   para que una corrección a mano hecha en otra pantalla no se pierda.
+   ========================================================================== */
+var CAP={pend:null,leyendo:false,api:null,cat:'org',fid:'',filtro:'',sim:{l:'',q:''}};
+function registros(){ return S.registros||(S.registros=[]); }
+
+/* ---- unidades: cada una con su dimensión y su valor en la unidad base ---- */
+var CAP_UNI={
+ kg:['masa',1,'kg'], lb:['masa',0.45359237,'libras'], qq:['masa',45.359237,'quintales (100 lb)'], t:['masa',1000,'toneladas'],
+ L:['vol',1,'litros'], gal:['vol',3.785411784,'galones EE. UU.'], m3:['vol',1000,'m³'],
+ kWh:['ene',1,'kWh'], MWh:['ene',1000,'MWh'], GJ:['ene',277.7777778,'GJ'],
+ km:['dist',1,'km'], mi:['dist',1.609344,'millas'],
+ und:['cont',1,'unidades (sacos, bolsas, piezas)'], carga:['carga',1,'cargas'], cabeza:['cabeza',1,'cabezas']
+};
+function capUniDeTexto(t){
+ t=String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+ if(!t)return '';
+ if(/^(qq|quintal)/.test(t))return 'qq';
+ if(/^(lb|libra)/.test(t))return 'lb';
+ if(/^(kg|kilo(?!m)|kilogram)/.test(t))return 'kg';
+ if(/^(t|tm|ton)/.test(t))return 't';
+ if(/^gal/.test(t))return 'gal';
+ if(/^(l|lt|lts|litro)/.test(t))return 'L';
+ if(/^(m3|m³|metro.*cub)/.test(t))return 'm3';
+ if(/^kwh|^kw\/h|^kilovatio/.test(t))return 'kWh';
+ if(/^mwh/.test(t))return 'MWh';
+ if(/^gj/.test(t))return 'GJ';
+ if(/^(km|kilomet)/.test(t))return 'km';
+ if(/^(mi|milla)/.test(t))return 'mi';
+ if(/^carga/.test(t))return 'carga';
+ if(/^cabeza/.test(t))return 'cabeza';
+ if(/^(und|unidad|u\b|pza|pieza|saco|bolsa|c\/u|cilindro|rollo)/.test(t))return 'und';
+ return '';
+}
+/* En qué unidad pide el dato cada renglón del inventario */
+function capUniLinea(l){
+ var u=String((l&&l.un)||'');
+ if(/quintal/i.test(u))return 'qq';
+ if(/gal[oó]n/i.test(u))return 'gal';
+ if(/kWh/i.test(u))return 'kWh';
+ if(/libra/i.test(u))return 'lb';
+ if(/saco|bolsa/i.test(u))return 'und';
+ if(/kil[oó]metro/i.test(u))return 'km';
+ if(/\bGJ\b/.test(u))return 'GJ';
+ if(/litro/i.test(u))return 'L';
+ if(/carga/i.test(u))return 'carga';
+ if(/cabeza/i.test(u))return 'cabeza';
+ if(/m³|m3/i.test(u))return 'm3';
+ return '';
+}
+/* Factor para pasar de la unidad de la factura a la del renglón; null si las
+   dimensiones no coinciden (kg contra sacos): entonces lo declara la persona */
+function capConv(de,a){
+ var x=CAP_UNI[de], y=CAP_UNI[a];
+ if(!x||!y||x[0]!==y[0])return null;
+ return x[1]/y[1];
+}
+function capLineas(cat){ return lineasDe(cat==='finca'?'finca':'org').filter(function(l){ return !esDirecta(l)&&!!capUniLinea(l); }); }
+function capLinea(cat,id){ var r=null; lineasDe(cat==='finca'?'finca':'org').forEach(function(l){ if(l.id===id)r=l; }); return r; }
+
+/* ---- sugerencia de renglón por palabras clave (respaldo de la lectura) ---- */
+var CAP_CLAVES=[
+ [/\burea\b|46-0-0/,['fert_urea']],[/sulfato de amonio|21-0-0/,['fert_sulfato']],
+ [/nitrato.*calc|nutran|27-0-0/,['fert_nitrato_ca']],[/\bdap\b|18-46-0/,['fert_dap']],[/\bmap\b|11-52-0/,['fert_map']],
+ [/15-15-15|triple quince/,['fert_151515']],[/12-24-12/,['fert_122412']],[/16-20-0/,['fert_1620']],[/20-5-20/,['fert_20520']],
+ [/18-5-15/,['fert_185156']],[/muriato|cloruro de potasio|0-0-60|\bkcl\b/,['fert_muriato']],
+ [/sulpomag|k-?mag|0-0-22/,['fert_sulpomag']],[/nitrato de potasio|13-0-46/,['fert_nitrato_k']],
+ [/fungicida|herbicida|insecticida|plaguicida|nematicida/,['plaguicidas']],
+ [/carbonato de calcio|dolomit|\bcal\b|cal agricola/,['cal']],
+ [/compost|abono organico|bocashi|lombri/,['compost_comprado']],
+ [/biochar/,['biochar','biochar_org']],
+ [/diesel|gasoil/,['diesel_org','diesel_finca']],[/gasolina|\bsuper\b|\bregular\b/,['gasolina_org','gasolina_finca']],
+ [/\bglp\b|gas licuado|propano|cilindro de gas|gas lpg/,['glp']],
+ [/kwh|energia electrica|electricidad|\benee\b|consumo de energia/,['elec_org','elec_finca']],
+ [/vapor/,['vapor']],[/r-?22\b|r-?410|r-?134|refrigerante/,['refrigerante_org']],
+ [/lena/,['lena_secado','lena_patio']],[/yute/,['yute']],
+ [/polipropileno|big ?bag|super ?saco|saco pp/,['polipropileno']],
+ [/bolsa.*vivero|bolsa de polietileno/,['bolsas_vivero']],[/saco|malla/,['sacos_campo','polipropileno']]
+];
+function capSugerir(desc,cat){
+ var t=String(desc||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+ var ids=capLineas(cat).map(function(l){return l.id;});
+ for(var i=0;i<CAP_CLAVES.length;i++){
+  if(!CAP_CLAVES[i][0].test(t))continue;
+  for(var j=0;j<CAP_CLAVES[i][1].length;j++) if(ids.indexOf(CAP_CLAVES[i][1][j])>=0)return CAP_CLAVES[i][1][j];
+ }
+ return '';
+}
+
+/* ---- quién puede leer la factura en esta copia ---- */
+function capLector(){
+ if(lecDisponible())return 'claude';
+ if(CAP.api===true)return 'api';
+ return '';
+}
+function capComprobarApi(){
+ if(CAP.api!==null)return;
+ CAP.api=false;
+ try{
+  fetch('/api/leer-factura',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+   .then(function(o){ CAP.api=!!(o&&o.disponible); if(vista==='cap')pintar(); }).catch(function(){});
+ }catch(e){}
+}
+function capPrompt(cat){
+ var ls=capLineas(cat).map(function(l){return l.id+' = '+l.et+' (se anota en '+l.un+')';}).join('\n');
+ return 'Lee esta factura o comprobante de compra y devuelve SOLO un objeto JSON, sin texto antes ni después, con esta forma:\n'+
+  '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","items":[{"descripcion":"","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
+  'Reglas: copia solo lo que se lee en el documento; si un dato no se lee, déjalo vacío y anótalo en "ilegible"; no estimes ni completes cantidades. '+
+  'La cantidad es la cantidad física comprada o consumida (galones, litros, kWh, quintales, libras, sacos), nunca el precio. '+
+  'En una factura de electricidad, el item es el consumo del período en kWh. '+
+  'Si quien emite es una persona natural, escribe "persona natural" en proveedor en lugar de su nombre. No copies números de identidad, RTN de personas ni datos de tarjetas. '+
+  'En "renglon_sugerido" usa uno de estos códigos, o déjalo vacío si ninguno corresponde:\n'+ls;
+}
+async function capImagenes(file){
+ var t=file.type||'';
+ if(t.indexOf('image/')===0){ var r=await comprimir(file,1800,0.82); return [r.blob]; }
+ if(t.indexOf('pdf')>=0||/\.pdf$/i.test(file.name||''))return await lecPdfAImagenes(file,3);
+ throw new Error('Suba una foto (JPG o PNG) o un PDF');
+}
+function capDataURL(b){ return new Promise(function(res,rej){ var fr=new FileReader(); fr.onload=function(){res(String(fr.result));}; fr.onerror=rej; fr.readAsDataURL(b); }); }
+function capNormalizar(r,cat){
+ r=r||{};
+ var ids=capLineas(cat).map(function(l){return l.id;});
+ var items=(r.items instanceof Array?r.items:[]).slice(0,25).map(function(x){
+  x=x||{};
+  var sug=String(x.renglon_sugerido||''); if(ids.indexOf(sug)<0)sug=capSugerir(x.descripcion,cat);
+  var u=capUniDeTexto(x.unidad);
+  return {desc:String(x.descripcion||'').slice(0,160),cant:numDe(x.cantidad),uniTxt:String(x.unidad||'').slice(0,30),uni:u,
+   importe:numDe(x.importe),linea:sug,conf:String(x.confianza||''),incluir:!!sug,conv:''};
+ });
+ return {proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:String(r.fecha||'').slice(0,10),
+  items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
+  confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)};
+}
+async function capLeerConLector(imgs,cat){
+ var lector=capLector();
+ if(lector==='claude'){
+  var r=await LEC.fn.json(capPrompt(cat),{images:imgs,modelTier:'default',cache:false});
+  return capNormalizar(r,cat);
+ }
+ if(lector==='api'){
+  var urls=[]; for(var i=0;i<imgs.length;i++)urls.push(await capDataURL(imgs[i]));
+  var resp=await fetch('/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({imagenes:urls,instruccion:capPrompt(cat)})});
+  var o=await resp.json().catch(function(){return null;});
+  if(!resp.ok||!o||!o.ok)throw new Error((o&&o.text)||('el servicio respondió '+resp.status));
+  return capNormalizar(o.datos,cat);
+ }
+ return null;
+}
+function capDuplicado(hash,proveedor,numero){
+ var norm=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');};
+ var p=norm(proveedor), n=norm(numero);
+ return registros().filter(function(x){
+  if(x.estado==='anulado')return false;
+  if(hash&&x.hash===hash)return true;
+  return !!(n&&p&&norm(x.numero)===n&&norm(x.proveedor)===p);
+ })[0]||null;
+}
+/* 1 · subir: se calcula el sello del archivo y se pide la lectura */
+async function capSubir(file){
+ if(!file)return;
+ if(!puedeEditar()){ msg('Su perfil no puede capturar'); return; }
+ if(file.size>20*1024*1024){ msg('El archivo pesa más de 20 MB'); return; }
+ var cat=CAP.cat, fid=(cat==='finca')?CAP.fid:'';
+ if(cat==='finca'&&!fid){ msg('Elija primero la finca'); return; }
+ var u8=new Uint8Array(await file.arrayBuffer()), s=await selloDeBytes(u8);
+ CAP.pend={file:file,nombre:file.name||'factura',hash:s.val,metHash:s.met,cat:cat,fid:fid,
+  url:(file.type.indexOf('image/')===0)?URL.createObjectURL(file):'',origen:'manual',
+  datos:{proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''},error:''};
+ var dup=capDuplicado(s.val,'','');
+ if(dup)CAP.pend.dup=dup;
+ if(capLector()){
+  CAP.leyendo=true; pintar();
+  try{
+   var imgs=await capImagenes(file);
+   var d=await capLeerConLector(imgs,cat);
+   if(d){ CAP.pend.datos=d; CAP.pend.origen='ia'; }
+   if(!CAP.pend.dup){ var d2=capDuplicado('',d&&d.proveedor,d&&d.numero); if(d2)CAP.pend.dup=d2; }
+  }catch(e){
+   var c=(e&&e.code)||'';
+   CAP.pend.error=(c==='rate_limited')?'Demasiadas lecturas seguidas; espere un momento o anote a mano.':
+    ('No se pudo leer la factura ('+((e&&e.message)||'error')+'). Anote los datos a mano.');
+  }
+  CAP.leyendo=false;
+ }
+ if(!CAP.pend.datos.items.length)CAP.pend.datos.items.push(capItemVacio());
+ pintar();
+}
+function capItemVacio(){ return {desc:'',cant:NaN,uniTxt:'',uni:'',importe:NaN,linea:'',conf:'',incluir:true,conv:''}; }
+function capManual(){
+ var cat=CAP.cat, fid=(cat==='finca')?CAP.fid:'';
+ if(cat==='finca'&&!fid){ msg('Elija primero la finca'); return; }
+ CAP.pend={file:null,nombre:'',hash:'',metHash:'',cat:cat,fid:fid,url:'',origen:'manual',
+  datos:{proveedor:'',numero:'',fecha:hoy(),items:[capItemVacio()],ilegible:[],confianza:'',observacion:''},error:''};
+ pintar();
+}
+/* conversión efectiva de un item: automática si las unidades son compatibles */
+function capConvItem(it,l){
+ var ul=capUniLinea(l), auto=capConv(it.uni,ul);
+ var man=numDe(it.conv);
+ if(auto!=null)return {f:auto,auto:true,ul:ul};
+ return {f:(man>0?man:NaN),auto:false,ul:ul};
+}
+function capProblemas(P){
+ var p=[];
+ var d=P.datos, inc=d.items.filter(function(x){return x.incluir;});
+ if(!inc.length)p.push('No hay ningún renglón marcado para registrar.');
+ if(!d.fecha)p.push('Falta la fecha de la factura.');
+ inc.forEach(function(it,i){
+  var l=capLinea(P.cat,it.linea), n='Renglón '+(d.items.indexOf(it)+1);
+  if(!l){ p.push(n+': elija a qué fuente de emisión corresponde.'); return; }
+  if(!(it.cant>0))p.push(n+': la cantidad debe ser mayor que cero.');
+  if(!it.uni)p.push(n+': elija la unidad de la factura.');
+  var cv=capConvItem(it,l);
+  if(it.uni&&!(cv.f>0))p.push(n+': declare cuántos '+CAP_UNI[cv.ul][2]+' vale una unidad de la factura.');
+ });
+ return p;
+}
+/* 3 · confirmar: se guardan los registros, el respaldo y la bitácora */
+async function capConfirmar(){
+ var P=CAP.pend; if(!P)return;
+ var pr=capProblemas(P); if(pr.length){ msg(pr[0]); return; }
+ var d=P.datos, ahora=new Date().toISOString(), quien=quienEdita();
+ if(P.cat==='finca'){ S.insumos[P.fid]=S.insumos[P.fid]||{}; }
+ var adj={}, tocadas={};
+ var inc=d.items.filter(function(x){return x.incluir;});
+ for(var i=0;i<inc.length;i++){
+  var it=inc[i], l=capLinea(P.cat,it.linea), ref=refLinea(l,P.cat,P.fid);
+  if(P.file&&!adj[ref]){
+   await adjuntarArchivo(ref,'documento',P.file);
+   var c=contenedor(ref), lista=(c&&c.obj.adjuntos)||[];
+   adj[ref]=lista.length?lista[lista.length-1].id:'';
+  }
+  var cv=capConvItem(it,l);
+  var reg={id:uid('reg'),fecha:d.fecha,numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
+   linea:l.id,lineaNom:l.et,desc:it.desc,cantidad:it.cant,unidad:it.uni,conversion:cv.f,convAuto:cv.auto,
+   cantidadLinea:Math.round(it.cant*cv.f*1e6)/1e6,unidadLinea:l.un,importe:isFinite(it.importe)?it.importe:null,
+   adjuntoId:adj[ref]||'',archivo:P.nombre||'',hash:P.hash||'',metHash:P.metHash||'',
+   origen:P.origen,confianza:it.conf||d.confianza||'',por:quien,cuando:ahora,nota:d.observacion||'',estado:'vigente'};
+  registros().push(reg);
+  anotar('dato','Captura · '+l.et,'', fmt(reg.cantidadLinea,2)+' '+l.un,
+   'factura '+(d.numero||'s/n')+' del '+d.fecha+', '+fmt(it.cant,3)+' '+it.uni+' × '+fmt(cv.f,6)+(cv.auto?' (conversión automática)':' (conversión declarada)')+
+   ', lectura '+(P.origen==='ia'?'asistida y confirmada':'manual')+(P.hash?(', sello '+P.hash.slice(0,16)):', sin archivo de respaldo'));
+  tocadas[ref]=true;
+ }
+ Object.keys(tocadas).forEach(capRecalcular);
+ marcar('captura/registros'); guardarLocal();
+ if(P.url)URL.revokeObjectURL(P.url);
+ CAP.pend=null;
+ msg(inc.length===1?'Registro guardado y sumado al inventario':(inc.length+' registros guardados y sumados al inventario'));
+ pintar();
+}
+function capSumaRef(ref){
+ var p=partesRef(ref); if(!p)return 0;
+ return registros().filter(function(x){ return x.estado!=='anulado'&&x.linea===p.l.id&&x.cat===p.cat&&String(x.fid||'')===String(p.fid||''); })
+  .reduce(function(a,x){return a+(numDe(x.cantidadLinea)||0);},0);
+}
+/* El valor del renglón = lo anotado fuera de la captura + la suma de facturas */
+function capRecalcular(ref){
+ var p=partesRef(ref); if(!p)return;
+ var st=(p.cat==='org')?S.beneficio:(S.insumos[p.fid]=S.insumos[p.fid]||{});
+ st.valores=st.valores||{};
+ S.capBase=S.capBase||{};
+ var e=S.capBase[ref], actual=numDe(st.valores[p.l.id]); if(!isFinite(actual))actual=0;
+ var base=e?Math.max(0,actual-(e.suma||0)):actual;
+ var suma=capSumaRef(ref), nuevo=Math.round((base+suma)*1e6)/1e6;
+ S.capBase[ref]={base:base,suma:suma};
+ if(nuevo!==actual){
+  st.valores[p.l.id]=String(nuevo);
+  marcar((p.cat==='org')?'beneficio/actual':('insumos/'+p.fid));
+  anotar('dato','Inventario · '+p.l.et,fmt(actual,2),fmt(nuevo,2),
+   'derivado de la captura: '+fmt(base,2)+' anotado aparte + '+fmt(suma,2)+' de facturas vigentes');
+ }
+}
+function capAnular(id,motivo){
+ var r=registros().filter(function(x){return x.id===id;})[0]; if(!r||r.estado==='anulado')return;
+ r.estado='anulado'; r.motivoAnula=String(motivo||'').slice(0,300); r.anuladoPor=quienEdita(); r.anuladoEn=new Date().toISOString();
+ var l=capLinea(r.cat,r.linea);
+ anotar('dato','Captura anulada · '+r.lineaNom,fmt(r.cantidadLinea,2),'0',r.motivoAnula||'sin motivo');
+ if(l)capRecalcular(refLinea(l,r.cat,r.fid||null));
+ marcar('captura/registros'); guardarLocal(); pintar();
+}
+function capCSV(){
+ var cols=['id','estado','fecha','numero','proveedor','ambito','finca','renglon','descripcion','cantidad','unidad','conversion','conversion_automatica','cantidad_renglon','unidad_renglon','importe','origen','confianza','confirmo','confirmado_en','archivo','sello','metodo_sello','motivo_anulacion'];
+ var q=function(v){ v=(v==null)?'':String(v); return /[",;\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; };
+ var cod=function(fid){ var f=S.fincas.filter(function(x){return x.id===fid;})[0]; return f?(f.codigo||''):''; };
+ var filas=registros().map(function(r){ return [r.id,r.estado,r.fecha,r.numero,r.proveedor,r.cat==='org'?'organización':'finca',cod(r.fid),r.lineaNom,r.desc,
+  r.cantidad,r.unidad,r.conversion,r.convAuto?'sí':'no',r.cantidadLinea,r.unidadLinea,r.importe,r.origen==='ia'?'lectura asistida':'manual',r.confianza,r.por,r.cuando,r.archivo,r.hash,r.metHash,r.motivoAnula||''].map(q).join(','); });
+ var b=new Blob(['﻿'+cols.join(',')+'\n'+filas.join('\n')],{type:'text/csv;charset=utf-8'});
+ var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='registro-de-facturas.csv'; document.body.appendChild(a); a.click();
+ setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+
+/* ---- la calculadora: dato → conversión → factor → ajustes → resultado ---- */
+function capPasos(l,cat,fid,qOverride){
+ var q=(qOverride!=null)?qOverride:cantidad(l,cat,fid), cv=conver(l,cat,fid), f=factor(l,cat,fid);
+ var ac=ajusteCons(l), ad=ajusteDato(l,cat,fid);
+ var t=q*cv*f/1000*ac*ad;
+ return {q:q,cv:cv,f:f,ac:ac,ad:ad,t:t,t2:(qOverride!=null)?0:tco2Linea2(l,cat,fid),un:l.un,ut:unTecDe(l,cat,fid),
+  fuente:fuenteDe(l),anio:anioDe(l),nivel:nivelDe(l)};
+}
+function capFormula(P,corta){
+ var s='<span class="cap-f"><b>'+fmt(P.q,2)+'</b> <small>'+esc(P.un)+'</small></span>'+
+  '<span class="cap-op">×</span><span class="cap-f"><b>'+fmt(P.cv,4)+'</b> <small>'+esc(P.ut)+' por unidad</small></span>'+
+  '<span class="cap-op">×</span><span class="cap-f"><b>'+fmt(P.f,4)+'</b> <small>kg CO₂e por '+esc(P.ut)+'</small></span>'+
+  '<span class="cap-op">÷</span><span class="cap-f"><b>1000</b> <small>kg por t</small></span>';
+ if(P.ac!==1)s+='<span class="cap-op">×</span><span class="cap-f"><b>'+fmt(P.ac,3)+'</b> <small>descuento conservador</small></span>';
+ if(Math.abs(P.ad-1)>1e-9)s+='<span class="cap-op">×</span><span class="cap-f"><b>'+fmt(P.ad,3)+'</b> <small>calidad e incertidumbre del dato</small></span>';
+ s+='<span class="cap-op">=</span><span class="cap-f cap-res"><b>'+fmt(P.t,3)+'</b> <small>t CO₂e</small></span>';
+ return '<div class="cap-formula">'+s+'</div>'+(corta?'':'<p class="cap-fuente">Factor: '+esc(P.fuente||'sin fuente declarada')+(P.anio?(' · '+esc(P.anio)):'')+' · '+esc(nivelNom(P.nivel))+'</p>');
+}
+function capRenglonesConDato(cat,fid){
+ return lineasDe(cat==='finca'?'finca':'org').filter(function(l){
+  return cantidad(l,cat,fid)>0||registros().some(function(x){return x.estado!=='anulado'&&x.linea===l.id&&x.cat===cat&&String(x.fid||'')===String(fid||'');});
+ });
+}
+
+/* ---- la pantalla ---- */
+function vistaCaptura(){
+ capComprobarApi();
+ var ed=puedeEditar(), cat=CAP.cat, fid=CAP.fid, P=CAP.pend, lector=capLector();
+ if(cat==='finca'&&fid&&!S.fincas.some(function(x){return x.id===fid;}))CAP.fid=fid='';
+ var R=registros(), vig=R.filter(function(x){return x.estado!=='anulado';});
+ var h=cabModulo('cap','<p class="vista-sub">Un solo camino para entrar los datos: suba la factura, revise lo que la aplicación leyó, confírmelo y vea cómo se convierte en toneladas de CO₂e. Cada cifra queda unida a su factura, a su sello y a quien la confirmó.</p>');
+ var paso=P?(CAP.leyendo?1:2):1;
+ h+='<ol class="cap-pasos">'+[['Subir la factura','foto o PDF'],['Revisar lo leído','corrija si hace falta'],['Confirmar','queda el registro y su respaldo'],['Ver el cálculo','dato, factor y resultado']]
+  .map(function(x,i){ return '<li class="'+(i+1===paso?'act':(i+1<paso?'hecho':''))+'"><span>'+(i+1)+'</span><b>'+x[0]+'</b><small>'+x[1]+'</small></li>'; }).join('')+'</ol>';
+ h+='<dl class="cifras">'+
+  tarjetaCifra('Facturas registradas',String(vig.length),'renglones vigentes')+
+  tarjetaCifra('Con respaldo',String(vig.filter(function(x){return x.hash;}).length),'con archivo y sello')+
+  tarjetaCifra('Leídas con ayuda',String(vig.filter(function(x){return x.origen==='ia';}).length),'todas confirmadas por una persona')+
+  tarjetaCifra('Anuladas',String(R.length-vig.length),'se conservan con su motivo')+'</dl>';
+
+ /* 1 · subir */
+ if(!P){
+  h+='<div class="tarjeta cap-subir"><h3>1 · Subir la factura</h3><div class="cuerpo">'+
+   '<div class="cap-amb"><div class="campo"><label for="cap-cat">¿De quién es el gasto?</label><select id="cap-cat" data-cap-cat="1">'+
+    (lineasDe('org').length?'<option value="org"'+(cat==='org'?' selected':'')+'>De la organización (beneficio, planta, oficina)</option>':'')+
+    '<option value="finca"'+(cat==='finca'?' selected':'')+'>De una finca</option></select></div>'+
+   (cat==='finca'?'<div class="campo"><label for="cap-fid">Finca</label><select id="cap-fid" data-cap-fid="1">'+selFinca(fid,true)+'</select></div>':'')+'</div>'+
+   (ed?('<label class="cap-zona'+(cat==='finca'&&!fid?' off':'')+'"><input type="file" accept="image/*,application/pdf" data-cap-subir="1" hidden'+(cat==='finca'&&!fid?' disabled':'')+'>'+
+     '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Tomar la foto o elegir el archivo</b><small>Factura, recibo o comprobante · JPG, PNG o PDF hasta 20 MB</small></label>'+
+     '<div class="acciones cap-alt"><button type="button" data-cap="manual">Anotar sin archivo</button><span class="muted">solo si la factura no existe en papel; el registro queda marcado «sin respaldo»</span></div>')
+    :'<div class="aviso">Su perfil puede consultar, pero no capturar.</div>')+
+   '<p class="cap-lector">'+(lector==='claude'?'✓ La lectura automática está disponible.':lector==='api'?'✓ La lectura automática está disponible (servicio del programa).':
+     'La lectura automática no está disponible en esta copia: al subir el archivo, la aplicación le pide los datos y guarda la factura como respaldo.')+
+   ' Nada se suma al inventario sin que usted lo confirme.</p></div></div>';
+ }
+ if(P&&CAP.leyendo)h+='<div class="tarjeta"><div class="cuerpo"><p class="cap-leyendo">Leyendo «'+esc(P.nombre)+'»…</p></div></div>';
+
+ /* 2 y 3 · revisar y confirmar */
+ if(P&&!CAP.leyendo){
+  var d=P.datos, ls=capLineas(P.cat), fz=S.fincas.filter(function(x){return x.id===P.fid;})[0];
+  h+='<div class="tarjeta cap-rev"><h3>2 · Revisar lo leído y 3 · confirmar</h3><div class="cuerpo">';
+  h+='<div class="cap-rev-g">'+(P.url?'<a href="'+P.url+'" target="_blank" rel="noopener" class="cap-mini"><img src="'+P.url+'" alt="Factura subida"></a>':
+    (P.file?'<div class="cap-mini cap-pdf">PDF<br><small>'+esc(P.nombre)+'</small></div>':'<div class="cap-mini cap-pdf">Sin archivo</div>'))+
+   '<div><p class="small">'+(P.cat==='org'?'Gasto de la organización':('Gasto de la finca '+esc((fz&&fz.codigo)||'')))+
+    (P.hash?(' · sello '+esc(P.metHash)+' <code>'+esc(P.hash.slice(0,16))+'…</code>'):'')+
+    (P.origen==='ia'?(' · leída con ayuda, confianza '+esc(d.confianza||'sin declarar')):'')+'</p>'+
+   (P.error?'<div class="aviso">'+esc(P.error)+'</div>':'')+
+   (P.dup?'<div class="aviso"><b>Posible duplicado.</b> Ya hay un registro '+(P.dup.hash===P.hash?'con el mismo archivo':'con el mismo proveedor y número')+': factura '+esc(P.dup.numero||'s/n')+' del '+esc(P.dup.fecha)+', '+esc(P.dup.lineaNom)+'. Revise antes de confirmar.</div>':'')+
+   (d.ilegible.length?'<div class="aviso"><b>No se leyó con claridad:</b> '+esc(d.ilegible.join(', '))+'. Compruébelo en la factura.</div>':'')+
+   '<div class="cap-cab">'+
+    '<div class="campo"><label for="cap-prov">Proveedor</label><input id="cap-prov" data-cap-h="proveedor" value="'+esc(d.proveedor)+'"></div>'+
+    '<div class="campo"><label for="cap-num">N.º de factura</label><input id="cap-num" data-cap-h="numero" value="'+esc(d.numero)+'"></div>'+
+    '<div class="campo"><label for="cap-fec">Fecha</label><input id="cap-fec" type="date" data-cap-h="fecha" value="'+esc(d.fecha)+'"></div></div></div></div>';
+  h+='<div class="tabla-caja"><table class="cap-items"><thead><tr><th>✓</th><th>Lo que dice la factura</th><th>Cantidad</th><th>Unidad</th><th>Fuente de emisión</th><th>Conversión</th><th>Entra al inventario</th></tr></thead><tbody>';
+  d.items.forEach(function(it,i){
+   var l=capLinea(P.cat,it.linea), cv=l?capConvItem(it,l):null;
+   var opU='<option value="">elegir</option>'+Object.keys(CAP_UNI).map(function(k){return '<option value="'+k+'"'+(it.uni===k?' selected':'')+'>'+esc(CAP_UNI[k][2])+'</option>';}).join('');
+   var opL='<option value="">elegir</option>'+ls.map(function(x){return '<option value="'+esc(x.id)+'"'+(it.linea===x.id?' selected':'')+'>'+esc(x.et)+'</option>';}).join('');
+   var conv=!l?'<span class="muted">—</span>':(cv.auto?(cv.f===1?'<span class="muted">misma unidad</span>':('<span title="automática">× '+fmt(cv.f,4)+'</span>')):
+    ('<input class="cap-conv" data-cap-i="'+i+'" data-cap-k="conv" inputmode="decimal" placeholder="'+esc(CAP_UNI[cv.ul]?CAP_UNI[cv.ul][2]:'')+' por unidad" value="'+esc(it.conv)+'">'));
+   var entra=(l&&it.cant>0&&cv.f>0)?('<b>'+fmt(it.cant*cv.f,2)+'</b> '+esc(l.un)):'<span class="muted">—</span>';
+   var baja=(P.origen==='ia'&&it.conf==='baja');
+   h+='<tr'+(baja?' class="cap-baja"':'')+'><td><input type="checkbox" data-cap-i="'+i+'" data-cap-k="incluir"'+(it.incluir?' checked':'')+' aria-label="Registrar este renglón"></td>'+
+    '<td><input data-cap-i="'+i+'" data-cap-k="desc" value="'+esc(it.desc)+'" placeholder="Producto o servicio">'+(baja?'<small class="cap-conf">confianza baja: compruebe</small>':'')+'</td>'+
+    '<td><input class="cap-num" data-cap-i="'+i+'" data-cap-k="cant" inputmode="decimal" value="'+(isFinite(it.cant)?String(it.cant).replace('.',','):'')+'"></td>'+
+    '<td><select data-cap-i="'+i+'" data-cap-k="uni">'+opU+'</select>'+(it.uniTxt&&!it.uni?'<small class="cap-conf">leído: «'+esc(it.uniTxt)+'»</small>':'')+'</td>'+
+    '<td><select data-cap-i="'+i+'" data-cap-k="linea">'+opL+'</select></td>'+
+    '<td>'+conv+'</td><td class="cap-entra">'+entra+'</td></tr>';
+  });
+  h+='</tbody></table></div><div class="acciones"><button type="button" data-cap="item-mas">+ Otro renglón de la misma factura</button></div>';
+  var pr=capProblemas(P);
+  h+=pr.length?'<div class="aviso"><b>Antes de confirmar:</b><ul>'+pr.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>':
+   '<div class="aviso bien">Todo listo. Al confirmar, cada renglón marcado se suma a su fuente de emisión y la factura queda como respaldo.</div>';
+  h+='<div class="acciones"><button type="button" class="primario" data-cap="confirmar"'+(pr.length?' disabled':'')+'>Confirmar y registrar</button>'+
+   '<button type="button" data-cap="descartar">Descartar</button></div></div></div>';
+ }
+
+ /* 4 · el cálculo, trazable */
+ var amb=[['org','',  'Organización']].filter(function(){return lineasDe('org').length>0;})
+  .concat(S.fincas.map(function(f){return ['finca',f.id,f.codigo||'Finca'];}));
+ var filtro=CAP.filtro||(amb[0]?(amb[0][0]+':'+amb[0][1]):'');
+ var fp=filtro.split(':'), fcat=fp[0]||'org', ffid=fp[1]||'';
+ var rs=capRenglonesConDato(fcat,ffid||null).map(function(l){ var n=registros().filter(function(x){return x.estado!=='anulado'&&x.linea===l.id&&x.cat===fcat&&String(x.fid||'')===String(ffid||'');}).length;
+  return {l:l,n:n,t:tco2Linea(l,fcat,ffid||null)}; }).sort(function(a,b){ return (b.n>0)-(a.n>0)||b.t-a.t; }).map(function(o){return o.l;});
+ h+='<div class="tarjeta"><h3>4 · El cálculo, paso a paso</h3><div class="cuerpo">'+
+  '<p>Cada fuente con dato muestra la cuenta completa: la actividad que viene de las facturas, la conversión a la unidad técnica, el factor con su origen y los ajustes que pide el protocolo. Toque la cifra final para ver su pista de auditoría.</p>'+
+  '<div class="campo cap-filtro"><label for="cap-filtro">Ámbito</label><select id="cap-filtro" data-cap-filtro="1">'+
+   amb.map(function(a){var v=a[0]+':'+a[1]; return '<option value="'+esc(v)+'"'+(v===filtro?' selected':'')+'>'+esc(a[2])+'</option>';}).join('')+'</select></div>';
+ var totT=0;
+ if(!rs.length)h+='<div class="vacio">Todavía no hay datos en este ámbito. Suba la primera factura.</div>';
+ rs.forEach(function(l){
+  var ref=refLinea(l,fcat,ffid||null), Pz=capPasos(l,fcat,ffid||null);
+  var regs=registros().filter(function(x){return x.estado!=='anulado'&&x.linea===l.id&&x.cat===fcat&&String(x.fid||'')===String(ffid||'');});
+  var suma=regs.reduce(function(a,x){return a+(numDe(x.cantidadLinea)||0);},0), base=Math.max(0,Pz.q-suma);
+  var ne=nEvidenciaLinea(l,fcat,ffid||null);
+  totT+=Pz.t+Pz.t2;
+  h+='<details class="cap-linea"><summary><span class="cap-ln">'+esc(l.et)+'</span><span class="cap-lt">'+fmt(Pz.t+Pz.t2,3)+' t CO₂e</span>'+
+   '<span class="cap-le">'+regs.length+' factura'+(regs.length===1?'':'s')+' · '+(ne?(ne+' respaldo'+(ne===1?'':'s')):'<span class="falta">sin respaldo</span>')+'</span></summary>'+
+   '<div class="cap-act"><b>Actividad</b>: '+(base>0?(fmt(base,2)+' anotado aparte'+(regs.length?' + ':'')):'')+(regs.length?(fmt(suma,2)+' de facturas'):'')+' = <b>'+fmt(Pz.q,2)+' '+esc(l.un)+'</b></div>'+
+   (regs.length?'<ul class="cap-regs">'+regs.slice(-8).map(function(x){return '<li>'+esc(x.fecha)+' · factura '+esc(x.numero||'s/n')+' · '+fmt(x.cantidad,2)+' '+esc(x.unidad)+(x.conversion!==1?(' × '+fmt(x.conversion,4)):'')+' = '+fmt(x.cantidadLinea,2)+(x.hash?'':' · <span class="falta">sin respaldo</span>')+'</li>';}).join('')+(regs.length>8?'<li class="muted">y '+(regs.length-8)+' más en el registro</li>':'')+'</ul>':'')+
+   capFormula(Pz)+(Pz.t2?('<p class="small">Más '+fmt(Pz.t2,3)+' t CO₂e de un segundo gas declarado en otra categoría.</p>'):'')+
+   '<div class="acciones"><button type="button" data-accion="traza" data-ref="'+esc(ref)+'">Pista de auditoría</button></div></details>';
+ });
+ if(rs.length)h+='<p class="cap-total">Total del ámbito: <b>'+fmt(totT,3)+' t CO₂e</b></p>';
+ h+='</div></div>';
+
+ /* calculadora de prueba: no guarda nada */
+ var simLs=capLineas(fcat), sl=capLinea(fcat,CAP.sim.l)||null;
+ h+='<div class="tarjeta"><h3>Calculadora de prueba</h3><div class="cuerpo"><p>Para responder «¿cuánto pesa esto?» antes de capturarlo. No guarda nada ni toca el inventario.</p>'+
+  '<div class="cap-cab"><div class="campo"><label for="cap-sim-l">Fuente de emisión</label><select id="cap-sim-l" data-cap-sim="l"><option value="">elegir</option>'+
+   simLs.map(function(x){return '<option value="'+esc(x.id)+'"'+(sl&&sl.id===x.id?' selected':'')+'>'+esc(x.et)+'</option>';}).join('')+'</select></div>'+
+  '<div class="campo"><label for="cap-sim-q">Cantidad'+(sl?(' en '+esc(sl.un)):'')+'</label><input id="cap-sim-q" data-cap-sim="q" inputmode="decimal" value="'+esc(CAP.sim.q)+'"></div></div>'+
+  '<div id="cap-sim-res">'+capSimRes()+'</div></div></div>';
+
+ /* el registro completo */
+ h+='<div class="tarjeta"><h3>Registro de facturas</h3><div class="cuerpo">'+
+  '<p>El libro de lo capturado. Un registro equivocado no se borra: se anula con su motivo, y el inventario se recalcula solo.</p>'+
+  (R.length?'<div class="acciones"><button type="button" data-cap="csv">Descargar el registro (CSV)</button></div>':'')+
+  '<div class="tabla-caja"><table class="hoja cap-tabla"><thead><tr><th>Fecha</th><th>Factura</th><th>Ámbito</th><th>Fuente</th><th>Factura dice</th><th>Al inventario</th><th>Confirmó</th><th>Respaldo</th><th></th></tr></thead><tbody>'+
+  (R.length?R.slice().reverse().slice(0,60).map(function(x){
+   var f=S.fincas.filter(function(z){return z.id===x.fid;})[0];
+   return '<tr'+(x.estado==='anulado'?' class="cap-anulado"':'')+'><td>'+esc(x.fecha)+'</td><td>'+esc(x.numero||'s/n')+'<div class="muted">'+esc(x.proveedor||'')+'</div></td>'+
+    '<td>'+(x.cat==='org'?'Organización':esc((f&&f.codigo)||'Finca'))+'</td><td>'+esc(x.lineaNom)+'</td>'+
+    '<td class="n">'+fmt(x.cantidad,2)+' '+esc(x.unidad)+'</td><td class="n">'+fmt(x.cantidadLinea,2)+'<div class="muted">'+esc(x.unidadLinea)+'</div></td>'+
+    '<td>'+esc(x.por)+'<div class="muted">'+esc(String(x.cuando).slice(0,10))+' · '+(x.origen==='ia'?'lectura asistida':'manual')+'</div></td>'+
+    '<td>'+(x.hash?'<code title="'+esc(x.metHash+' '+x.hash)+'">'+esc(x.hash.slice(0,10))+'</code>':'<span class="falta">sin respaldo</span>')+'</td>'+
+    '<td>'+(x.estado==='anulado'?('<span class="etq">anulado</span><div class="muted">'+esc(x.motivoAnula||'')+'</div>'):(ed?'<button type="button" class="mini" data-cap="anular" data-id="'+esc(x.id)+'">Anular</button>':''))+'</td></tr>';
+  }).join(''):'<tr><td colspan="9"><div class="vacio">Todavía no hay facturas registradas.</div></td></tr>')+
+  '</tbody></table></div>'+(R.length>60?'<p class="small muted">Se muestran los 60 más recientes; el CSV trae los '+R.length+'.</p>':'')+'</div></div>';
+ return h;
+}
+function capSimRes(){
+ var fp=(CAP.filtro||'org:').split(':'), cat=fp[0]||'org', fid=fp[1]||null;
+ var l=capLinea(cat,CAP.sim.l), q=numDe(CAP.sim.q);
+ if(!l||!(q>0))return '<p class="muted">Elija la fuente y escriba la cantidad.</p>';
+ return capFormula(capPasos(l,cat,fid,q));
+}
+function capItem(i){ return CAP.pend&&CAP.pend.datos.items[i]; }
+document.addEventListener('change',function(ev){
+ var t=ev.target; if(!t||!t.dataset)return;
+ if(t.dataset.capSubir){ var f=t.files&&t.files[0]; t.value=''; if(f)capSubir(f); return; }
+ if(t.dataset.capCat){ CAP.cat=t.value; if(t.value==='org')CAP.fid=''; pintar(); return; }
+ if(t.dataset.capFid){ CAP.fid=t.value; pintar(); return; }
+ if(t.dataset.capFiltro){ CAP.filtro=t.value; pintar(); return; }
+ if(t.dataset.capSim==='l'){ CAP.sim.l=t.value; pintar(); return; }
+ if(t.dataset.capH&&CAP.pend){ CAP.pend.datos[t.dataset.capH]=t.value;
+  if(t.dataset.capH!=='fecha'&&!CAP.pend.dup){ var d=capDuplicado('',CAP.pend.datos.proveedor,CAP.pend.datos.numero); if(d)CAP.pend.dup=d; }
+  pintar(); return; }
+ if(t.dataset.capI!=null&&capItem(+t.dataset.capI)){
+  var it=capItem(+t.dataset.capI), k=t.dataset.capK;
+  if(k==='incluir')it.incluir=t.checked;
+  else if(k==='cant')it.cant=numDe(t.value);
+  else if(k==='uni')it.uni=t.value;
+  else if(k==='linea')it.linea=t.value;
+  else if(k==='conv')it.conv=t.value;
+  else if(k==='desc'){ it.desc=t.value; if(!it.linea){ it.linea=capSugerir(t.value,CAP.pend.cat); } }
+  pintar(); return;
+ }
+});
+document.addEventListener('input',function(ev){
+ var t=ev.target; if(!t||!t.dataset||t.dataset.capSim!=='q')return;
+ CAP.sim.q=t.value; var r=$('cap-sim-res'); if(r)r.innerHTML=capSimRes();
+});
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-cap]'); if(!b)return;
+ var a=b.dataset.cap;
+ if(a==='manual')capManual();
+ else if(a==='descartar'){ if(CAP.pend&&CAP.pend.url)URL.revokeObjectURL(CAP.pend.url); CAP.pend=null; pintar(); }
+ else if(a==='item-mas'&&CAP.pend){ CAP.pend.datos.items.push(capItemVacio()); pintar(); }
+ else if(a==='confirmar')capConfirmar();
+ else if(a==='csv')capCSV();
+ else if(a==='anular'){
+  var idA=b.dataset.id;
+  pedir({titulo:'Anular el registro',peligro:true,ok:'Anular',motivo:'Motivo de la anulación',
+   texto:['El registro no se borra: queda marcado como anulado, con su motivo, y el inventario se recalcula sin él.']})
+   .then(function(m){ if(m)capAnular(idA,m); });
+ }
+});
+
 function pintar(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
     siguiente, de modo que no puede quedar desfasada respecto del estado */
@@ -22878,6 +23442,7 @@ function pintar(){
  else if(vista==='bib')$('v-bib').innerHTML=vistaBiblioteca();
  else if(vista==='arc')$('v-arc').innerHTML=vistaArchivo();
  else if(vista==='pod')$('v-pod').innerHTML=vistaPodas();
+ else if(vista==='cap')$('v-cap').innerHTML=vistaCaptura();
  else if(vista==='ins')$('v-ins').innerHTML=vistaLineas('finca');
  else if(vista==='ben')$('v-ben').innerHTML=vistaLineas('org');
  else if(vista==='apr')$('v-apr').innerHTML=vistaAprender();
@@ -25075,6 +25640,8 @@ window.__central={
  cargarEjemplo:function(){ return cargarOccidente(); }
 };
 window.__nucleo=(function(){ var O={
+ ir:function(v){return ir(v);}, cap:function(){return CAP;}, capSubir:function(f){return capSubir(f);}, capConfirmar:function(){return capConfirmar();}, capAnular:function(i,m){return capAnular(i,m);},
+ capNormalizar:function(r,c){return capNormalizar(r,c);}, capPasos:function(l,c,f,q){return capPasos(capLinea(c,l),c,f,q);}, capUniLinea:function(c,l){return capUniLinea(capLinea(c,l));},
  presentacionesCalc:function(){return presentacionesCalc();},
  revisionPresentaciones:function(C){return revisionPresentaciones(C);},
  tarjetaPresentaciones:function(){return tarjetaPresentaciones();},
