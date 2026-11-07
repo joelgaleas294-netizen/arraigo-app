@@ -2685,7 +2685,7 @@ function calcularArbol(ind){
  /* M5.4.7: sin ecuación con ficha verificada el individuo se registra pero no
     produce biomasa. Un dato sin ecuación recuperable no es cuantificable.   */
  if(!ecu){ estado='sin ecuación'; acred=0;
-  motivo='El estrato '+EST[1].toLowerCase()+' no tiene ecuación declarada con su ficha. Se registra el diámetro, no se calcula biomasa.'; }
+  motivo='El estrato '+String((EST&&EST[1])||'sin nombre').toLowerCase()+' no tiene ecuación declarada con su ficha. Se registra el diámetro, no se calcula biomasa.'; }
  else if(ecu.incompleta){ estado='sin ecuación'; acred=0;
   motivo='La ecuación '+(ecu.idint||'declarada')+' no tiene su forma y sus coeficientes capturados. Sin ellos no se puede evaluar, y el protocolo no admite sustituirla por otra.'; }
  else if(ecu.extrap==='abajo'){ estado='bajo el rango'; acred=0;
@@ -6798,6 +6798,8 @@ document.addEventListener('focusin',function(ev){
 },true);
 document.addEventListener('change',function(ev){
  var t=ev.target;
+ if(t&&t.dataset&&(t.dataset.pres!==undefined||t.dataset.dest!==undefined)&&t.dataset.pc)
+  setTimeout(function(){ if(vista==='ver')pintar(); },30);
  if(t&&t.dataset&&t.dataset.ruta&&/^(prod|cred|verif|comp)\./.test(t.dataset.ruta))
   setTimeout(function(){ if(vista==='ver'||vista==='neu')pintar(); },30);
  if(!esCampoDeDatos(t))return;
@@ -6845,28 +6847,36 @@ function produccionTotal(){
    puerto pero no el uso ni el fin de vida, que son la categoría 5; la tumba
    incluye todo. El parcial declarado incluye todo y obliga a justificar por
    escrito lo que se dejó fuera.                                            */
+/* El puerto de embarque (FOB) está antes del barco: el flete internacional
+   (marítimo, aéreo y frío en tránsito) solo entra en los límites que llegan
+   al puerto de destino o más allá. Antes la puerta de embarque lo sumaba si
+   el renglón tenía dato, y un verificador lo habría objetado.                */
 var LIMITES_PROD=[
- ['De la cuna a la puerta de la finca',   {finca:true, org:false, expo:false, cats:[1,2,3,4,5,6]}],
- ['De la cuna a la puerta del beneficio', {finca:true, org:true,  expo:false, cats:[1,2,3,4,5,6]}],
- ['De la cuna a la puerta de embarque',   {finca:true, org:true,  expo:true,  cats:[1,2,3,4,6]}],
- ['De la cuna a la tumba',                {finca:true, org:true,  expo:true,  cats:[1,2,3,4,5,6]}],
- ['Parcial declarado',                    {finca:true, org:true,  expo:true,  cats:[1,2,3,4,5,6]}]
+ ['De la cuna a la puerta de la finca',   {finca:true, org:false, expo:false, flete:false, cats:[1,2,3,4,5,6]}],
+ ['De la cuna a la puerta del beneficio', {finca:true, org:true,  expo:false, flete:false, cats:[1,2,3,4,5,6]}],
+ ['De la cuna a la puerta de embarque',   {finca:true, org:true,  expo:true,  flete:false, cats:[1,2,3,4,6]}],
+ ['De la cuna al puerto de destino',      {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,6]}],
+ ['De la cuna a la tumba',                {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,5,6]}],
+ ['Parcial declarado',                    {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,5,6]}]
 ];
+var FLETE_INTL={tm_maritimo:1,tm_aereo:1,frio_transito:1};
 function reglaLimite(nom){
  var n=String(nom||'').trim();
  for(var i=0;i<LIMITES_PROD.length;i++)if(LIMITES_PROD[i][0]===n)return LIMITES_PROD[i][1];
  return LIMITES_PROD[1][1];
 }
 function idsEXPO(){ return memo('idsexpo',function(){ var m={}; (typeof EXPO!=='undefined'?EXPO:[]).forEach(function(l){m[l.id]=1;}); return m; }); }
-function emisionesEnLimite(nom){
+function emisionesEnLimite(nom,omitir){
  var G=reglaLimite(nom), dentro=function(c){ return G.cats.indexOf(c)>=0; };
- var EX=idsEXPO(), total=0, fuera=0, det={};
+ var EX=idsEXPO(), total=0, fuera=0, det={}, omitido=0;
  function suma(l,cat,fid){
   var esExpo=!!EX[l.id];
   var ambito=(cat==='finca')?'finca':(esExpo?'expo':'org');
   var v=(l.tipo!=='r')?tco2Linea(l,cat,fid):0;
   var v2=tco2Linea2(l,cat,fid)||0;
-  var pasa=G[ambito];
+  /* Renglones que el cálculo por presentación reemplaza por su propio dato */
+  if(omitir&&omitir[l.id]){ omitido+=(v||0)+(l.cat2?v2:0); return; }
+  var pasa=G[ambito]&&(!FLETE_INTL[l.id]||G.flete);
   [[v,l.cat],[l.cat2?v2:0,l.cat2]].forEach(function(par){
    var t=par[0]||0, c=par[1]; if(!t||!c)return;
    if(pasa&&dentro(c)){ total+=t; det[c]=(det[c]||0)+t; } else fuera+=t;
@@ -6877,7 +6887,7 @@ function emisionesEnLimite(nom){
  var poda=0; S.podas.forEach(function(x){poda+=emisionesPoda(x).total;});
  var cult=emisCultivoTotal();
  if(G.finca&&dentro(1)){ total+=poda+cult; det[1]=(det[1]||0)+poda+cult; } else fuera+=poda+cult;
- return {total:total,fuera:fuera,det:det,limite:String(nom||'').trim()||LIMITES_PROD[1][0],regla:G};
+ return {total:total,fuera:fuera,det:det,omitido:omitido,limite:String(nom||'').trim()||LIMITES_PROD[1][0],regla:G};
 }
 function huellaProducto(){
  var R=resumenGlobal(), P=S.prod||{};
@@ -6892,6 +6902,210 @@ function huellaProducto(){
  return {prod:prod,kgU:kgU,asig:asig,emis:emisLim,emisOrg:R.emisiones,emisAsig:emisAsig,
   porU:porU,porKg:porKg,limite:LIM.limite,fueraLimite:LIM.fuera,detLimite:LIM.det,
   remo:R.remociones,unidad:P.unidad||'quintal de café oro'};
+}
+
+/* ====== ISO 14067 · presentaciones puestas en puerto de destino ======
+   La huella del café es la misma hasta el puerto de embarque; lo que cambia
+   entre presentaciones es el empaque y la masa que viaja en el barco. Por eso
+   el cálculo toma la huella por kilogramo hasta la puerta de embarque (sin el
+   renglón genérico de sacos ni el flete internacional, que aquí se reemplazan
+   por el dato de cada presentación) y le suma, por presentación y destino:
+   el empaque según su lista de materiales y el flete marítimo por t·km de la
+   masa bruta. Se revisa como lo haría un organismo de verificación: unidad
+   declarada, límite, criterio de corte, calidad de cada dato, asignación,
+   sensibilidad y declaración del resultado.                                  */
+var FLETE_MAR={f:0.01612,fue:'Ministry for the Environment de Nueva Zelanda · Measuring Emissions Catalogue 2026, tabla 8.20, promedio de buque portacontenedores',anio:'2026'};
+var MAT_EMP={
+ yute:{nom:'Saco de yute (fibra, hilado y tejido)',f:0.566+1.0,partes:[
+   {t:'Fibra de yute, de la cuna a la fibra',f:0.566,est:'cotejado',fue:'Singh, Kumar y Mitra (2018), Indian Journal of Agricultural Sciences 88(8). FAC-YUTE'},
+   {t:'Hilado, tejido y confección del saco',f:1.0,est:'supuesto',fue:'Supuesto conservador del programa, sin fuente citable. Sustituir por la declaración ambiental (EPD) o los datos de energía del fabricante del saco'}]},
+ pp:{nom:'Polipropileno tejido del big bag, incluye conformado',f:3.0908,partes:[
+   {t:'Polipropileno, producción primaria con conformado',f:3.0908,est:'cotejado',fue:'DESNZ (Reino Unido), Greenhouse gas reporting: conversion factors 2023, Material use, PP (incl. forming), primary material production: 3 090,82 kg CO₂e por tonelada'}]},
+ pe:{nom:'Bolsa hermética o forro de polietileno',f:3.0864,partes:[
+   {t:'Polietileno con conformado, aproximado con HDPE',f:3.0864,est:'aproximado',fue:'DESNZ (Reino Unido), conversion factors 2024, Material use, HDPE (incl. forming), primary material production: 3 086,39 kg CO₂e por tonelada. Se usa como aproximación para la película de polietileno'}]}
+};
+function presDefecto(){
+ return [
+  {id:'saco69',nom:'Saco de yute de 69 kg',kg:69,mat:[
+    {m:'yute',kg:0.784,origen:'Calculado: tela Gloster de 560 g/m², 100 × 70 cm, dos caras. Confirmar pesando 10 sacos'},
+    {m:'pe',kg:0.15,origen:'Por confirmar con la ficha del proveedor de la bolsa hermética'}]},
+  {id:'bigbag1t',nom:'Big bag de polipropileno de 1 t',kg:1000,mat:[
+    {m:'pp',kg:3.0,origen:'Por confirmar con la ficha del fabricante del big bag'}]}
+ ];
+}
+function destDefecto(){
+ return [
+  {id:'us',nom:'Estados Unidos',puerto:'Puerto Cortés → costa este (Nueva York / Nueva Jersey)',km:3000,origen:'Distancia aproximada y conservadora. Reemplazar por la del conocimiento de embarque o la naviera'},
+  {id:'eu',nom:'Europa',puerto:'Puerto Cortés → Hamburgo / Amberes',km:9500,origen:'Distancia aproximada y conservadora. Reemplazar por la del conocimiento de embarque o la naviera'}
+ ];
+}
+function presLista(){ var P=S.prod||{}; return (P.pres instanceof Array&&P.pres.length)?P.pres:presDefecto(); }
+function destLista(){ var P=S.prod||{}; return (P.dest instanceof Array&&P.dest.length)?P.dest:destDefecto(); }
+function presAsegura(){ S.prod=S.prod||{}; if(!(S.prod.pres instanceof Array)||!S.prod.pres.length)S.prod.pres=presDefecto(); if(!(S.prod.dest instanceof Array)||!S.prod.dest.length)S.prod.dest=destDefecto(); }
+function factorMat(m,escTejido){
+ var M=MAT_EMP[m]; if(!M)return 0;
+ var esc_=(escTejido==null)?1:escTejido;
+ return M.partes.reduce(function(a,p){ return a+p.f*(p.est==='supuesto'?esc_:1); },0);
+}
+function presentacionesCalc(){
+ var P=S.prod||{}, HP=huellaProducto();
+ var LIM=emisionesEnLimite('De la cuna a la puerta de embarque',{empaque_exp:1,fin_empaque:1});
+ var asig=HP.asig, kgTot=HP.prod*HP.kgU;
+ var base=(kgTot>0)?(LIM.total*asig/100*1000/kgTot):0;
+ var res=[];
+ presLista().forEach(function(pr){
+  var kgU=nv(pr.kg)||0, kgEmp=0, emp=0, empMin=0, empMax=0;
+  (pr.mat||[]).forEach(function(x){ var k=nv(x.kg)||0; kgEmp+=k; emp+=k*factorMat(x.m); empMin+=k*factorMat(x.m,0); empMax+=k*factorMat(x.m,2); });
+  destLista().forEach(function(d){
+   var km=nv(d.km)||0, masa=kgU>0?(kgU+kgEmp)/kgU:0;
+   var fl=masa*km*FLETE_MAR.f/1000, e=kgU>0?emp/kgU:0;
+   var tot=base+e+fl;
+   res.push({pres:pr,dest:d,kgU:kgU,kgEmp:kgEmp,base:base,emp:e,flete:fl,tot:tot,porU:tot*kgU,porT:tot*1000,
+    min:base+(kgU>0?empMin/kgU:0)+fl*0.85, max:base+(kgU>0?empMax/kgU:0)+fl*1.15});
+  });
+ });
+ return {base:base,lim:LIM,asig:asig,kgTot:kgTot,res:res,generico:LIM.omitido};
+}
+/* Revisión con los ojos de un organismo verificador (ISO 14067:2018) */
+function revisionPresentaciones(C){
+ var P=S.prod||{}, out=[], pres=presLista(), dest=destLista();
+ function r(cl,t,estado,nota){ out.push({cl:cl,t:t,estado:estado,nota:nota}); }
+ r('6.3.3','Unidad declarada por presentación',pres.every(function(x){return nv(x.kg)>0;})?'ok':'falta',
+   pres.map(function(x){return '1 kg de café verde oro en '+String(x.nom||'').toLowerCase()+', puesto en puerto de destino';}).join('; ')+'. Se informa también por unidad de empaque y por tonelada.');
+ r('6.3.4','Límite del sistema declarado: de la cuna al puerto de destino','ok',
+   'Incluye finca, beneficio, bodega y transporte terrestre a puerto de embarque (con la regla de la puerta de embarque), empaque por presentación y flete marítimo. Excluye descarga y transporte en destino, tostado, uso y fin de vida, que quedan fuera del límite declarado.');
+ r('6.3.4.3','Criterio de corte y exclusiones declaradas',(typeof exclusionesSobreUmbral==='function'&&exclusionesSobreUmbral().length)?'falta':'ok',
+   'Las fuentes excluidas se declaran en la pestaña de exclusiones con su peso estimado frente al umbral de materialidad.');
+ r('6.3.5','Producción del ciclo con respaldo',C.kgTot>0?'ok':'falta',C.kgTot>0?('Base: '+fmt(C.kgTot/1000,1)+' t de café oro. Debe coincidir con el registro de exportación del ciclo.'):'Falta la producción del ciclo: sin ella no hay huella por kilogramo.');
+ var masasPend=[]; pres.forEach(function(x){(x.mat||[]).forEach(function(m){ if(/confirmar/i.test(String(m.origen||'')))masasPend.push(x.nom+': '+(MAT_EMP[m.m]||{}).nom); });});
+ r('6.3.5','Masa de empaque medida y no estimada',masasPend.length?'aviso':'ok',masasPend.length?('Por confirmar: '+masasPend.join('; ')+'. Pesar al menos 10 unidades y conservar el registro.'):'Masas con respaldo declarado.');
+ var supuestos=[]; pres.forEach(function(x){(x.mat||[]).forEach(function(m){ ((MAT_EMP[m.m]||{}).partes||[]).forEach(function(p){ if(p.est!=='cotejado')supuestos.push(p.t+' ('+p.est+')'); }); });});
+ r('6.3.5','Factores de empaque con fuente citable',supuestos.length?'aviso':'ok',supuestos.length?('Sin fuente o aproximados: '+supuestos.filter(function(v,i,a){return a.indexOf(v)===i;}).join('; ')+'. Su efecto se muestra en el análisis de sensibilidad.'):'Todos los factores cotejados.');
+ var kmDef=dest.filter(function(d){return /aproximada/i.test(String(d.origen||''));});
+ r('6.3.5','Distancia marítima documentada por ruta',kmDef.length?'aviso':'ok',kmDef.length?('Distancias aproximadas en: '+kmDef.map(function(d){return d.nom;}).join(', ')+'. Usar la del conocimiento de embarque o de la naviera.'):'Distancias con respaldo.');
+ r('6.4.6','Regla de asignación declarada',P.asignacion?'ok':'aviso','Regla: '+(P.asignacion||'Por masa (valor por defecto, confirmar)')+'; '+fmt(C.asig,0)+' % al café oro.');
+ r('6.4.9','Remociones informadas por separado','ok','Las remociones del ciclo no se restan de la huella de ninguna presentación.');
+ r('6.4.9.4','Sin doble conteo del empaque',C.generico>0?'aviso':'ok',C.generico>0?('El renglón genérico de sacos de exportación ('+fmt(C.generico,2)+' t CO₂e) se reemplaza aquí por la lista de materiales de cada presentación y no se suma dos veces.'):'No hay renglón genérico de sacos que pueda duplicarse.');
+ r('6.6','Análisis de sensibilidad','ok','Rango con el factor de tejido del yute en cero y al doble, y la distancia marítima ±15 %.');
+ r('7','Declaración del resultado','ok','Medición propia de la organización conforme a ISO 14067. No está verificada por un organismo independiente y no es una declaración de neutralidad.');
+ return out;
+}
+function tarjetaPresentaciones(){
+ if(!esqActivo('i14067'))return '';
+ var C=presentacionesCalc(), pres=presLista(), dest=destLista(), ed=puedeEditar(), dis=ed?'':' disabled';
+ var h='<div class="tarjeta"><h3>Presentaciones puestas en puerto de destino · ISO 14067</h3><div class="cuerpo">'+
+  '<p>La huella del café es la misma hasta el puerto de embarque. Entre presentaciones cambian el empaque y la masa que viaja en el barco, y eso es lo que se calcula aquí, para cada destino.</p>';
+ /* datos de cada presentación */
+ pres.forEach(function(pr,i){
+  h+='<div class="campos" style="margin-top:10px;align-items:end">'+
+   '<div class="campo ancho"><label>Presentación</label><input type="text" data-pres="'+i+'" data-pc="nom" value="'+esc(pr.nom||'')+'"'+dis+'></div>'+
+   '<div class="campo"><label>Kilogramos de café oro por unidad</label><input type="text" inputmode="decimal" data-num="1" data-pres="'+i+'" data-pc="kg" value="'+esc(pr.kg)+'"'+dis+'></div></div>'+
+   '<div class="tabla-caja"><table><thead><tr><th>Material de empaque</th><th>kg por unidad</th><th>Factor kg CO₂e/kg</th><th>Respaldo de la masa</th>'+(ed?'<th></th>':'')+'</tr></thead><tbody>';
+  (pr.mat||[]).forEach(function(m,j){
+   h+='<tr><td><select data-pres="'+i+'" data-pm="'+j+'" data-pc="m"'+dis+'>'+Object.keys(MAT_EMP).map(function(k){return '<option value="'+k+'"'+(k===m.m?' selected':'')+'>'+esc(MAT_EMP[k].nom)+'</option>';}).join('')+'</select></td>'+
+    '<td><input type="text" inputmode="decimal" data-num="1" data-pres="'+i+'" data-pm="'+j+'" data-pc="kg" value="'+esc(m.kg)+'" style="max-width:90px"'+dis+'></td>'+
+    '<td class="n">'+fmt(factorMat(m.m),3)+'</td>'+
+    '<td><input type="text" data-pres="'+i+'" data-pm="'+j+'" data-pc="origen" value="'+esc(m.origen||'')+'"'+dis+'></td>'+
+    (ed?'<td><button type="button" class="mini" data-accion="pres-mat-del" data-pres="'+i+'" data-pm="'+j+'">Quitar</button></td>':'')+'</tr>';
+  });
+  h+='</tbody></table></div>'+(ed?'<div class="acciones"><button type="button" class="mini" data-accion="pres-mat-add" data-pres="'+i+'">Agregar material</button></div>':'');
+ });
+ /* rutas */
+ h+='<h4 style="margin-top:16px">Rutas marítimas</h4><div class="tabla-caja"><table><thead><tr><th>Destino</th><th>Ruta</th><th>Kilómetros por mar</th><th>Respaldo de la distancia</th></tr></thead><tbody>';
+ dest.forEach(function(d,k){
+  h+='<tr><td><b>'+esc(d.nom)+'</b></td><td><input type="text" data-dest="'+k+'" data-pc="puerto" value="'+esc(d.puerto||'')+'"'+dis+'></td>'+
+   '<td><input type="text" inputmode="decimal" data-num="1" data-dest="'+k+'" data-pc="km" value="'+esc(d.km)+'" style="max-width:100px"'+dis+'></td>'+
+   '<td><input type="text" data-dest="'+k+'" data-pc="origen" value="'+esc(d.origen||'')+'"'+dis+'></td></tr>';
+ });
+ h+='</tbody></table></div><p class="pista">Flete marítimo: '+fmt(FLETE_MAR.f,5)+' kg CO₂e por t·km de masa bruta (café más empaque). '+esc(FLETE_MAR.fue)+'.</p>';
+ /* resultados */
+ h+='<h4 style="margin-top:16px">Resultado</h4><div class="tabla-caja"><table><thead><tr><th>Presentación</th><th>Destino</th><th>Hasta puerto de embarque</th><th>Empaque</th><th>Flete marítimo</th><th>Total por kg</th><th>Por unidad</th><th>Por tonelada</th><th>Rango de sensibilidad</th></tr></thead><tbody>';
+ if(!(C.kgTot>0))h+='<tr><td colspan="9">Falta la producción del ciclo en la tarjeta anterior: sin ella no hay huella por kilogramo.</td></tr>';
+ else C.res.forEach(function(x){
+  h+='<tr><td><b>'+esc(x.pres.nom)+'</b></td><td>'+esc(x.dest.nom)+'</td>'+
+   '<td class="n">'+fmt(x.base,4)+'</td><td class="n">'+fmt(x.emp,4)+'</td><td class="n">'+fmt(x.flete,4)+'</td>'+
+   '<td class="n"><b>'+fmt(x.tot,4)+'</b></td><td class="n">'+fmt(x.porU,2)+' kg CO₂e</td><td class="n">'+fmt(x.porT,1)+' kg CO₂e</td>'+
+   '<td class="n">'+fmt(x.min,4)+' a '+fmt(x.max,4)+'</td></tr>';
+ });
+ h+='</tbody></table></div><p class="pista">Valores en kg CO₂e por kilogramo de café verde oro, salvo donde se indica. El tramo hasta el puerto de embarque usa la regla de asignación declarada y deja fuera el renglón genérico de sacos y el flete internacional, que aquí se reemplazan por el dato de cada presentación.</p>';
+ /* revisión tipo verificador */
+ var R=revisionPresentaciones(C);
+ h+='<h4 style="margin-top:16px">Revisión como la haría el organismo verificador</h4><div class="tabla-caja"><table><thead><tr><th>ISO 14067</th><th>Requisito</th><th>Estado</th><th>Observación</th></tr></thead><tbody>'+
+  R.map(function(x){return '<tr><td>'+esc(x.cl)+'</td><td>'+esc(x.t)+'</td><td>'+pastillaEstado(x.estado)+'</td><td style="white-space:normal">'+esc(x.nota)+'</td></tr>';}).join('')+
+  '</tbody></table></div>'+
+  '<p class="pista" style="margin-top:10px">Mientras un organismo de certificación independiente no lo verifique, el resultado es medición propia de la organización y así debe presentarse a compradores.</p>'+
+  '<div class="acciones no-imprimir"><button type="button" class="primario" data-accion="rep-modal" data-tipo="cfp-pres" data-id="">Ver el informe del estudio</button></div>';
+ return h+'</div></div>';
+}
+
+/* ====== informe del estudio CFP por presentación (ISO 14067, cláusula 7) ======
+   Sigue la estructura de los informes del sistema de gestión (objeto, alcance,
+   desarrollo, responsables, registros, control de cambios y referencias) y el
+   contenido que la cláusula 7 de ISO 14067 pide al informe del estudio.     */
+function repCFPPresentaciones(){
+ var C=presentacionesCalc(), P=S.prod||{}, HP=huellaProducto(), pres=presLista(), dest=destLista();
+ var org=S.perfil.organizacion||'la organización', ciclo=S.perfil.ciclo||'sin declarar';
+ var h=encabezadoRep('Huella de carbono de producto por presentación, puesta en puerto de destino',
+  'Informe del estudio conforme a ISO 14067:2018 · '+org+' · ciclo '+ciclo);
+ h+='<h2 class="rep-h2">Objeto</h2><p>Cuantificar y comunicar la huella de carbono del café verde oro de '+esc(org)+' en dos presentaciones de exportación, '+
+  esc(pres.map(function(x){return String(x.nom||'').toLowerCase();}).join(' y '))+', puestas en el puerto de destino en '+esc(dest.map(function(d){return d.nom;}).join(' y '))+', conforme a ISO 14067:2018, para informar a compradores y orientar las decisiones de empaque y de logística.</p>';
+ h+='<h2 class="rep-h2">Alcance</h2><p>Comprende la producción en finca, el beneficiado, la bodega y el transporte terrestre al puerto de embarque del ciclo '+esc(ciclo)+', el empaque propio de cada presentación y el flete marítimo hasta el puerto de destino. El estudio es de la cuna al puerto de destino y no incluye la descarga ni el transporte en destino, el tostado, la preparación por el consumidor ni el fin de vida del producto o del empaque.</p>';
+ h+='<h2 class="rep-h2">Unidad declarada y presentaciones</h2>';
+ h+=tabla(['Presentación','Unidad declarada','Café oro por unidad','Empaque por unidad'],pres.map(function(x){
+  var ke=(x.mat||[]).reduce(function(a,m){return a+(nv(m.kg)||0);},0);
+  return [x.nom,'1 kg de café verde oro empacado en '+String(x.nom||'').toLowerCase()+', puesto en puerto de destino',fmt(nv(x.kg),0)+' kg',fmt(ke,3)+' kg'];
+ }));
+ h+='<p>El resultado se informa por kilogramo de café oro, que permite comparar las presentaciones, y también por unidad de empaque y por tonelada.</p>';
+ h+='<h2 class="rep-h2">Límite del sistema</h2>';
+ h+=tabla(['Etapa','Incluida','Cómo se cuantifica'],[
+  ['Producción en finca','Sí','Inventario de insumos, combustibles, podas y cambio de existencia del cultivo de las fincas del ciclo'],
+  ['Beneficiado, bodega y oficinas','Sí','Combustibles, electricidad, refrigerantes y aguas residuales registrados por la organización'],
+  ['Transporte terrestre al puerto de embarque','Sí','Kilómetros de los viajes cargados al puerto'],
+  ['Empaque de exportación','Sí','Lista de materiales de cada presentación; reemplaza al renglón genérico de sacos'],
+  ['Flete marítimo al puerto de destino','Sí','t·km de la masa bruta, café más empaque, por ruta'],
+  ['Descarga y transporte en destino','No','Fuera del límite declarado'],
+  ['Tostado, uso y fin de vida','No','Fuera del límite declarado']]);
+ h+='<h2 class="rep-h2">Datos, fuentes y calidad</h2>';
+ var filas=[];
+ pres.forEach(function(x){ (x.mat||[]).forEach(function(m){ ((MAT_EMP[m.m]||{}).partes||[]).forEach(function(p){
+  filas.push([x.nom,p.t,fmt(nv(m.kg),3)+' kg',fmt(p.f,4)+' kg CO₂e/kg',p.est==='cotejado'?'Cotejado':(p.est==='supuesto'?'Supuesto conservador':'Aproximado'),p.fue+'. Masa: '+(m.origen||'sin declarar')]); }); }); });
+ dest.forEach(function(d){ filas.push(['Flete a '+d.nom,d.puerto||'',fmt(nv(d.km),0)+' km',fmt(FLETE_MAR.f,5)+' kg CO₂e/t·km','Cotejado',FLETE_MAR.fue+'. Distancia: '+(d.origen||'sin declarar')]); });
+ h+=tabla(['Ámbito','Dato','Cantidad','Factor','Estado','Fuente y respaldo'],filas);
+ h+='<p>Los datos de finca, beneficio y bodega son los del inventario del ciclo, con la procedencia de cada factor documentada en la memoria de cálculo. Un dato sin evidencia recuperable no se cuantifica.</p>';
+ h+='<h2 class="rep-h2">Asignación</h2><p>Regla aplicada: '+esc(P.asignacion||'Por masa')+', con '+fmt(C.asig,0)+' % de la carga asignada al café oro. Las remociones del ciclo, '+fmt(HP.remo,2)+' t CO₂e, se informan por separado y no se restan de la huella.</p>';
+ h+='<h2 class="rep-h2">Resultados</h2>';
+ if(!(C.kgTot>0))h+='<p>No se informa resultado porque falta la producción del ciclo.</p>';
+ else{
+  h+='<p>Producción del ciclo tomada como base: '+fmt(C.kgTot/1000,1)+' t de café oro. Huella hasta el puerto de embarque, común a todas las presentaciones: '+fmt(C.base,4)+' kg CO₂e por kg.</p>';
+  h+=tabla(['Presentación','Destino','Hasta embarque','Empaque','Flete marítimo','Total kg CO₂e/kg','Por unidad','Por tonelada'],C.res.map(function(x){
+   return [x.pres.nom,x.dest.nom,fmt(x.base,4),fmt(x.emp,4),fmt(x.flete,4),fmt(x.tot,4),fmt(x.porU,2)+' kg CO₂e',fmt(x.porT,1)+' kg CO₂e'];
+  }));
+ }
+ h+='<h2 class="rep-h2">Análisis de sensibilidad</h2>';
+ if(C.kgTot>0)h+=tabla(['Presentación','Destino','Resultado','Mínimo','Máximo'],C.res.map(function(x){return [x.pres.nom,x.dest.nom,fmt(x.tot,4),fmt(x.min,4),fmt(x.max,4)];}));
+ h+='<p>El mínimo toma el factor de hilado y tejido del yute en cero y la distancia marítima un 15 % menor; el máximo duplica ese factor y aumenta la distancia un 15 %. Son los dos supuestos con menor respaldo del estudio.</p>';
+ h+='<h2 class="rep-h2">Revisión requisito por requisito</h2>';
+ h+=tabla(['ISO 14067','Requisito','Estado','Observación'],revisionPresentaciones(C).map(function(x){return [x.cl,x.t,EST_NOM[x.estado]||x.estado,x.nota];}));
+ h+='<h2 class="rep-h2">Limitaciones y declaración del resultado</h2><p>El resultado es medición propia de '+esc(org)+' conforme a ISO 14067:2018. No ha sido verificado por un organismo de certificación independiente, no constituye una declaración de neutralidad y no debe presentarse como verificado. Los supuestos señalados en los apartados 5 y 9 deben sustituirse por datos medidos antes de una verificación.</p>';
+ h+='<h2 class="rep-h2">Responsables</h2>'+tabla(['Función','Responsabilidad'],[
+  ['Responsable de sostenibilidad','Consolida los datos del ciclo, mantiene la lista de materiales y las rutas, y actualiza el informe'],
+  ['Responsable de bodega y exportación','Pesa el empaque, conserva las fichas de los proveedores y los conocimientos de embarque'],
+  ['Responsable de calidad','Verifica que cada dato tenga su registro y que el informe coincida con la memoria de cálculo'],
+  ['Gerencia general','Aprueba el informe y su comunicación a compradores']]);
+ h+='<h2 class="rep-h2">Registros</h2>'+tabla(['Registro','Contenido'],[
+  ['Inventario del ciclo','Insumos, combustibles, electricidad y producción, con su evidencia'],
+  ['Pesaje de empaque','Peso de al menos 10 unidades de cada material, con fecha y responsable'],
+  ['Fichas de proveedores','Gramaje, dimensiones y declaración ambiental del saco, la bolsa y el big bag'],
+  ['Conocimientos de embarque','Puerto de embarque, puerto de destino y ruta de cada exportación']]);
+ h+='<h2 class="rep-h2">Control de cambios</h2>'+tabla(['Versión','Fecha','Naturaleza del cambio'],[
+  ['1.0',hoy(),'Primera emisión. Huella por presentación de la cuna al puerto de destino, con revisión requisito por requisito y análisis de sensibilidad.']]);
+ h+='<h2 class="rep-h2">Referencias normativas</h2>'+tabla(['Norma','Materia'],[
+  ['ISO 14067:2018','Huella de carbono de productos. Requisitos y directrices para cuantificación'],
+  ['ISO 14044:2006','Análisis del ciclo de vida. Requisitos y directrices'],
+  ['ISO 14064-1:2018','Inventario de gases de efecto invernadero de la organización, del que procede el tramo común'],
+  ['IPCC 2006 y Refinamiento 2019','Métodos de estimación de emisiones agrícolas y de energía'],
+  ['ISO 9001:2015','Control de la información documentada']]);
+ return h;
 }
 
 /* ====== navegación ====== */
@@ -7665,6 +7879,7 @@ function cuerpoReporteRaw(tipo,id){
  if(tipo==='informe1y2')return repInforme1y2();
  if(tipo==='entrega')return repEntrega();
  if(tipo==='normas')return repNormas();
+ if(tipo==='cfp-pres')return repCFPPresentaciones();
  if(tipo==='biblioteca')return repBiblioteca();
  if(tipo==='traza')return trazaLinea(id||'');
  return armarReporte(tipo,id||'');
@@ -10495,6 +10710,7 @@ function ver_prodcred(){
    '</tbody></table></div>'+
    '<p class="pista" style="margin-top:10px">Las remociones no se restan de la huella del producto. ISO 14067 obliga a informarlas por separado, y descontarlas exige demostrar permanencia y cumplir los criterios de contabilidad de remociones. Si no hay producción declarada, la huella por unidad no se calcula: se toma la producción anotada finca por finca en el módulo de insumos.</p>'+
    '</div></div>';
+  h+=tarjetaPresentaciones();
  }
 
  /* --- condiciones de crédito --- */
@@ -19499,6 +19715,7 @@ var REPORTES=[
  ['nivel3','Unidades del nivel 3','Escenario de referencia, adicionalidad, fugas, permanencia y la serie de cada unidad'],
  ['fuentes','Inventario de fuentes y sumideros','El pronunciamiento de la organización sobre las veintitrés fuentes del catálogo del protocolo'],
  ['biblioteca','Biblioteca de fuentes','De qué documento sale cada factor, cada ecuación y cada parámetro, con el estado de cotejo de cada documento'],
+ ['cfp-pres','Huella de carbono de producto por presentación, ISO 14067','Saco de yute y big bag puestos en puerto de destino (Estados Unidos y Europa): unidad declarada, límite, datos y su calidad, resultados, sensibilidad y revisión requisito por requisito'],
  ['normas','Informe de declaración por norma','Requisito por requisito de ISO 14064-1, ISO 14064-2, ISO 14067, ISO 14068-1 y las Directrices del IPCC, con lo que declara la organización y lo que falta'],
  ['informe14064','Informe del inventario, ISO 14064-1','Recorrido completo de la cláusula 9: consolidación, período, categorías, gases, año base, exclusiones y verificación'],
  ['informe140642','Informe del proyecto, ISO 14064-2','Recorrido del capítulo 6: descripción, escenario de referencia, secuencia de cálculo, fugas, permanencia, monitoreo y requisito por requisito'],
@@ -26345,6 +26562,8 @@ document.addEventListener('input',function(ev){
   var LA=loteDe(t.dataset.lote);
   if(LA){ LA.contratoId=t.checked?t.dataset.ctrLote:''; marcar('lotes/'+LA.id); guardarLocal(); pintar(); }
   return;}
+ if(t.dataset.pres!==undefined&&t.dataset.pc&&!t.dataset.accion){ presAsegura(); var PR=S.prod.pres[+t.dataset.pres]; if(PR){ if(t.dataset.pm!==undefined){ var MM=PR.mat[+t.dataset.pm]; if(MM)MM[t.dataset.pc]=t.value; } else PR[t.dataset.pc]=t.value; marcar('gestion/declaraciones'); } return;}
+ if(t.dataset.dest!==undefined&&t.dataset.pc){ presAsegura(); var DE=S.prod.dest[+t.dataset.dest]; if(DE){ DE[t.dataset.pc]=t.value; marcar('gestion/declaraciones'); } return;}
  if(t.dataset.ruta){ponRuta(t.dataset.ruta,t.value); if(t.dataset.ruta.indexOf('perfil')===0)return; return;}
  if(t.dataset.ods){S.ods[t.dataset.ods]=S.ods[t.dataset.ods]||{}; S.ods[t.dataset.ods].valor=t.value; marcar('ods/declaracion'); return;}
  if(t.dataset.conv){var stc=estadoInsumo(); if(!stc)return; stc.conversiones=stc.conversiones||{};
@@ -27349,6 +27568,12 @@ document.addEventListener('click',function(ev){
   if(LA[ia]){ anotar('apartamiento','Apartamiento retirado: '+LA[ia].umbral,'',''); LA.splice(ia,1); marcar('gestion/declaraciones'); }
   pintar(); sincronizar(true);
   return;}
+ if(a==='pres-mat-add'||a==='pres-mat-del'){
+  if(!puedeEditar()){msg('Su acceso no permite modificar la huella de producto');return;}
+  presAsegura(); var PX=S.prod.pres[+b.dataset.pres]; if(!PX)return;
+  PX.mat=PX.mat||[];
+  if(a==='pres-mat-add')PX.mat.push({m:'pe',kg:'',origen:'Por confirmar'}); else PX.mat.splice(+b.dataset.pm,1);
+  marcar('gestion/declaraciones'); pintar(); return;}
  if(a==='exc-crear'){
   if(!puedeGestionar()){msg('Su acceso no permite declarar exclusiones');return;}
   var fx=($('ex-f').value||'').trim();
@@ -28110,6 +28335,14 @@ window.__central={
  cargarEjemplo:function(){ return cargarOccidente(); }
 };
 window.__nucleo=(function(){ var O={
+ presentacionesCalc:function(){return presentacionesCalc();},
+ revisionPresentaciones:function(C){return revisionPresentaciones(C);},
+ tarjetaPresentaciones:function(){return tarjetaPresentaciones();},
+ repCFPPresentaciones:function(){return repCFPPresentaciones();},
+ emisionesEnLimite:function(n,o){return emisionesEnLimite(n,o);},
+ cargarEjemploDemo:function(){return cargarEjemplo();},
+ estiloMembrete:function(){return estiloMembrete();},
+ bloqueControlDoc:function(t){return bloqueControlDoc(t);},
  resumenBosque:function(){return resumenBosque();},
  listaVM0048:function(){return listaVM0048();},
 
