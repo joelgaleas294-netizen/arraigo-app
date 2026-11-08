@@ -23268,6 +23268,8 @@ function capPrompt(){
  return 'Lee este documento de un programa de huella de carbono de café y cacao (factura, recibo, orden de entrega, bitácora o registro) y devuelve SOLO un objeto JSON, sin texto antes ni después, con esta forma:\n'+
   '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","ambito":"org|finca","finca_codigo":"","productor":"","items":[{"descripcion":"","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
   'La imagen puede venir girada o escrita a mano: léela en su orientación correcta. Si es un talonario o un escaneo con varias facturas, lee solo la factura de esta página; si en la página hay más de una, devuelve la más completa y anota las demás en "observacion". '+
+  'La fecha va en formato AAAA-MM-DD. En Honduras las facturas escriben día/mes/año: 05/12/25 es el 5 de diciembre de 2025 (2025-12-05), nunca el año 2005. '+
+  'En una factura de combustible, la cantidad son los litros o galones despachados (columna Cantidad, Litros o Galones); nunca el valor en lempiras, el precio unitario ni el total. '+
   'Reglas: copia solo lo que se lee en el documento; si un dato no se lee, déjalo vacío y anótalo en "ilegible"; no estimes ni completes cantidades. '+
   'La cantidad es la cantidad física (galones, litros, kWh, quintales, libras, sacos, kilómetros), nunca el precio. En una factura de electricidad, el item es el consumo del período en kWh. '+
   'Si el documento es una bitácora o un registro con muchas filas, suma las cantidades por producto, unidad y finca, y devuelve un item por cada suma; en "observacion" anota el período que cubre. '+
@@ -23346,7 +23348,15 @@ function capBuscarFinca(cod,prod){
 }
 /* Fechas a AAAA-MM-DD: las facturas traen 15/01/2026, 15-01-26, 15 de enero de 2026… y el modelo no siempre las convierte */
 var MESES_N={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
-function normFecha(t){
+/* El modelo a veces lee «05/12/25» como 2005-12-25. Si el año no es plausible y el día sí lo es como año, se corrige a 2025-12-05. */
+function fechaPlausible(f){
+ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(f||'')); if(!m)return f;
+ var y=+m[1], mo=+m[2], d=+m[3], hoyY=new Date().getFullYear();
+ if((y<2013||y>hoyY+1)&&y>=2000&&y<=2031&&d>=13&&d<=hoyY-2000+1){ var y2=2000+d, d2=y-2000; if(d2>=1&&d2<=31)return y2+'-'+m[2]+'-'+('0'+d2).slice(-2); }
+ return f;
+}
+function normFecha(t){ return fechaPlausible(normFechaBase(t)); }
+function normFechaBase(t){
  t=String(t||'').trim(); if(!t)return '';
  var m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t); if(m)return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
  m=/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})/.exec(t); if(m)return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
@@ -23626,6 +23636,7 @@ function capProblemas(P){
  if(!inc.length)p.push('No hay ningún renglón marcado para registrar.');
  if(!d.fecha)p.push('Falta la fecha de la factura.');
  /* Regla: no se admiten facturas duplicadas (el mismo archivo, o el mismo proveedor y número ya registrados) */
+ inc.forEach(function(it){ if(it.cant>0&&isFinite(it.importe)&&Math.abs(it.cant-it.importe)<0.005)p.push('Renglón '+(d.items.indexOf(it)+1)+': la cantidad es igual al monto de la factura; anote la cantidad física (litros, galones, kWh), no el valor en lempiras.'); });
  var dupV=capDuplicado(P.hash,d.proveedor,d.numero,P.pagina||0);
  if(dupV)p.push('Esta factura ya está registrada'+(dupV.numero?(' (factura '+dupV.numero+(dupV.fecha?(' del '+dupV.fecha):'')+')'):'')+'. No se admiten facturas duplicadas: quítela de la lista.');
  inc.forEach(function(it,i){
@@ -25527,7 +25538,7 @@ function calcEstructura(){
 var MES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 function calcMeses(){
  var P=S.prod||{}, a=String(P.per_inicio||'').slice(0,7), b=String(P.per_fin||'').slice(0,7);
- if(!(a&&b)){ var fs=registros().filter(function(r){return r.estado!=='anulado'&&/^\d{4}-\d{2}/.test(r.fecha||'');}).map(function(r){return r.fecha.slice(0,7);}).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
+ if(!(a&&b)){ var yM=new Date().getFullYear()+1; var fs=registros().filter(function(r){ var y=+String(r.fecha||'').slice(0,4); return r.estado!=='anulado'&&/^\d{4}-\d{2}/.test(r.fecha||'')&&y>=2013&&y<=yM;}).map(function(r){return r.fecha.slice(0,7);}).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
  var out=[], y=+a.slice(0,4), m=+a.slice(5,7);
  while(out.length<24){ var k=y+'-'+String(m).padStart(2,'0'); out.push(k); if(k>=b)break; m++; if(m>12){m=1;y++;} }
  return out;
@@ -25748,7 +25759,7 @@ function migrarLitros(){
  var cr=false;
  (S.registros||[]).forEach(function(r){ if(GAL_IDS.indexOf(r.linea)<0||!/gal/i.test(r.unidadLinea||''))return; r.cantidadLinea=Math.round(nv(r.cantidadLinea)*GAL_L*1e6)/1e6; r.conversion=nv(r.conversion)*GAL_L; r.unidadLinea='litros comprados'; cr=true; });
  Object.keys(S.capBase||{}).forEach(function(k){ var id=k.split(':').pop(), e=S.capBase[k]; if(GAL_IDS.indexOf(id)>=0&&e&&!e.uLitros){ e.base=nv(e.base)*GAL_L; e.suma=nv(e.suma)*GAL_L; e.uLitros=true; } });
- (S.registros||[]).forEach(function(r){ if(r.fecha&&!/^\d{4}-\d{2}-\d{2}$/.test(r.fecha)){ var nf=normFecha(r.fecha); if(nf){ r.fechaLeida=r.fecha; r.fecha=nf; cr=true; } } });
+ (S.registros||[]).forEach(function(r){ if(!r.fecha)return; var nf=normFecha(r.fecha); if(nf&&nf!==r.fecha){ if(!r.fechaLeida)r.fechaLeida=r.fecha; r.fecha=nf; cr=true; } });
  if(cr)marcar('captura/registros');
  }catch(e){}
 }
