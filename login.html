@@ -30,6 +30,7 @@
  button[disabled]{opacity:.6;cursor:wait}
  .msg{min-height:1.2em;margin-top:12px;font-size:.85rem;color:var(--error)}
  small{display:block;margin-top:16px;font-size:.75rem;color:var(--tinta2);text-align:center}
+.origen{display:block;margin-top:10px;padding:12px;border:1px solid var(--acento);border-radius:10px;text-align:center;color:var(--acento);font-weight:700;text-decoration:none}
 </style>
 </head>
 <body>
@@ -44,6 +45,7 @@
   <input id="clave" name="clave" type="password" autocomplete="current-password" required>
   <button id="b" type="submit">Ingresar</button>
   <div class="msg" id="m" role="alert"></div>
+  <a class="origen" href="https://sgd.jjglobalsa.com/arraigo/entrar">Entrar con mi sesión de Origen</a>
   <small>¿No tiene acceso? Solicítelo a JJ Global: info@jjglobalsa.com</small>
  </form>
 </main>
@@ -65,6 +67,10 @@
   })
   .catch(function(){ m.textContent='Sin conexión. Intente de nuevo.'; b.disabled=false; b.textContent='Ingresar'; });
  });
+ var e=new URLSearchParams(location.search).get('e');
+ var EM={entrada:'El pase de Origen venció o ya se usó. Vuelva a tocar «Entrar con mi sesión de Origen» o ingrese con su correo.',
+  origen:'La entrada directa solo funciona desde Origen (sgd.jjglobalsa.com).',red:'No se pudo comprobar el acceso con Origen. Intente de nuevo.'};
+ if(e&&EM[e])m.textContent=EM[e];
 })();
 </script>
 </body>
