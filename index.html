@@ -1701,6 +1701,15 @@ html body .lateral .lp-vista button span:last-child{overflow:hidden;text-overflo
  html body .lateral nav button[aria-current="page"]{box-shadow:none}
  html body .lateral .nv-num{display:none}
 }
+
+html body .lateral .lp-actualizar{width:100%;text-align:left;font-size:.78rem}
+html body .lateral .lp-actualizar.hay{background:#c99a3e;border-color:#c99a3e;color:#fff;font-weight:700;animation:ver-latido 2s ease-in-out 3}
+@keyframes ver-latido{50%{box-shadow:0 0 0 4px rgba(201,154,62,.35)}}
+.aviso-version{position:fixed;z-index:1200;left:50%;bottom:20px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+ background:#14231c;color:#e6efe9;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px 10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:.9rem;max-width:calc(100vw - 32px)}
+.aviso-version button{border:0;border-radius:8px;padding:7px 12px;font:inherit;font-weight:700;cursor:pointer;background:#8dbf3f;color:#14231c}
+.aviso-version button.x{background:transparent;color:#9fb5a8;font-weight:500}
+@media (max-width:760px){.aviso-version{bottom:84px}}
 </style>
 </head>
 <body>
@@ -1731,6 +1740,7 @@ html body .lateral .lp-vista button span:last-child{overflow:hidden;text-overflo
     <button type="button" class="mini" id="btn-sync">Sincronizar</button>
    </div>
    <div class="lp-chips"><span class="chip-modo" id="chip-modo">Comprobando acceso</span><span class="chip-modo" id="chip-lic" hidden></span></div>
+   <button type="button" class="lp-actualizar" id="btn-actualizar" title="Descarga la versión más reciente de ARRAIGO; sus datos se conservan">⟳ <span id="act-txt">Actualizar ARRAIGO</span></button>
    <div class="lp-vista">
     <button type="button" class="mini aspecto" id="btn-aspecto" aria-pressed="false">
      <span class="asp-ico" aria-hidden="true"></span><span id="asp-txt">Aspecto oscuro</span></button>
@@ -3500,11 +3510,7 @@ var ALCANCES=[
 ];
 function alcance(){ var a=S.perfil.alcance; return (a==='alc1'||a==='alc3')?a:'alc2'; }
 /* Qué módulos tienen sentido en cada ruta del ALC-00 */
-var SERVICIOS=[['gei','Inventario GEI de la organización','Emisiones y remociones de la organización por categoría, con sus límites de organización y de informe (ISO 14064-1).'],
- ['huella','Huella de carbono de producto','Huella por unidad de producto, p. ej. por quintal, con unidad funcional, límite del sistema y regla de asignación declarados (ISO 14067).'],
- ['neutral','Carbono neutral','Ruta de reducción y declaración de neutralidad (ISO 14068-1) sobre una cuantificación previa: el inventario de la organización o la huella del producto.'],
- ['insetting','Insetting (Alcance 3)','Reducciones y remociones en la cadena de suministro del comprador, con trazabilidad por lote.'],
- ['creditos','Créditos de carbono','Proyectos de reducción o remoción para un estándar (JJ Carbon System: Verra, Gold Standard, Plan Vivo y otros).']];
+var SERVICIOS=[['huella','Huella de carbono de producto','Huella por unidad de producto (saco de yute, big bag, quintal), con unidad declarada, límite del sistema y regla de asignación declarados (ISO 14067).']];
 var MOD_SERV={lfe:['gei','huella','neutral','insetting'],lae:['insetting','creditos'],pai:['gei','huella','neutral','insetting'],tal:['gei','huella','neutral','insetting'],ins:['gei','huella','neutral','insetting'],ben:['gei','huella','neutral','insetting'],
  pod:['gei','huella','insetting','creditos'],lot:['huella','insetting'],mit:['gei','huella','neutral','insetting'],neu:['neutral'],
  mue:['insetting','creditos'],ppm:['insetting','creditos'],est:['insetting','creditos'],ctr:['insetting'],vcu:['insetting'],
@@ -3512,22 +3518,21 @@ var MOD_SERV={lfe:['gei','huella','neutral','insetting'],lae:['insetting','credi
 /* ISO 14064-1 (organización) e ISO 14067 (producto) son servicios separados. Los proyectos anteriores a la separación
    tenían ambos bajo «huella»: se leen como los dos hasta que alguien vuelva a guardar los servicios.
    Carbono neutral necesita al menos una de las dos cuantificaciones; si no hay ninguna, se activan ambas. */
-function serviciosProyecto(){var s=S.perfil&&S.perfil.servicios; if(!Array.isArray(s)||!s.length)return SERVICIOS.map(function(x){return x[0];}); s=s.slice();
- if(!S.perfil.servSep&&s.indexOf('huella')>=0&&s.indexOf('gei')<0)s.push('gei');
- if(s.indexOf('neutral')>=0&&s.indexOf('gei')<0&&s.indexOf('huella')<0){s.push('gei');s.push('huella');}
- return SERVICIOS.map(function(x){return x[0];}).filter(function(x){return s.indexOf(x)>=0;});}
+/* El programa trabaja solo la huella de carbono de producto (ISO 14067), decisión del 07/11/2026:
+   el inventario de la organización, la neutralidad, el insetting y los créditos ya no se ofrecen. */
+function serviciosProyecto(){ return ['huella']; }
 function moduloEnServicio(id){var r=MOD_SERV[id]; if(!r)return true; var s=serviciosProyecto(); return r.some(function(x){return s.indexOf(x)>=0;});}
 function moduloEnAlcance(id){return moduloEnAlcanceBase(id)&&moduloEnServicio(id);}
 function tarjetaServicios(){
  var s=serviciosProyecto(), ed=puedeEditar(), dec=(S.perfil&&Array.isArray(S.perfil.servicios))?S.perfil.servicios:[];
  return '<div class="tarjeta"><h3>Servicios contratados</h3><div class="cuerpo">'+
-  '<p>Cada cliente usa solo los servicios que contrató. Lo que no está activo desaparece del menú, pero los datos ya capturados no se borran ni se dejan de calcular. El inventario de la organización (ISO 14064-1) y la huella de producto (ISO 14067) son servicios distintos. Carbono neutral necesita al menos uno de los dos.</p>'+
+  '<p>El programa ARRAIGO cuantifica la huella de carbono de producto conforme a ISO 14067. La neutralidad, el inventario de la organización, el insetting y los créditos de carbono no forman parte del servicio.</p>'+
   '<div class="clases" style="grid-template-columns:1fr">'+
   SERVICIOS.map(function(x){
    var on=s.indexOf(x[0])>=0, cuant=(x[0]==='gei'||x[0]==='huella'), otra=x[0]==='gei'?'huella':'gei';
    var impl=on&&cuant&&s.indexOf('neutral')>=0&&s.indexOf(otra)<0;
    return '<button type="button" class="clase" data-accion="srv-alternar" data-srv="'+x[0]+'" aria-pressed="'+(on?'true':'false')+'"'+(ed&&!impl?'':' disabled')+'>'+
-    '<b>'+esc(x[1])+(impl?' (requerida por carbono neutral)':'')+'</b><span>'+esc(x[2])+'</span></button>';
+    '<b>'+esc(x[1])+'</b><span>'+esc(x[2])+'</span></button>';
   }).join('')+'</div></div></div>';
 }
 function moduloEnAlcanceBase(id){
@@ -5510,7 +5515,7 @@ var HERR={aju:{codigo:'AJUSTES Y AYUDA',nom:'Ajustes y ayuda',col:'mE'},
  map:{codigo:'HERRAMIENTA',nom:'Mapa y trazabilidad',col:'mE'},
  rep:{codigo:'HERRAMIENTA',nom:'Reportes',col:'mE'},
  asi:{codigo:'HERRAMIENTA',nom:'Asistente',col:'mE'}};
-var REP_DE_MODULO={apr:'',tal:'fuentes',ver:'',car:'',con:'',mit:'mitigacion',dia:'diagnostico',org:'ciclo',pai:'paises',fincas:'finca',pod:'poda',ins:'categorias',ben:'categorias',
+var REP_DE_MODULO={apr:'',tal:'memoria',ver:'',car:'',con:'',mit:'mitigacion',dia:'diagnostico',org:'ciclo',pai:'paises',fincas:'finca',pod:'',ins:'memoria',ben:'memoria',
  cal:'hoja',evi:'evidencia',ods:'ciclo',res:'ciclo',cfg:'ciclo',pry:'ciclo',map:'evidencia',bib:'biblioteca'};
 function botonRep(id){
  var t=REP_DE_MODULO[id]; if(!t)return '';
@@ -11252,16 +11257,11 @@ function balanceNeutralidad(){ return memo('bal14068',function(){
 /* Catálogo cerrado del M6.3: solo estas frases, con su respaldo y su mercado. */
 var CATALOGO_DECL=[
  {id:'inv',txt:'Inventario de GEI cuantificado conforme a la norma declarada, período [X]',resp:'Inventario completo y registros de los módulos 2 y 3',merc:'Ninguna conocida',req:['inventario']},
- {id:'invver',txt:'Inventario de GEI verificado por organismo acreditado, período [X]',resp:'Declaración de verificación vigente',merc:'Ninguna conocida',req:['verificacion']},
  {id:'hcp',txt:'Huella de carbono de producto por unidad funcional, verificada',resp:'Estudio de huella y declaración de verificación',merc:'Ninguna conocida',req:['producto','verificacion']},
  {id:'red',txt:'Reducción de [X] por ciento respecto del período [Y], verificada',resp:'Dos períodos comparables con el mismo método y límites',merc:'Ninguna conocida',req:['serie','verificacion']},
- {id:'remo',txt:'[X] t CO₂e removidas y reportadas por separado en la unidad productiva de origen',resp:'Módulo 5 con memoria de cálculo y declaración de exclusividad',merc:'Ninguna conocida',req:['remociones']},
- {id:'biochar',txt:'[X] t CO₂e almacenadas de forma duradera mediante biochar aplicado al suelo',resp:'Apartado M5.6 completo, con análisis por lote y balance de masa',merc:'Ninguna conocida',req:['biochar']},
  {id:'prac',txt:'Prácticas de reducción implementadas y verificadas en [n] unidades productivas',resp:'Módulo 4 con evidencia de implementación',merc:'Ninguna conocida',req:['practicas']},
  {id:'ingreso',txt:'[X] por ciento del ingreso llegó al nivel de finca y comunidad en el período [Y]',resp:'Capítulo 16: plan de reparto y comprobación de recepción',merc:'Ninguna conocida',req:['reparto']},
  {id:'cobenef',txt:'Co-beneficio [indicador] mejoró de [A] a [B] respecto de la línea base',resp:'Capítulo 16: indicador medido con línea base y relación causal',merc:'No expresable en t CO₂e',req:['ods']},
- {id:'neutprod',txt:'Producto con neutralidad de carbono verificada conforme a ISO 14068-1',resp:'Inventario verificado, jerarquía de mitigación y unidades retiradas',merc:'No admisible para producto comercializado en la Unión Europea',req:['verificacion','jerarquia','unidades','producto']},
- {id:'neutorg',txt:'Organización con neutralidad de carbono verificada, período [X]',resp:'Inventario verificado, jerarquía de mitigación y unidades retiradas',merc:'Restricciones crecientes; verificar el mercado antes de usar',req:['verificacion','jerarquia','unidades']}
 ];
 var MERCADOS=['Sin declarar','Unión Europea','Estados Unidos','Canadá','Japón','Corea del Sur','Centroamérica','Otro'];
 function mercadoDestino(){ return String(S.comp&&S.comp.mercado||'Sin declarar'); }
@@ -14330,7 +14330,7 @@ var BIBLIO_BASE=[
   titulo:'ISO 14068-1:2023 · Neutralidad de carbono',
   autores:'Organización Internacional de Normalización',editor:'ISO, Ginebra',
   ref:'ISO 14068-1:2023. Climate change management — Transition to net zero — Part 1: Carbon neutrality.',
-  ambito:'Preparación de la neutralidad',claves:['iso 14068'],
+  ambito:'Comunicación de la huella',claves:['iso 14068'],
   nota:'El programa no declara neutralidad: documenta lo que la norma exige. Correspondencia en el Anexo T.'},
  {id:'d-iso140643',cod:'NOR-14064-3',tipo:'norma',estado:'pendiente',anio:'2019',
   titulo:'ISO 14064-3:2019 · Verificación y validación',
@@ -16499,13 +16499,13 @@ function REQ_NORMAS(){
 }
 function normasDelInforme(){
  var d=normasDeclaradas(), o=[];
- o.push({id:'i14064',nom:'ISO 14064-1:2018',des:'Cuantificación e informe de las emisiones y remociones de la organización',aplica:true,
+ o.push({id:'i14064',nom:'ISO 14064-1:2018',des:'Cuantificación e informe de las emisiones y remociones de la organización',aplica:false,
   por:'Es la norma base del inventario: toda cifra del período se clasifica y se informa conforme a ella.'});
  o.push({id:'i14067',nom:'ISO 14067:2018',des:'Huella de carbono de producto, cuantificación y requisitos de informe',
-  aplica:(d.indexOf('i14067')>=0)||lotes().length>0,
+  aplica:true,
   por:(d.indexOf('i14067')>=0||lotes().length>0)?'La organización declara huella por unidad de producto y emite reportes por lote.':'La organización no declara huella por unidad de producto en este ciclo.'});
  o.push({id:'i140642',nom:'ISO 14064-2:2019',des:'Cuantificación, monitoreo e informe a nivel de proyecto, que es el nivel en el que se emite una unidad',
-  aplica:(d.indexOf('i140642')>=0)||esqActivo('credito')||unidadesV1().length>0,
+  aplica:false,
   por:((d.indexOf('i140642')>=0)||esqActivo('credito')||unidadesV1().length>0)
    ?'El proyecto cuantifica a nivel de proyecto para emitir unidades. La norma pone el método y el formato del informe; el protocolo pone los criterios de adicionalidad, que la propia norma deja a cada programa en su introducción, apartado 0.2.'
    :'La organización no cuantifica a nivel de proyecto en este ciclo: solo declara su inventario de organización.'});
@@ -17490,11 +17490,8 @@ function repGEI(){
 }
 
 var REPORTES=[
- ['gei','Informe de gases de efecto invernadero','El informe narrado de principio a fin: principios, límites, procedencia de cada factor, resultado por categoría, gases, remociones, incertidumbre, exclusiones y declaración de la organización'],
  ['ciclo','Reporte del ciclo','Todo el período de la organización, con balance, cobertura, mapa y objetivos'],
- ['categorias','Inventario por categoría','Las seis categorías de ISO 14064-1 con sus renglones capturados'],
  ['finca','Reporte por finca','Ficha, parcelas, existencias, insumos, podas y evidencia de una unidad productiva'],
- ['poda','Acta de intervención de sombra','Un registro de poda con su balance de destinos, en la forma del FOR-51'],
  ['evidencia','Reporte de evidencia','Todos los archivos con su fecha, su autor y su coordenada'],
  ['memoria','Memoria de cálculo','De dónde salió cada dato y por qué se aplicó cada factor, renglón por renglón'],
  ['productor','Constancia del productor','Lo que se midió en una finca, a nombre de su productor, con su consentimiento y su firma'],
@@ -17503,11 +17500,8 @@ var REPORTES=[
  ['mitigacion','Plan de mitigación','Las medidas que bajan el resultado, con responsable, plazo y toneladas'],
  ['diagnostico','Diagnóstico agronómico de la finca','Sombra, especies, reemplazo, nitrógeno y eficiencia de una finca, con recomendaciones'],
  ['muestreo','Plan de muestreo del verificador','Lo que toca revisar, sorteado con semilla registrada y reproducible'],
- ['fuentes','Inventario de fuentes y sumideros','El pronunciamiento de la organización sobre las veintitrés fuentes del catálogo del protocolo'],
  ['biblioteca','Biblioteca de fuentes','De qué documento sale cada factor, cada ecuación y cada parámetro, con el estado de cotejo de cada documento'],
  ['cfp-pres','Huella de carbono de producto por presentación, ISO 14067','Saco de yute y big bag puestos en puerto de destino (Estados Unidos y Europa): unidad declarada, límite, datos y su calidad, resultados, sensibilidad y revisión requisito por requisito'],
- ['normas','Informe de declaración por norma','Requisito por requisito de ISO 14064-1, ISO 14064-2, ISO 14067, ISO 14068-1 y las Directrices del IPCC, con lo que declara la organización y lo que falta'],
- ['informe14064','Informe del inventario, ISO 14064-1','Recorrido completo de la cláusula 9: consolidación, período, categorías, gases, año base, exclusiones y verificación'],
  ['auditoria','Informe de auditoría interna','Los criterios evaluados uno por uno, los hallazgos con su norma y su evidencia, y la empresa ciclo por ciclo'],
  ['entrega','Acta de contenido de la entrega','La relación de todo lo que viaja en el paquete del verificador, archivo por archivo, con su sello de integridad y el método con que se calculó'],
 ];
@@ -17517,8 +17511,8 @@ var REPORTES=[
 function normasVigentes(extra){
  var l=(extra||[]).slice();
  normasDelInforme().filter(function(x){return x.aplica;}).forEach(function(x){ l.push(x.nom); });
- l.push('ISO 14064-3:2019'); l.push('ISO 14065:2020'); l.push('ISO 14066:2023');
- if(unidadesV1().length||lotes().length)l.push('GHG Protocol Land Sector and Removals Standard');
+ l.unshift('ISO 14067:2018');
+ l.push('ISO 14064-3:2019 (verificación de la declaración)');
  var vis={}, o=[];
  l.forEach(function(n){ if(n&&!vis[n]){vis[n]=1;o.push(n);} });
  return o.join(' · ');
@@ -17588,8 +17582,7 @@ function pieRep(){
  var VV=versionesDeclaradas(), VF=verifFicha();
  var h=secc('Base normativa y condición del resultado','Cierre obligatorio del reporte');
  h+=tabla(['Concepto','Declarado'],[
-  ['Norma de cuantificación de la organización',VV.norma],
-  ['Norma de cuantificación del proyecto','ISO 14064-2:2019'],
+  ['Norma de cuantificación','ISO 14067:2018, huella de carbono de producto'],
   ['Norma de verificación','ISO 14064-3:2019, organismo acreditado conforme a ISO 14065:2020'],
   ['Protocolo aplicado',VV.protocolo],
   ['Catálogo de fuentes',VV.catalogo],
@@ -17801,7 +17794,7 @@ var COMP_ARRAIGO=[
  [/^7(\.|$)/,'Incertidumbre y muestreo del estrato'],
  [/^9(\.|$)/,'Plan de mitigación'],
  [/^20(\.|$)/,'Evidencia y trazabilidad de la medición'],
- [/^2[1-9](\.|$)/,'Preparación de la neutralidad'],
+ [/^2[1-9](\.|$)/,'Comunicación de la huella'],
  [/^3[0-2](\.|$)/,'Trazabilidad del producto'],
  [/^3[34](\.|$)/,'Lotes, contratos y huella de producto'],
  [/^35(\.|$)/,'Revisión previa antes de declarar'],
@@ -23709,6 +23702,42 @@ document.addEventListener('click',function(ev){
  if(b.dataset.cds==='verificar')cdsVerificar();
  else if(b.dataset.cds==='paquete')cdsPaquete();
 });
+
+
+/* ====== Actualizar a la versión publicada ======
+   La aplicación pregunta cada 10 minutos (y al volver a la pestaña) qué versión está publicada.
+   Si hay una nueva, lo avisa y el botón «Actualizar» la carga: borra la copia guardada para trabajar
+   sin señal y recarga. Los datos capturados viven en el equipo y en la base, y no se tocan. */
+var VER={actual:null,nueva:null};
+function verComprobar(){
+ if(!navigator.onLine)return;
+ try{ fetch('/api/version',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
+  if(!o||!o.v)return;
+  if(!VER.actual){ VER.actual=o.v; return; }
+  if(o.v!==VER.actual&&VER.nueva!==o.v){ VER.nueva=o.v; verAviso(); }
+ }).catch(function(){}); }catch(e){}
+}
+function verAviso(){
+ var b=$('btn-actualizar'), t=$('act-txt'); if(b)b.classList.add('hay'); if(t)t.textContent='Nueva versión: actualizar';
+ if(document.getElementById('aviso-version'))return;
+ var d=document.createElement('div'); d.id='aviso-version'; d.className='aviso-version'; d.setAttribute('role','status');
+ d.innerHTML='<span>Hay una versión nueva de ARRAIGO con mejoras.</span><button type="button" data-ver="act">Actualizar ahora</button><button type="button" class="x" data-ver="luego">Más tarde</button>';
+ document.body.appendChild(d);
+}
+async function actualizarApp(){
+ try{ guardarLocal(); }catch(e){}
+ msg('Actualizando ARRAIGO…');
+ try{ if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.map(function(k){return caches.delete(k);})); } }catch(e){}
+ try{ if(navigator.serviceWorker){ var rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(function(r){return r.update().catch(function(){});})); } }catch(e){}
+ location.reload();
+}
+document.addEventListener('click',function(ev){
+ var t=ev.target.closest&&ev.target.closest('#btn-actualizar,[data-ver]'); if(!t)return;
+ if(t.id==='btn-actualizar'||t.dataset.ver==='act'){ actualizarApp(); return; }
+ if(t.dataset.ver==='luego'){ var d=document.getElementById('aviso-version'); if(d)d.remove(); }
+});
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible')verComprobar(); });
+setTimeout(verComprobar,1500); setInterval(verComprobar,10*60*1000);
 
 function pintar(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
