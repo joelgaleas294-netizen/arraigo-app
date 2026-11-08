@@ -5202,7 +5202,7 @@ function adjuntosTodos(){
 
 async function adjuntarArchivo(ref,tipo,file){
  var c=contenedor(ref); if(!c){msg('No se encontró dónde guardar');return;}
- if(file.size>25*1024*1024){msg('El archivo pesa demasiado');return;}
+ if(file.size>MAX_ARCHIVO){msg('El archivo pesa más de 200 MB');return;}
  msg('Procesando…');
  var r;
  var _lado=(tipo==='documento')?2600:1600, _cal=(tipo==='documento')?0.86:0.72;
@@ -22026,7 +22026,7 @@ function analizarZip(Z,nombre){
   if(e.cifrado){ saltadas.push({ruta:n,por:'está protegido con contraseña'}); return; }
   if(e.metodo!==0&&e.metodo!==8){ saltadas.push({ruta:n,por:'usa una compresión que el navegador no abre: vuelva a comprimir en formato ZIP normal'}); return; }
   if(e.comp===4294967295||e.sinComp===4294967295){ saltadas.push({ruta:n,por:'el comprimido es de formato ZIP64: divídalo en partes más pequeñas'}); return; }
-  if(e.sinComp>25*1024*1024){ saltadas.push({ruta:n,por:'pesa '+pesoTxt(e.sinComp)+' y el límite por archivo es veinticinco megas'}); return; }
+  if(e.sinComp>MAX_ARCHIVO){ saltadas.push({ruta:n,por:'pesa '+pesoTxt(e.sinComp)+' y el límite por archivo es 200 MB'}); return; }
   var base=n.split('/').pop(), cl=claseArchivoZip(base);
   fs.push({e:e,ruta:n,base:base,bytes:e.sinComp,clase:cl.k,claseEt:cl.et,
    carpeta:carpetaDeRuta(n),fecha:fechaDeNombre(base),ref:refDeNombre(base),
@@ -23219,7 +23219,7 @@ async function capSubirVarios(files){
  var nuevos=[];
  for(var i=0;i<files.length;i++){
   var file=files[i];
-  if(file.size>20*1024*1024){ msg(file.name+' pesa más de 20 MB'); continue; }
+  if(file.size>MAX_ARCHIVO){ msg(file.name+' pesa más de 200 MB'); continue; }
   var s0=await selloDeBytes(new Uint8Array(await file.arrayBuffer()));
   if(capCola().some(function(x){return x.hash===s0.val;})){ msg(file.name+' ya está en la cola'); continue; }
   var P={id:uid('doc'),file:file,nombre:file.name||'documento',hash:s0.val,metHash:s0.met,cat:'org',fid:'',fincaLeida:'',
@@ -23408,7 +23408,7 @@ function vistaCaptura(){
  /* 1 · subir: uno o varios documentos; la aplicación decide a qué fuente y a qué finca va cada uno */
  h+='<div class="tarjeta cap-subir"><h3>1 · Subir facturas y registros</h3><div class="cuerpo">'+
   (ed?('<label class="cap-zona"><input type="file" multiple accept="image/*,application/pdf,.xlsx,.xls,.csv,.ods" data-cap-subir="1" hidden>'+
-    '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Elegir uno o varios documentos</b><small>Facturas, órdenes de entrega, recibos, bitácoras o registros · foto, PDF o Excel hasta 20 MB cada uno</small></label>'+
+    '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Elegir uno o varios documentos</b><small>Facturas, órdenes de entrega, recibos, bitácoras o registros · foto, PDF o Excel hasta 200 MB cada uno</small></label>'+
     '<p class="cap-lector">La aplicación lee cada documento y lo manda a su lugar: si es de la organización (diésel de los vehículos, electricidad de la planta, sacos) o de una finca (compost, fertilizante, combustible de la finca), y a qué fuente de emisión. '+
     (lector?'':'<b>La lectura automática no está disponible en esta copia</b>: los datos se anotan a mano. ')+'Nada se suma sin su confirmación.</p>'+
     '<div class="acciones cap-alt"><button type="button" data-cap="manual">Anotar sin archivo</button><span class="muted">solo si el documento no existe; queda marcado «sin respaldo»</span></div>')
@@ -24115,7 +24115,7 @@ async function clSubir(files){
  var ok=0, mal=[];
  for(var i=0;i<files.length;i++){
   var f=files[i];
-  if(f.size>25*1024*1024){ mal.push(f.name+' (más de 25 MB)'); continue; }
+  if(f.size>MAX_ARCHIVO){ mal.push(f.name+' (más de 200 MB)'); continue; }
   try{ var s=await selloDeBytes(new Uint8Array(await f.arrayBuffer()));
    var id=await capGuardarOriginal('cdoc:'+g+'-'+c,f,s.val,s.met); if(id)ok++; else mal.push(f.name); }
   catch(e){ mal.push(f.name); }
@@ -24154,7 +24154,7 @@ function tarjetaCarpetasLibres(){
  var tot=function(g){ return CL_GRUPOS[g].c.reduce(function(s,c){return s+clArchivos(g,c[0]).length;},0); };
  var h='<div class="tarjeta cfe"><h3>Carpetas de documentos</h3><div class="cuerpo">'+
   (tot('da')?'<div class="cl-tabs">'+['fe','da'].map(function(g){ return '<button type="button" data-cl="grupo" data-g="'+g+'" aria-pressed="'+(CL.grupo===g)+'">'+esc(CL_GRUPOS[g].t)+' <small>'+tot(g)+'</small></button>'; }).join('')+'</div>':'')+
-  '<p>'+esc(G.d)+' Abra una carpeta y suba los archivos (PDF, Excel, Word o fotos, hasta 25 MB cada uno).'+(CL.grupo==='fe'?' Las facturas y registros de actividad no van aquí: se suben en «Subir facturas y registros», que los lee y los suma a su fuente.':'')+'</p>'+
+  '<p>'+esc(G.d)+' Abra una carpeta y suba los archivos (PDF, Excel, Word o fotos, hasta 200 MB cada uno).'+(CL.grupo==='fe'?' Las facturas y registros de actividad no van aquí: se suben en «Subir facturas y registros», que los lee y los suma a su fuente.':'')+'</p>'+
   '<div class="cfe-rejilla">';
  G.c.forEach(function(c){
   var n=clArchivos(CL.grupo,c[0]).length, ab=CL.abierta===c[0];
@@ -24192,6 +24192,10 @@ document.addEventListener('click',function(ev){
 });
 document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.clSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)clSubir(fs); } });
 
+/* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
+   (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
+var MAX_ARCHIVO=200*1024*1024;
+try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persisted().then(function(p){ if(!p)navigator.storage.persist(); }); }catch(e){}
 function pintar(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
     siguiente, de modo que no puede quedar desfasada respecto del estado */
