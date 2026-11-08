@@ -1741,10 +1741,14 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola button .cds-est{grid-row:1/span 2;grid-column:2;align-self:center}
 .cap-cola button.sel{border:2px solid #1e6b47;background:#e8f3ec}
 .cap-cola li{display:flex;gap:6px;align-items:stretch}
+.cap-marca{display:flex;align-items:center;padding:0 4px}.cap-marca input{width:20px;height:20px}
+.cap-cola-acc button.cap-conf-sel{border-color:#1e6b47;color:#1e6b47}
 .cap-cola li>button[data-cap="cola-sel"]{flex:1;min-width:0}
 .cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
 .cap-cola li>button.cap-quitar{width:auto;display:flex;align-items:center;padding:0 12px;color:#9b2c2c;font-weight:600;white-space:nowrap}
 .cl-sub{margin:12px 0 6px}
+.cl-selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:8px 12px;border:1px dashed var(--line);border-radius:8px;font-size:14px}
+.cl-selbar span{flex:1}
 .hcp-pry{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 14px}
 .hcp-indice{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .hcp-indice span{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2,#566)}
@@ -5319,7 +5323,7 @@ function adjuntosHTML(ref,titulo,tipos,nota){
    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h3.2L9 6h6l1.8 2.5H20v10H4Z"/><circle cx="12" cy="13" r="3.2"/></svg>'+
    esc(t[1])+'</label>';
  });
- h+='<label class="adj-boton secundario"><input type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" data-adj="'+esc(ref)+'" data-tipo="documento" hidden>'+
+ h+='<label class="adj-boton secundario"><input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" data-adj="'+esc(ref)+'" data-tipo="documento" hidden>'+
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5H7a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5Z"/><path d="M13.5 3.5v5h5"/></svg>Adjuntar archivo</label>';
  h+='</div>';
  if(lista.length){
@@ -12941,7 +12945,7 @@ function fichaArcDoc(d){
  }
  if(puedeEditar()){
   h+='<div class="acciones">'+
-   '<label class="adj-boton"><input type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" data-adj="arcdoc:'+esc(d.id)+'" data-tipo="documento" hidden>Adjuntar archivo</label>'+
+   '<label class="adj-boton"><input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" data-adj="arcdoc:'+esc(d.id)+'" data-tipo="documento" hidden>Adjuntar archivo</label>'+
    (adj.length&&lecDisponible()
      ? ' <button type="button" class="primario" data-accion="arc-leer" data-id="'+esc(d.id)+'"'+(LEC.trabajando[d.id]?' disabled':'')+'>'+(LEC.trabajando[d.id]?'Leyendo…':(d.lectura?'Leer de nuevo':'Leer el documento'))+'</button>'
      : '')+
@@ -23370,6 +23374,7 @@ function capDuplicado(hash,proveedor,numero,pagina){
 function capCola(){ return CAP.cola||(CAP.cola=[]); }
 /* Quitar de la lista de pendientes: no registra nada, libera las vistas previas y detiene la lectura de lo que faltaba */
 function capQuitarDeCola(lista){
+ CAP.marcados={};
  lista.forEach(function(Q){ Q.quitado=true; ['url','urlGrande','urlOrig'].forEach(function(k){ if(Q[k])try{URL.revokeObjectURL(Q[k]);}catch(e){} }); });
  CAP.cola=capCola().filter(function(x){ return lista.indexOf(x)<0; });
  var hs={}; lista.forEach(function(Q){ if(Q.hash)hs[Q.hash]=1; });
@@ -23606,14 +23611,16 @@ function vistaCaptura(){
   var archivos={}; COLA.forEach(function(Q){ if(Q.hash){ var A=archivos[Q.hash]=archivos[Q.hash]||{n:0,nombre:(Q.file&&Q.file.name)||Q.nombre}; A.n++; } });
   var acc=ed?('<div class="cap-cola-acc">'+Object.keys(archivos).filter(function(k){return archivos[k].n>1;}).map(function(k){
     return '<button type="button" data-cap="quitar-archivo" data-hash="'+esc(k)+'">🗑 Quitar «'+esc(archivos[k].nombre)+'» completo ('+archivos[k].n+' páginas)</button>'; }).join('')+
-    '<button type="button" data-cap="vaciar">🗑 Vaciar la lista</button></div>'):'';
+    '<button type="button" data-cap="vaciar">🗑 Vaciar la lista</button>'+
+    (Object.keys(CAP.marcados||{}).length?'<button type="button" data-cap="quitar-sel">🗑 Quitar seleccionados ('+Object.keys(CAP.marcados).length+')</button><button type="button" class="cap-conf-sel" data-cap="confirmar-sel">✓ Confirmar seleccionados</button>':'<span class="muted" style="align-self:center">Marque varios documentos para quitarlos o confirmarlos juntos.</span>')+'</div>'):'';
   h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo">'+acc+'<ul class="cap-cola">'+
    COLA.map(function(Q){
+    var marcaQ=ed?'<label class="cap-marca"><input type="checkbox" data-cap-marca="'+esc(Q.id)+'"'+(CAP.marcados&&CAP.marcados[Q.id]?' checked':'')+' aria-label="Seleccionar"></label>':'';
     var pr=Q.estado==='revisar'?capProblemas(Q):[], fz=S.fincas.filter(function(x){return x.id===Q.fid;})[0];
     var dest=Q.estado==='leyendo'?'leyendo…':(Q.cat==='org'?'Organización':(fz?('Finca '+(fz.codigo||'')):'Finca sin elegir'));
     var est=Q.estado==='leyendo'?'<span class="cds-est cds-parcial">Leyendo</span>':pr.length?'<span class="cds-est cds-sin">Revisar</span>':'<span class="cds-est cds-conciliado">Listo</span>';
     var n=Q.datos.items.filter(function(x){return x.incluir&&x.linea;}).length;
-    return '<li><button type="button" class="'+(Q===P?'sel':'')+'" data-cap="cola-sel" data-id="'+esc(Q.id)+'"><span class="cap-cola-n">'+esc(Q.nombre)+'</span>'+
+    return '<li>'+marcaQ+'<button type="button" class="'+(Q===P?'sel':'')+'" data-cap="cola-sel" data-id="'+esc(Q.id)+'"><span class="cap-cola-n">'+esc(Q.nombre)+'</span>'+
      '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+est+'</button>'+
      (Q.file&&!capEsHoja(Q.file)&&!capEsWord(Q.file)?'<button type="button" class="cap-ver" data-cap="ver" data-id="'+esc(Q.id)+'" title="Ver la hoja en grande">👁 Ver hoja</button>':'')+
      (ed?'<button type="button" class="cap-quitar" data-cap="quitar" data-id="'+esc(Q.id)+'" title="Quitar de la lista sin registrar">🗑 Quitar</button>':'')+'</li>';
@@ -23733,6 +23740,7 @@ function capItem(i){ return CAP.pend&&CAP.pend.datos.items[i]; }
 document.addEventListener('change',function(ev){
  var t=ev.target; if(!t||!t.dataset)return;
  if(t.dataset.capSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)capSubirVarios(fs); return; }
+ if(t.dataset.capMarca){ CAP.marcados=CAP.marcados||{}; if(t.checked)CAP.marcados[t.dataset.capMarca]=1; else delete CAP.marcados[t.dataset.capMarca]; pintar(); return; }
  if(t.dataset.capAmb&&CAP.pend){ capCambiarAmbito(CAP.pend,t.value); pintar(); return; }
  if(t.dataset.capCat){ CAP.cat=t.value; if(t.value==='org')CAP.fid=''; pintar(); return; }
  if(t.dataset.capFid){ CAP.fid=t.value; pintar(); return; }
@@ -23763,8 +23771,11 @@ document.addEventListener('click',function(ev){
  else if(a==='descartar'){ if(CAP.pend)capQuitarDeCola([CAP.pend]); }
  else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
  else if(a==='ver'){ ev.preventDefault(); capVerHoja(capCola().filter(function(x){return x.id===b.dataset.id;})[0]); }
- else if(a==='quitar'||a==='quitar-archivo'||a==='vaciar'){
-  var sel=capCola().filter(function(x){ return a==='vaciar'||(a==='quitar'?x.id===b.dataset.id:x.hash===b.dataset.hash); });
+ else if(a==='confirmar-sel'){ (async function(){ var L=capCola().filter(function(x){return CAP.marcados&&CAP.marcados[x.id]&&x.estado==='revisar';}), n=0, mal=0;
+   for(var i=0;i<L.length;i++){ if(await capConfirmar(L[i],true))n++; else mal++; } CAP.marcados={}; pintar();
+   msg(n+' documento'+(n===1?'':'s')+' registrado'+(n===1?'':'s')+(mal?(' · '+mal+' con datos por completar'):'')); })(); }
+ else if(a==='quitar'||a==='quitar-archivo'||a==='vaciar'||a==='quitar-sel'){
+  var sel=capCola().filter(function(x){ return a==='vaciar'||(a==='quitar-sel'?(CAP.marcados&&CAP.marcados[x.id]):a==='quitar'?x.id===b.dataset.id:x.hash===b.dataset.hash); });
   if(!sel.length)return;
   var hecho=function(){ capQuitarDeCola(sel); };
   if(sel.length===1)hecho();
@@ -24337,6 +24348,27 @@ function clCapturados(c){
 }
 /* Eliminar un documento de una vez: sale de las carpetas, de las fuentes y del inventario.
    La bitácora conserva qué se eliminó, cuánto aportaba, quién y por qué. */
+function docEliminarVarios(lista){
+ lista=(lista||[]).filter(Boolean); if(!lista.length)return;
+ if(lista.length===1)return docEliminar(lista[0]);
+ var todos=adjuntosTodos(), sellos={}, ids={};
+ lista.forEach(function(id){ var x=todos.filter(function(y){return y.a.id===id;})[0]; if(!x)return; ids[id]=1; if(x.a.sello)sellos[x.a.sello]=1; });
+ var ads=todos.filter(function(x){ return ids[x.a.id]||(x.a.sello&&sellos[x.a.sello]); }), idl=ads.map(function(x){return x.a.id;});
+ var regs=registros().filter(function(r){ return idl.indexOf(r.adjuntoId)>=0||(r.hash&&sellos[r.hash]); }), vig=regs.filter(function(r){return r.estado!=='anulado';});
+ pedir({titulo:'Eliminar '+lista.length+' documentos',peligro:true,ok:'Eliminar '+lista.length,motivo:'Motivo (queda en la bitácora)',
+  texto:['Se eliminan '+lista.length+' documentos de las carpetas y de las fuentes donde estaban.',
+   vig.length?('Se quitan del inventario '+vig.length+' renglones y los datos de actividad se recalculan sin ellos.'):'No tienen renglones registrados en el inventario.','No se puede deshacer.']}).then(function(m){
+  if(!m)return; var refs={};
+  ads.forEach(function(x){ var c=contenedor(x.ref); if(c){ c.obj.adjuntos=(c.obj.adjuntos||[]).filter(function(a){return idl.indexOf(a.id)<0;}); marcar(c.ruta); } if(x.ref.indexOf('linea:')===0)refs[x.ref]=1; });
+  regs.forEach(function(r){ var l=capLinea(r.cat,r.linea); if(l)refs[refLinea(l,r.cat,r.fid||null)]=1; });
+  S.registros=registros().filter(function(r){return regs.indexOf(r)<0;});
+  idl.forEach(function(id){ try{archivoBorrar(id);}catch(e){} });
+  CAP.cola=capCola().filter(function(q){return !sellos[q.hash];});
+  Object.keys(refs).forEach(capRecalcular);
+  anotar('dato','Documentos eliminados · '+lista.length,ads.map(function(x){return x.a.nombre;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join('; ').slice(0,300),'0','motivo: '+m);
+  CL.marcados={}; marcar('captura/registros'); guardarLocal(); pintar(); msg(lista.length+' documentos eliminados');
+ });
+}
 function docEliminar(idAdj){
  var todos=adjuntosTodos(), x0=todos.filter(function(x){return x.a.id===idAdj;})[0]; if(!x0)return;
  var sello=x0.a.sello||'';
@@ -24428,20 +24460,23 @@ function tarjetaCarpetasLibres(){
   if(c){
    h+='<div class="cfe-det"><div class="cfe-det-cab"><b>'+c[2]+' '+esc(c[1])+' · '+esc(G.t)+'</b><span>'+
     (ed?'<label class="adj-boton primario"><input type="file" multiple data-cl-subir="1" hidden>Subir documentos</label> ':'')+
-    (L.length?'<button type="button" data-cl="bajar" data-c="'+c[0]+'">Descargar esta carpeta</button>':'')+'</span></div>';
+    (L.length||K.length?'<button type="button" data-cl="bajar" data-c="'+c[0]+'">Descargar esta carpeta</button>':'')+'</span></div>';
+   var nm=Object.keys(CL.marcados||{}).length;
+   if(ed&&(L.length||K.length))h+='<div class="cl-selbar"><span>'+(nm?(nm+' seleccionado'+(nm===1?'':'s')):'Marque las casillas para trabajar con varios documentos a la vez')+'</span>'+
+    (nm?'<button type="button" class="peligro" data-cl="eliminar-sel">Eliminar seleccionados</button><button type="button" data-cl="limpiar-sel">Quitar selección</button>':'')+'</div>';
    if(K.length){
     var sumas={}; K.forEach(function(x){ x.regs.forEach(function(r){ var k=r.lineaNom+'|'+r.unidadLinea+'|'+x.amb; sumas[k]=(sumas[k]||0)+r.cantidadLinea; }); });
     h+='<p class="cl-sub"><b>Facturas y registros confirmados</b> · vinculados a su dato de actividad: '+Object.keys(sumas).map(function(k){ var p=k.split('|'); return '<b>'+fmt(sumas[k],2)+' '+esc(p[1])+'</b> en '+esc(p[0])+' ('+esc(p[2])+')'; }).join('; ')+'</p>'+
-     '<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Fecha</th><th>Documento</th><th>Dato de actividad</th><th>Sello</th><th></th></tr></thead><tbody>'+
-     K.map(function(x){ return '<tr><td>'+esc(x.fecha)+'</td><td>'+(x.numero?('Factura '+esc(x.numero)):esc(x.a.nombre))+'<div class="muted">'+esc(x.proveedor||x.a.nombre)+'</div></td>'+
+     '<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr>'+(ed?'<th><input type="checkbox" data-cl-todos="k" aria-label="Seleccionar todos"></th>':'')+'<th>Fecha</th><th>Documento</th><th>Dato de actividad</th><th>Sello</th><th></th></tr></thead><tbody>'+
+     K.map(function(x){ return '<tr>'+(ed?'<td><input type="checkbox" data-cl-marca="'+esc(x.a.id)+'"'+(CL.marcados&&CL.marcados[x.a.id]?' checked':'')+' aria-label="Seleccionar"></td>':'')+'<td>'+esc(x.fecha)+'</td><td>'+(x.numero?('Factura '+esc(x.numero)):esc(x.a.nombre))+'<div class="muted">'+esc(x.proveedor||x.a.nombre)+'</div></td>'+
       '<td>'+(x.regs.length?x.regs.map(function(r){return fmt(r.cantidadLinea,2)+' '+esc(r.unidadLinea)+(r.pagina?(' · pág. '+r.pagina):'');}).join('<br>'):'<span class="muted">sin renglón vigente</span>')+'<div class="muted">'+esc(x.l.et)+' · '+esc(x.amb)+'</div></td>'+
       '<td>'+(x.a.sello?'<code title="'+esc(x.a.selloMet+' '+x.a.sello)+'">'+esc(x.a.sello.slice(0,10))+'</code>':'—')+'</td>'+
       '<td style="white-space:nowrap"><button type="button" class="mini" data-cl="verc" data-id="'+esc(x.a.id)+'">Ver</button>'+(ed?' <button type="button" class="mini peligro" data-cl="eliminar" data-id="'+esc(x.a.id)+'">Eliminar</button>':'')+'</td></tr>'; }).join('')+
      '</tbody></table></div>';
     if(L.length)h+='<p class="cl-sub"><b>Otros documentos de la carpeta</b></p>';
    }
-   h+=L.length?('<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Documento</th><th>Cargado</th><th>Sello</th><th></th></tr></thead><tbody>'+
-     L.slice().reverse().map(function(a){ return '<tr><td>'+esc(a.nombre)+'<div class="muted">'+kb(a.bytes||0)+'</div></td><td>'+esc(String(a.fecha||'').slice(0,10))+'<div class="muted">'+esc(a.tecnico||'')+'</div></td>'+
+   h+=L.length?('<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr>'+(ed?'<th><input type="checkbox" data-cl-todos="l" aria-label="Seleccionar todos"></th>':'')+'<th>Documento</th><th>Cargado</th><th>Sello</th><th></th></tr></thead><tbody>'+
+     L.slice().reverse().map(function(a){ return '<tr>'+(ed?'<td><input type="checkbox" data-cl-marca="'+esc(a.id)+'" data-libre="1"'+(CL.marcados&&CL.marcados[a.id]?' checked':'')+' aria-label="Seleccionar"></td>':'')+'<td>'+esc(a.nombre)+'<div class="muted">'+kb(a.bytes||0)+'</div></td><td>'+esc(String(a.fecha||'').slice(0,10))+'<div class="muted">'+esc(a.tecnico||'')+'</div></td>'+
       '<td>'+(a.sello?'<code title="'+esc(a.selloMet+' '+a.sello)+'">'+esc(a.sello.slice(0,10))+'</code>':'—')+'</td>'+
       '<td style="white-space:nowrap"><button type="button" class="mini" data-cl="ver" data-id="'+esc(a.id)+'">Ver</button>'+(ed?' <button type="button" class="mini" data-cl="quitar" data-id="'+esc(a.id)+'">Quitar</button>':'')+'</td></tr>'; }).join('')+
      '</tbody></table></div>'):(K.length?'':'<div class="vacio">Carpeta vacía. Las facturas que confirme en «Subir facturas y registros» aparecen aquí solas; también puede subir documentos directamente.</div>');
@@ -24453,16 +24488,33 @@ function tarjetaCarpetasLibres(){
 document.addEventListener('click',function(ev){
  var b=ev.target.closest&&ev.target.closest('[data-cl]'); if(!b)return;
  var a=b.dataset.cl;
- if(a==='grupo'){ CL.grupo=b.dataset.g; CL.abierta=''; pintar(); }
- else if(a==='abrir'){ CL.abierta=(CL.abierta===b.dataset.c)?'':b.dataset.c; pintar(); }
+ if(a==='grupo'){ CL.grupo=b.dataset.g; CL.abierta=''; CL.marcados={}; pintar(); }
+ else if(a==='abrir'){ CL.abierta=(CL.abierta===b.dataset.c)?'':b.dataset.c; CL.marcados={}; pintar(); }
  else if(a==='todo')clDescargar('');
  else if(a==='bajar')clDescargar(b.dataset.c);
  else if(a==='quitar')clQuitar(b.dataset.id);
  else if(a==='eliminar')docEliminar(b.dataset.id);
+ else if(a==='limpiar-sel'){ CL.marcados={}; pintar(); }
+ else if(a==='eliminar-sel'){
+  var M=Object.keys(CL.marcados||{}), libres=M.filter(function(id){return CL.marcados[id]==='libre';}), capt=M.filter(function(id){return CL.marcados[id]!=='libre';});
+  if(libres.length&&!capt.length){
+   pedir({titulo:'Quitar '+libres.length+' documentos',peligro:true,ok:'Quitar',texto:['Se quitan de esta carpeta los documentos seleccionados.']}).then(function(si){
+    if(!si)return; var r=clReg(CL.grupo+'-'+CL.abierta); if(r)r.adjuntos=(r.adjuntos||[]).filter(function(a){return libres.indexOf(a.id)<0;});
+    libres.forEach(function(id){ try{archivoBorrar(id);}catch(e){} }); anotar('dato','Carpeta de documentos · quitados',libres.length+' documentos','',CL_GRUPOS[CL.grupo].t);
+    CL.marcados={}; marcar('gestion/archivo'); guardarLocal(); pintar(); });
+  } else {
+   if(libres.length){ var r2=clReg(CL.grupo+'-'+CL.abierta); if(r2){ r2.adjuntos=(r2.adjuntos||[]).filter(function(a){return libres.indexOf(a.id)<0;}); libres.forEach(function(id){ try{archivoBorrar(id);}catch(e){} }); } }
+   docEliminarVarios(capt);
+  }
+ }
  else if(a==='verc'){ var mc=adjuntosTodos().filter(function(x){return x.a.id===b.dataset.id;})[0];
   if(mc)fuenteAdjunto(mc.a).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); }); }
  else if(a==='ver'){ var m=clArchivos(CL.grupo,CL.abierta).filter(function(x){return x.id===b.dataset.id;})[0];
   if(m)fuenteAdjunto(m).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); }); }
+});
+document.addEventListener('change',function(ev){ var t=ev.target; if(!t||!t.dataset)return;
+ if(t.dataset.clMarca){ CL.marcados=CL.marcados||{}; if(t.checked)CL.marcados[t.dataset.clMarca]=t.dataset.libre?'libre':'cap'; else delete CL.marcados[t.dataset.clMarca]; pintar(); return; }
+ if(t.dataset.clTodos){ var tb=t.closest('table'); CL.marcados=CL.marcados||{}; [].forEach.call(tb.querySelectorAll('[data-cl-marca]'),function(c){ if(t.checked)CL.marcados[c.dataset.clMarca]=c.dataset.libre?'libre':'cap'; else delete CL.marcados[c.dataset.clMarca]; }); pintar(); return; }
 });
 document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.clSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)clSubir(fs); } });
 
@@ -25555,8 +25607,8 @@ document.addEventListener('change',function(ev){
   return;
  }
  if(t.dataset.adj){
-  var f=t.files&&t.files[0];
-  if(f)adjuntarArchivo(t.dataset.adj,t.dataset.tipo,f);
+  var fs=[].slice.call(t.files||[]), ref_=t.dataset.adj, tipo_=t.dataset.tipo;
+  (async function(){ for(var i=0;i<fs.length;i++)await adjuntarArchivo(ref_,tipo_,fs[i]); if(fs.length>1)msg(fs.length+' archivos adjuntados'); })();
   t.value='';
   return;
  }
