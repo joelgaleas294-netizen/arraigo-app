@@ -1632,6 +1632,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--mod,var(--acento));
 .cap-tabla tr.cap-anulado td:last-child{text-decoration:none}
 .falta{color:var(--grave)}
 @media (max-width:720px){.cap-pasos{grid-template-columns:1fr 1fr}.cap-rev-g{grid-template-columns:1fr}.cap-mini{width:100%;height:180px}}
+
+/* ====== MOD-CDS · centro de datos de sustentos ====== */
+.cds-grupo summary{grid-template-columns:1fr auto}.cds-res{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.cds-grupo .tabla-caja{margin:0 var(--e-5) var(--e-4)}.cds-tabla .cds-barra{margin-top:4px}
+table.hoja.cds-tabla td{white-space:normal;font-size:var(--t-2)} table.hoja.cds-tabla td.n,table.hoja.cds-tabla td:first-child{white-space:nowrap}
+.cds-grupo .cds-tabla td:last-child{white-space:nowrap}
+.cds-tabla td small{font-size:var(--t-0);color:var(--ink-3)}
+.cds-barra{height:6px;width:80px;background:var(--surface-3);border-radius:3px;overflow:hidden}.cds-barra span{display:block;height:6px;background:var(--mod,var(--acento))}
+.cds-est{font-size:var(--t-1);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.cds-conciliado{background:color-mix(in srgb,var(--acento) 14%,transparent);color:var(--acento)}
+.cds-parcial{background:color-mix(in srgb,var(--aviso) 16%,transparent);color:var(--aviso)}
+.cds-sin{background:color-mix(in srgb,var(--grave) 14%,transparent);color:var(--grave)}
+.cds-ok{color:var(--acento)} .cds-local{color:var(--aviso)}
+.cds-filtros{display:flex;gap:var(--e-4);flex-wrap:wrap;margin-bottom:var(--e-5)}.cds-filtros input{flex:1 1 260px}
+.cds-acc{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--e-6)}.cds-acc>div{border:1px solid var(--line);border-radius:var(--r-1);padding:var(--e-5);background:var(--surface-2)}
+.cds-acc p{font-size:var(--t-2);color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -1709,6 +1724,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--mod,var(--acento));
    <section id="v-lfe" hidden></section>
    <section id="v-pod" hidden></section>
    <section id="v-cap" hidden></section>
+   <section id="v-cds" hidden></section>
    <section id="v-ins" hidden></section>
    <section id="v-ben" hidden></section>
    <section id="v-cal" hidden></section>
@@ -5257,6 +5273,7 @@ function odsDeclarables(){
 
 /* ====== módulos ====== */
 var ICO={
+ cds:'<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/>',
  cap:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M12.5 17v-6"/><path d="M10 13.5l2.5-2.5 2.5 2.5"/>',
  bos:'<path d="M12 21v-5"/><path d="M12 16 6.5 12.5h3L5 8.5h3L12 4l4 4.5h3l-4.5 4h3z"/><path d="M8 21h8"/>',
  aju:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 .97-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47.97H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47.97z"/>',
@@ -5314,6 +5331,8 @@ var MODULOS=[
   des:'Las veintitrés fuentes de emisión que el protocolo obliga a buscar. De cada una hay que decir si ocurre y se cuantifica, si no existe en esta operación, o si se excluye y por qué. Una fuente sin pronunciamiento es un olvido, y el verificador no puede distinguirla de un cero medido.'},
  {id:'cap',scol:'s3',codigo:'MOD-CAP',nom:'Subir facturas y calcular',col:'m3',etapa:'campo',paso:5,
   des:'El camino corto: se sube la factura, la aplicación la lee, se confirma y se ve el cálculo paso a paso, con su respaldo y su sello.'},
+ {id:'cds',scol:'s3',codigo:'MOD-CDS',nom:'Centro de datos de sustentos',col:'m3',etapa:'campo',paso:5,
+  des:'Facturas, registros y archivos que sostienen cada emisión: conciliados con lo declarado, con sello de integridad y listos para el verificador.'},
  {id:'fincas',scol:'s2',codigo:'MOD-FIN',nom:'Fincas y productores',col:'m2',etapa:'campo',paso:5,
   des:'El catálogo de unidades productivas. Todo lo demás se cuelga de aquí.'},
  {id:'pod',scol:'s4',codigo:'MOD-POD',nom:'Emisiones por poda de sombra',col:'m4',etapa:'campo',paso:7,
@@ -5386,6 +5405,7 @@ function datoModulo(m){
  if(m.id==='cfg')return [S.perfil.ciclo||'sin ciclo','ciclo declarado', !!S.perfil.organizacion];
  if(m.id==='lfe'){var LL=libFac(), ap=LL.filter(function(x){return x.estado==='aprobada';}).length, rv=LL.filter(function(x){return x.estado==='revision';}).length;
   return [String(ap),'aprobadas'+(rv?' · '+rv+' en revisión':''), ap>0];}
+ if(m.id==='cds'){var cc=cdsConciliacion(), ok=cc.filter(function(c){return c.est==='conciliado';}).length; return [ok+' de '+cc.length,'fuentes conciliadas', cc.length>0&&ok===cc.length];}
  if(m.id==='cap'){var rv=(S.registros||[]).filter(function(x){return x.estado!=='anulado';}).length; return [String(rv),(rv===1?'factura registrada':'facturas registradas'), rv>0];}
  if(m.id==='fincas')return [String(S.fincas.length),(S.fincas.length===1?'unidad productiva':'unidades productivas'), S.fincas.length>0];
  if(m.id==='bib'){var Cb=coberturaBiblio();
@@ -5479,7 +5499,7 @@ var ICO_INICIO='<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x
    componente tiene su menú y sus cifras.                                    */
 var COMPONENTES=[['H','Huella y neutralidad','Inventario, huella de producto, neutralidad e insetting'],
  ['R','Remociones y créditos','Estrato de sombra, bosque, parcelas y unidades de carbono']];
-var COMP_MOD={cap:'H',pai:'H',lfe:'H',tal:'H',pod:'H',ins:'H',ben:'H',res:'H',ctr:'H',lot:'H',mit:'H',vcu:'H',neu:'H',
+var COMP_MOD={cap:'H',cds:'H',pai:'H',lfe:'H',tal:'H',pod:'H',ins:'H',ben:'H',res:'H',ctr:'H',lot:'H',mit:'H',vcu:'H',neu:'H',
  lae:'R',mue:'R',bos:'R',ppm:'R',est:'R',niv:'R'};
 function compDisponible(c){ return MODULOS.some(function(m){return COMP_MOD[m.id]===c&&moduloEnAlcance(m.id);}); }
 function compEfectivo(){
@@ -6797,7 +6817,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['portada','cap','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 function ir(v){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
  if(VISTAS.indexOf(v)<0)v='portada';
@@ -23159,9 +23179,7 @@ async function capConfirmar(){
  for(var i=0;i<inc.length;i++){
   var it=inc[i], l=capLinea(P.cat,it.linea), ref=refLinea(l,P.cat,P.fid);
   if(P.file&&!adj[ref]){
-   await adjuntarArchivo(ref,'documento',P.file);
-   var c=contenedor(ref), lista=(c&&c.obj.adjuntos)||[];
-   adj[ref]=lista.length?lista[lista.length-1].id:'';
+   adj[ref]=await capGuardarOriginal(ref,P.file,P.hash,P.metHash);
   }
   var cv=capConvItem(it,l);
   var reg={id:uid('reg'),fecha:d.fecha,numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
@@ -23422,6 +23440,215 @@ document.addEventListener('click',function(ev){
  }
 });
 
+/* La factura se guarda tal cual llegó (sin recomprimir), para que su sello
+   SHA-256 siga siendo el del documento original y se pueda comprobar después. */
+async function capGuardarOriginal(ref,file,sello,met){
+ var c=contenedor(ref); if(!c)return '';
+ var id='ev-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
+ var meta={id:id,tipo:'documento',nombre:file.name||'factura',mime:file.type||'application/octet-stream',bytes:file.size,
+  ancho:0,alto:0,fecha:new Date().toISOString(),tecnico:tecnico(),lat:null,lon:null,acc:null,assetId:null,
+  sello:sello||'',selloMet:met||'',selladoEn:new Date().toISOString(),selloOrigen:'al subir',original:true};
+ try{ await archivoGuardar({id:id,blob:file,ref:ref}); }catch(e){ msg('Este navegador no permite guardar archivos'); return ''; }
+ c.obj.adjuntos=c.obj.adjuntos||[]; c.obj.adjuntos.push(meta); marcar(c.ruta);
+ subirPendientes(true);
+ return id;
+}
+/* ==========================================================================
+   MOD-CDS · Centro de datos de sustentos
+   Un solo lugar para las facturas, registros y archivos que sostienen cada
+   emisión. Concilia lo declarado con lo respaldado, verifica que ningún
+   archivo haya cambiado desde que se guardó (sello SHA-256), dice dónde está
+   cada archivo (solo en este equipo o también en la base central) y arma el
+   paquete de sustentos para el verificador.
+   Reglas: un dato sin evidencia recuperable no se cuantifica (3.3); un
+   sustento no se borra, el registro que lo usa se anula con su motivo.
+   ========================================================================== */
+var CDS={q:'',amb:'',est:'',verif:null,verificando:false};
+function cdsAmbNom(cat,fid){ if(cat==='org')return 'Organización'; var f=S.fincas.filter(function(x){return x.id===fid;})[0]; return (f&&f.codigo)||'Finca'; }
+/* Conciliación por fuente: lo declarado frente a lo que respaldan las facturas */
+function cdsConciliacion(){
+ return LINEAS_TODAS().map(function(x){
+  var q=cantidad(x.l,x.cat,x.fid); if(!(q>0))return null;
+  var ref=refLinea(x.l,x.cat,x.fid), fact=capSumaRef(ref), adj=adjuntosDe(ref).length;
+  var regs=registros().filter(function(r){return r.estado!=='anulado'&&r.linea===x.l.id&&r.cat===x.cat&&String(r.fid||'')===String(x.fid||'');});
+  var sinArch=regs.filter(function(r){return !r.adjuntoId;}).length;
+  var cubre=Math.min(1,fact/q), est;
+  if(fact>=q*0.999&&!sinArch)est='conciliado';
+  else if(fact>0||adj>0)est='parcial';
+  else est='sin';
+  return {l:x.l,cat:x.cat,fid:x.fid,ref:ref,q:q,fact:fact,dif:Math.max(0,q-fact),cubre:cubre,adj:adj,regs:regs.length,sinArch:sinArch,est:est,
+   t:tco2Linea(x.l,x.cat,x.fid),amb:cdsAmbNom(x.cat,x.fid)};
+ }).filter(Boolean);
+}
+/* Todos los archivos que cuelgan de una fuente de emisión, con los registros que los usan */
+function cdsSustentos(){
+ return adjuntosTodos().filter(function(x){return x.ref.indexOf('linea:')===0;}).map(function(x){
+  var p=partesRef(x.ref), regs=registros().filter(function(r){return r.adjuntoId===x.a.id;});
+  var r0=regs[0]||null;
+  return {a:x.a,ref:x.ref,cat:p?p.cat:'',fid:p?p.fid:'',linea:p?p.l.et:'',amb:p?cdsAmbNom(p.cat,p.fid):'',regs:regs,
+   fecha:(r0&&r0.fecha)||String(x.a.fecha||'').slice(0,10),numero:(r0&&r0.numero)||'',proveedor:(r0&&r0.proveedor)||'',
+   anulado:regs.length>0&&regs.every(function(r){return r.estado==='anulado';})};
+ });
+}
+async function cdsBlob(a){
+ try{ var reg=await archivoLeer(a.id); if(reg&&reg.blob)return reg.blob; }catch(e){}
+ if(a.assetId){ try{ var r=await fetch('/_blob/'+a.assetId); if(r.ok)return await r.blob(); }catch(e){} }
+ return null;
+}
+/* Verificación de integridad: se recalcula el sello de cada archivo guardado.
+   Si el archivo nunca tuvo sello (evidencia anterior), queda sellado ahora y
+   así se declara: el sello prueba que no cambió desde hoy, no desde antes. */
+async function cdsVerificar(){
+ if(CDS.verificando)return;
+ CDS.verificando=true; pintar();
+ var L=cdsSustentos(), ok=0, alt=0, nuevo=0, falta=0, cambios=false;
+ for(var i=0;i<L.length;i++){
+  var a=L[i].a, b=await cdsBlob(a);
+  if(!b){ falta++; a.integridad={est:'falta',en:new Date().toISOString()}; cambios=true; continue; }
+  var s=await selloDeBytes(await bytesDeBlob(b));
+  if(!a.sello){ a.sello=s.val; a.selloMet=s.met; a.selladoEn=new Date().toISOString(); a.selloOrigen='al verificar'; nuevo++; a.integridad={est:'ok',en:a.selladoEn}; }
+  else if(a.sello===s.val){ ok++; a.integridad={est:'ok',en:new Date().toISOString()}; }
+  else { alt++; a.integridad={est:'alterado',en:new Date().toISOString(),visto:s.val}; }
+  cambios=true;
+ }
+ CDS.verif={n:L.length,ok:ok,alt:alt,nuevo:nuevo,falta:falta,en:new Date().toISOString()};
+ anotar('dato','Centro de datos · verificación de integridad','',L.length+' archivos',
+  ok+' sin cambios, '+nuevo+' sellados por primera vez, '+alt+' con sello distinto, '+falta+' no encontrados en este equipo ni en la base');
+ if(cambios){ marcar('sustentos/integridad'); guardarLocal(); }
+ CDS.verificando=false; pintar();
+}
+function cdsNomSeguro(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'x'; }
+/* Paquete para el verificador: carpetas por ámbito y fuente, índice y manifiesto de sellos */
+async function cdsPaquete(){
+ var L=cdsSustentos(), C=cdsConciliacion(), arch=[], man=[], idx=[], fallos=[];
+ msg('Armando el paquete de sustentos…');
+ for(var i=0;i<L.length;i++){
+  var x=L[i], b=await cdsBlob(x.a);
+  if(!b){ fallos.push(x.a.nombre); continue; }
+  var u8=await bytesDeBlob(b), s=await selloDeBytes(u8);
+  var ruta='sustentos/'+cdsNomSeguro(x.amb)+'/'+cdsNomSeguro(x.linea)+'/'+cdsNomSeguro((x.fecha||'')+'_'+(x.numero||x.a.id))+'_'+cdsNomSeguro(x.a.nombre);
+  arch.push({nombre:ruta,datos:u8});
+  man.push(s.val+'  '+ruta);
+  idx.push([ruta,x.amb,x.linea,x.fecha,x.numero,x.proveedor,x.regs.map(function(r){return r.id;}).join(' '),
+   x.regs.map(function(r){return r.cantidadLinea+' '+r.unidadLinea;}).join(' | '),s.met,s.val,(x.a.sello&&x.a.sello!==s.val)?'SELLO DISTINTO':'',x.anulado?'anulado':'vigente']);
+ }
+ var q=function(v){ v=(v==null)?'':String(v); return /[",;\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; };
+ var csv=function(cab,filas){ return '﻿'+cab.join(',')+'\r\n'+filas.map(function(f){return f.map(q).join(',');}).join('\r\n')+'\r\n'; };
+ arch.push({nombre:'indice-de-sustentos.csv',datos:csv(['archivo','ambito','fuente','fecha','numero','proveedor','registros','cantidad_al_inventario','metodo_sello','sello','observacion','estado'],idx)});
+ arch.push({nombre:'conciliacion-por-fuente.csv',datos:csv(['ambito','fuente','actividad_declarada','unidad','respaldado_por_facturas','sin_respaldo','cobertura_%','archivos','t_CO2e','estado'],
+  C.map(function(c){return [c.amb,c.l.et,c.q,c.l.un,c.fact,c.dif,Math.round(c.cubre*1000)/10,c.adj,Math.round(c.t*1000)/1000,c.est==='conciliado'?'conciliado':c.est==='parcial'?'parcial':'sin sustento'];}))});
+ arch.push({nombre:'MANIFIESTO-SHA256.txt',datos:man.join('\r\n')+'\r\n'});
+ arch.push({nombre:'LEEME.txt',datos:'Paquete de sustentos de emisiones · Programa ARRAIGO\r\nArmado el '+hoy()+' por '+quienEdita()+'.\r\n\r\n'+
+  '- sustentos/: cada factura o documento en la carpeta de su ámbito y su fuente de emisión.\r\n'+
+  '- indice-de-sustentos.csv: qué registro usa cada archivo y cuánto aporta al inventario.\r\n'+
+  '- conciliacion-por-fuente.csv: actividad declarada frente a la respaldada por facturas.\r\n'+
+  '- MANIFIESTO-SHA256.txt: sello de cada archivo; se comprueba con cualquier herramienta SHA-256.\r\n\r\n'+
+  'Resultado de medición propia de la organización, sin evaluación de un organismo independiente.\r\n'+
+  (fallos.length?('\r\nNo se incluyeron '+fallos.length+' archivos que no están en este equipo ni en la base central.\r\n'):'')});
+ var blob=armarZip(arch), nom='ARRAIGO-sustentos-'+cdsNomSeguro((pryActual()&&pryActual().codigo)||'proyecto')+'-'+hoy()+'.zip';
+ anotar('reporte','Paquete de sustentos armado','',L.length-fallos.length+' archivos','con índice, conciliación y manifiesto SHA-256'+(fallos.length?('; '+fallos.length+' faltantes'):''));
+ guardarLocal();
+ var dl=await usarCap('downloads');
+ if(dl){ try{ await dl.save({filename:nom,data:blob}); msg('Paquete descargado'); return; }catch(e){ if(e&&e.code==='declined')return; } }
+ try{ var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=nom; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },4000); msg('Paquete descargado'); }
+ catch(e){ msg('No se pudo descargar el paquete en esta vista'); }
+}
+function cdsEstNom(e){ return e==='conciliado'?'Conciliado':e==='parcial'?'Parcial':'Sin sustento'; }
+function vistaCentroDatos(){
+ var C=cdsConciliacion(), L=cdsSustentos(), V=CDS.verif;
+ var conc=C.filter(function(c){return c.est==='conciliado';}).length, sin=C.filter(function(c){return c.est==='sin';}).length;
+ var tSin=C.filter(function(c){return c.est==='sin';}).reduce(function(s,c){return s+c.t;},0), tTot=C.reduce(function(s,c){return s+c.t;},0);
+ var bytes=L.reduce(function(s,x){return s+(x.a.bytes||0);},0), local=L.filter(function(x){return !x.a.assetId;}).length;
+ var alt=L.filter(function(x){return x.a.integridad&&x.a.integridad.est==='alterado';}).length;
+ var h=cabModulo('cds','<p class="vista-sub">El centro de datos de los sustentos: cada factura, registro y archivo que respalda una emisión, conciliado con lo declarado, con su sello de integridad y listo para entregarlo al verificador.</p>');
+ h+='<dl class="cifras">'+
+  tarjetaCifra('Fuentes conciliadas',conc+' de '+C.length,'lo declarado está cubierto por facturas')+
+  tarjetaCifra('Sin sustento',String(sin),sin?(fmt(tSin,2)+' t CO₂e de '+fmt(tTot,2)+' sin evidencia'):'todas tienen evidencia')+
+  tarjetaCifra('Archivos de sustento',String(L.length),bytes?kb(bytes):'0 KB')+
+  tarjetaCifra('Solo en este equipo',String(local),assets?(local?'se suben al sincronizar':'todos en la base central'):'sin base central conectada')+'</dl>';
+ if(sin)h+='<div class="aviso"><b>'+sin+' fuente'+(sin===1?'':'s')+' con dato y sin evidencia recuperable.</b> Según el protocolo, ese dato no se puede cuantificar hasta tener su sustento.</div>';
+ if(alt)h+='<div class="aviso"><b>'+alt+' archivo'+(alt===1?'':'s')+' con un sello distinto al guardado.</b> El archivo cambió después de registrarse; revise antes de entregar.</div>';
+ /* conciliación */
+ h+='<div class="tarjeta"><h3>Conciliación por fuente de emisión</h3><div class="cuerpo"><p>La actividad declarada en el inventario frente a la que respaldan las facturas registradas, por ámbito. Abra un ámbito para ver sus fuentes; lo que no cubre una factura queda como diferencia.</p>';
+ var grupos={}, orden=[];
+ C.forEach(function(c){ var k=c.cat+':'+(c.fid||''); if(!grupos[k]){grupos[k]={amb:c.amb,f:[]}; orden.push(k);} grupos[k].f.push(c); });
+ orden.sort(function(a,b){ return (a.indexOf('org')===0?-1:0)-(b.indexOf('org')===0?-1:0)||grupos[a].amb.localeCompare(grupos[b].amb); });
+ if(!orden.length)h+='<div class="vacio">Todavía no hay datos de actividad.</div>';
+ orden.forEach(function(k){
+  var g=grupos[k], n={conciliado:0,parcial:0,sin:0}, tS=0;
+  g.f.forEach(function(c){ n[c.est]++; if(c.est==='sin')tS+=c.t; });
+  g.f.sort(function(a,b){ var o={sin:0,parcial:1,conciliado:2}; return o[a.est]-o[b.est]||b.t-a.t; });
+  h+='<details class="cap-linea cds-grupo"><summary><span class="cap-ln">'+esc(g.amb)+'</span><span class="cds-res">'+
+   (n.conciliado?'<span class="cds-est cds-conciliado">'+n.conciliado+' conciliada'+(n.conciliado===1?'':'s')+'</span>':'')+
+   (n.parcial?'<span class="cds-est cds-parcial">'+n.parcial+' parcial'+(n.parcial===1?'':'es')+'</span>':'')+
+   (n.sin?'<span class="cds-est cds-sin">'+n.sin+' sin sustento</span>':'')+'</span>'+
+   '<span class="cap-le">'+g.f.length+' fuente'+(g.f.length===1?'':'s')+' con dato'+(tS?(' · '+fmt(tS,3)+' t CO₂e sin evidencia'):'')+'</span></summary>'+
+   '<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Fuente</th><th class="n">Declarado</th><th class="n">Con factura</th><th class="n">Diferencia</th><th class="n">t CO₂e</th><th>Estado</th></tr></thead><tbody>'+
+   g.f.map(function(c){
+    return '<tr><td>'+esc(c.l.et)+'<div class="muted">'+esc(c.l.un)+'</div></td><td class="n">'+fmt(c.q,2)+'</td><td class="n">'+fmt(c.fact,2)+'</td>'+
+     '<td class="n'+(c.dif>0?' falta':'')+'">'+fmt(c.dif,2)+'</td><td class="n">'+fmt(c.t,3)+'</td>'+
+     '<td><span class="cds-est cds-'+c.est+'">'+cdsEstNom(c.est)+'</span><small> '+c.adj+' archivo'+(c.adj===1?'':'s')+'</small><div class="cds-barra" title="'+Math.round(c.cubre*100)+' % con factura"><span style="width:'+Math.round(c.cubre*100)+'%"></span></div></td></tr>';
+   }).join('')+'</tbody></table></div></details>';
+ });
+ h+='<p class="small muted">«Parcial»: hay facturas o documentos, pero las facturas registradas no cubren todo lo declarado. Las que faltan se suben en «Subir facturas y calcular».</p></div></div>';
+ /* archivo de sustentos */
+ var q=CDS.q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+ var F=L.filter(function(x){
+  if(CDS.amb&&(x.cat+':'+(x.fid||''))!==CDS.amb)return false;
+  if(CDS.est==='local'&&x.a.assetId)return false;
+  if(CDS.est==='alterado'&&!(x.a.integridad&&x.a.integridad.est==='alterado'))return false;
+  if(CDS.est==='sinreg'&&x.regs.length)return false;
+  if(!q)return true;
+  return (x.linea+' '+x.amb+' '+x.numero+' '+x.proveedor+' '+x.a.nombre).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(q)>=0;
+ }).sort(function(a,b){return String(b.fecha).localeCompare(String(a.fecha));});
+ var ambs=[['','Todos los ámbitos']].concat(lineasDe('org').length?[['org:','Organización']]:[]).concat(S.fincas.map(function(f){return ['finca:'+f.id,f.codigo||'Finca'];}));
+ h+='<div class="tarjeta"><h3>Archivo de sustentos</h3><div class="cuerpo">'+
+  '<div class="cds-filtros"><input type="search" data-cds="q" placeholder="Buscar proveedor, número, fuente o archivo" value="'+esc(CDS.q)+'">'+
+  '<select data-cds="amb">'+ambs.map(function(a){return '<option value="'+esc(a[0])+'"'+(CDS.amb===a[0]?' selected':'')+'>'+esc(a[1])+'</option>';}).join('')+'</select>'+
+  '<select data-cds="est">'+[['','Todos'],['local','Solo en este equipo'],['alterado','Sello distinto'],['sinreg','Sin registro de factura']].map(function(a){return '<option value="'+a[0]+'"'+(CDS.est===a[0]?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select></div>'+
+  '<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Fecha</th><th>Documento</th><th>Ámbito y fuente</th><th>Aporta</th><th>Estado del archivo</th><th></th></tr></thead><tbody>'+
+  (F.length?F.slice(0,30).map(function(x){
+   var it=x.a.integridad, ig=!x.a.sello?'<span class="muted">sin sellar</span>':!it?'<span class="muted">sin verificar</span>':it.est==='ok'?'<span class="cds-ok" title="verificado '+esc(String(it.en).slice(0,10))+'">✓ sin cambios</span>':it.est==='alterado'?'<span class="falta">✗ sello distinto</span>':'<span class="falta">no encontrado</span>';
+   return '<tr'+(x.anulado?' class="cap-anulado"':'')+'><td>'+esc(x.fecha)+'</td><td>'+(x.numero?('Factura '+esc(x.numero)):esc(x.a.nombre))+'<div class="muted">'+esc(x.proveedor||kb(x.a.bytes||0))+'</div></td>'+
+    '<td>'+esc(x.amb)+'<div class="muted">'+esc(x.linea)+'</div></td>'+
+    '<td>'+(x.regs.length?x.regs.map(function(r){return fmt(r.cantidadLinea,2)+' '+esc(r.unidadLinea)+(r.estado==='anulado'?' (anulado)':'');}).join('<br>'):'<span class="muted">sin factura registrada</span>')+'</td>'+
+    '<td>'+ig+'<div class="muted">'+(x.a.assetId?'en la base central':'<span class="cds-local">solo en este equipo</span>')+'</div></td>'+
+    '<td><button type="button" class="mini" data-cds-ver="'+esc(x.a.id)+'" data-ref="'+esc(x.ref)+'">Ver</button></td></tr>';
+  }).join(''):'<tr><td colspan="6"><div class="vacio">'+(L.length?'Ningún sustento coincide con el filtro.':'Todavía no hay sustentos. Se crean al confirmar una factura o al adjuntar un documento a una fuente.')+'</div></td></tr>')+
+  '</tbody></table></div>'+(F.length>30?'<p class="small muted">Se muestran 30 de '+F.length+'; afine la búsqueda o descargue el paquete.</p>':'')+'</div></div>';
+ /* integridad y entrega */
+ h+='<div class="tarjeta"><h3>Integridad, conservación y entrega</h3><div class="cuerpo">'+
+  '<div class="cds-acc"><div><b>Verificar la integridad</b><p>Recalcula el sello SHA-256 de cada archivo y lo compara con el guardado. Un archivo sin sello queda sellado hoy, y así se declara.</p>'+
+  (V?'<p class="small">Última verificación '+esc(String(V.en).slice(0,16).replace('T',' '))+': '+V.ok+' sin cambios, '+V.nuevo+' sellados por primera vez, '+V.alt+' con sello distinto, '+V.falta+' no encontrados.</p>':'')+
+  '<button type="button" data-cds="verificar"'+(CDS.verificando||!L.length?' disabled':'')+'>'+(CDS.verificando?'Verificando…':'Verificar ahora')+'</button></div>'+
+  '<div><b>Paquete para el verificador</b><p>Un ZIP con cada sustento en la carpeta de su ámbito y su fuente, el índice de registros, la conciliación y el manifiesto de sellos.</p>'+
+  '<button type="button" class="primario" data-cds="paquete"'+(L.length?'':' disabled')+'>Descargar el paquete</button></div>'+
+  '<div><b>Conservación</b><p>Los sustentos se conservan mientras la declaración esté vigente y cinco años más. No se borran: el registro que los usa se anula con su motivo.</p>'+
+  (local&&!assets?'<p class="small falta">Hay archivos que solo existen en este equipo y no hay base central conectada: si se pierde el equipo, se pierde la evidencia.</p>':'')+'</div></div>'+
+  '</div></div>';
+ return h;
+}
+document.addEventListener('input',function(ev){
+ var t=ev.target; if(!t||!t.dataset||t.dataset.cds!=='q')return;
+ CDS.q=t.value; clearTimeout(CDS._t); CDS._t=setTimeout(function(){ var pos=t.selectionStart; pintar(); var n=document.querySelector('[data-cds="q"]'); if(n){ n.focus(); try{n.setSelectionRange(pos,pos);}catch(e){} } },250);
+});
+document.addEventListener('change',function(ev){
+ var t=ev.target; if(!t||!t.dataset)return;
+ if(t.dataset.cds==='amb'){ CDS.amb=t.value; pintar(); }
+ else if(t.dataset.cds==='est'){ CDS.est=t.value; pintar(); }
+});
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-cds],[data-cds-ver]'); if(!b||b.tagName==='INPUT'||b.tagName==='SELECT')return;
+ if(b.dataset.cdsVer){
+  var meta=adjuntosDe(b.dataset.ref).filter(function(x){return x.id===b.dataset.cdsVer;})[0];
+  if(meta)fuenteAdjunto(meta).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); });
+  return;
+ }
+ if(b.dataset.cds==='verificar')cdsVerificar();
+ else if(b.dataset.cds==='paquete')cdsPaquete();
+});
+
 function pintar(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
     siguiente, de modo que no puede quedar desfasada respecto del estado */
@@ -23443,6 +23670,7 @@ function pintar(){
  else if(vista==='arc')$('v-arc').innerHTML=vistaArchivo();
  else if(vista==='pod')$('v-pod').innerHTML=vistaPodas();
  else if(vista==='cap')$('v-cap').innerHTML=vistaCaptura();
+ else if(vista==='cds')$('v-cds').innerHTML=vistaCentroDatos();
  else if(vista==='ins')$('v-ins').innerHTML=vistaLineas('finca');
  else if(vista==='ben')$('v-ben').innerHTML=vistaLineas('org');
  else if(vista==='apr')$('v-apr').innerHTML=vistaAprender();
@@ -25640,7 +25868,7 @@ window.__central={
  cargarEjemplo:function(){ return cargarOccidente(); }
 };
 window.__nucleo=(function(){ var O={
- ir:function(v){return ir(v);}, cap:function(){return CAP;}, capSubir:function(f){return capSubir(f);}, capConfirmar:function(){return capConfirmar();}, capAnular:function(i,m){return capAnular(i,m);},
+ ir:function(v){return ir(v);}, cds:function(){return CDS;}, cdsConciliacion:function(){return cdsConciliacion();}, cdsSustentos:function(){return cdsSustentos();}, cdsVerificar:function(){return cdsVerificar();}, cap:function(){return CAP;}, capSubir:function(f){return capSubir(f);}, capConfirmar:function(){return capConfirmar();}, capAnular:function(i,m){return capAnular(i,m);},
  capNormalizar:function(r,c){return capNormalizar(r,c);}, capPasos:function(l,c,f,q){return capPasos(capLinea(c,l),c,f,q);}, capUniLinea:function(c,l){return capUniLinea(capLinea(c,l));},
  presentacionesCalc:function(){return presentacionesCalc();},
  revisionPresentaciones:function(C){return revisionPresentaciones(C);},
