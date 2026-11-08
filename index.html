@@ -1799,6 +1799,7 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .cl-selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:8px 12px;border:1px dashed var(--line);border-radius:8px;font-size:14px}
 .cl-selbar span{flex:1}
 .hcp-pry{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 14px}
+.hcp-ud{display:inline-block;margin:2px 8px 6px 0;font-size:15px;padding:7px 12px;border-radius:8px;background:#e8f3ec;color:#15513a;border:1px solid #9cc8b0}
 .hcp-indice{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .hcp-indice span{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2,#566)}
 .hcp-indice span.ok{border-color:#9cc8b0;background:#e8f3ec;color:#1e6b47}
@@ -24882,9 +24883,11 @@ function vistaEstudio(){
  h+='<div class="tarjeta"><h3>2. Producto, unidad y flujo de referencia <small class="cl">6.3.3</small></h3><div class="cuerpo"><div class="campos">'+
   hcpTx('producto',['Producto estudiado','Café verde (oro) exportado'])+
   hcpSel('Tipo de unidad','tipoUnidad',HCP_OPC.tipoUnidad,HCP_OPC.tipoUnidad[0])+
-  hcpTx('unidad',['Unidad declarada o funcional','quintal de café oro'])+
-  hcpTx('kg',['Kilogramos por unidad','45.36','num'])+
-  hcpTx('produccion',['Producción del período, en unidades','', 'num'])+
+  '<div class="campo ancho hcp-unidades"><label>Unidades declaradas del estudio</label><div>'+presLista().map(function(x){return '<span class="hcp-ud">kg CO₂e por '+esc(String(x.nom||'').charAt(0).toLowerCase()+String(x.nom||'').slice(1))+' de café oro exportado</span>';}).join(' ')+
+   '</div><span class="pista">Son las presentaciones de venta, puestas en el puerto de destino. Se agregan o modifican en la tarjeta «Presentaciones puestas en puerto de destino», más abajo.</span></div>'+
+  hcpTx('unidad',['Unidad en que se registra la producción','quintal de café oro'])+
+  hcpTx('kg',['Kilogramos por unidad de producción','45.36','num'])+
+  hcpTx('produccion',['Producción exportada del período, en esa unidad','', 'num'])+
   hcpArea('Descripción técnica del producto','descripcion','Especie y variedades, proceso (lavado, natural, honey), humedad, calidad y presentación.',3)+
   hcpArea('Flujo de referencia','flujo','',2,1)+
   '</div><p class="pista">El estudio llega hasta el puerto de destino y no incluye el tostado, el consumo ni el fin de vida del café. ISO 14067 llama a ese resultado huella parcial y lo expresa por <b>unidad declarada</b> (3.1.1.2 y 6.1): kg CO₂e por saco de 69 kg o por big bag de café oro exportado, puesto en el puerto de destino.</p></div></div>'+
