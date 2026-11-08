@@ -1714,6 +1714,21 @@ html body .lateral .lp-actualizar.hay{background:#c99a3e;border-color:#c99a3e;co
 html body .lateral .nv-num{display:none!important}
 html body .lateral #chip-modo,html body .lateral #chip-lic{display:none!important}
 html body .lateral nav button{padding:8px 10px}
+
+.cfe-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.cfe-car{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font:inherit;color:var(--ink)}
+.cfe-car:hover{border-color:#8dbf3f;background:color-mix(in srgb,#8dbf3f 8%,var(--surface))}
+.cfe .cfe-rejilla .cfe-car.abierta{border:2px solid #1e6b47;background:#e8f3ec}
+.cfe-ic{font-size:22px;width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:#f3e9d2;flex:none}
+.cfe-tx{display:flex;flex-direction:column;min-width:0}.cfe-tx b{font-size:var(--t-3)}.cfe-tx small{color:var(--ink-3);font-size:var(--t-1)}
+.cfe-det{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
+.cfe-det-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+
+.fxl-pasos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;counter-reset:fx}
+.fxl-pasos li{counter-increment:fx;border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.fxl-pasos li::before{content:counter(fx);width:26px;height:26px;border-radius:50%;background:#15513a;color:#fff;display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.fxl-pasos li span{font-size:var(--t-2);color:var(--ink-2)}
+.fxl-pasos li button,.fxl-pasos li label{margin-top:auto}
 </style>
 </head>
 <body>
@@ -12198,6 +12213,7 @@ function vistaPaises(){
    PAISES.map(function(x){return '<option value="'+x[0]+'"'+(cod===x[0]?' selected':'')+'>'+esc(x[1])+(x[0]===pp?' · el del proyecto':'')+'</option>';}).join('')+
    '</select></div>'+
   '</div>';
+ h+=tarjetaCarpetaFactores();
 
  var e=ecuPais(cod);
  h+='<div class="rejilla2"><div class="col">';
@@ -13853,6 +13869,7 @@ function vistaFincas(){
  var h=cabModulo('fincas','<p class="vista-sub">Cada unidad productiva se registra una vez. Todo lo demás, parcelas, podas e insumos, se cuelga de aquí.</p>');
  var f=sel.finca?S.fincas.find(function(x){return x.id===sel.finca;}):null;
  if(f)h+=barraVolver('finca-listo','Volver a la lista de fincas','Ficha de '+(f.codigo||'la finca'));
+ if(!f)h+=tarjetaFincasExcel();
  h+='<div class="rejilla2"><div class="col">';
  h+='<div class="tarjeta"><h3>Unidades productivas</h3><div class="lista">';
  if(!S.fincas.length)h+='<p class="vacio">Todavía no hay fincas. Agregue la primera para empezar a medir.</p>';
@@ -23720,6 +23737,217 @@ document.addEventListener('click',function(ev){
 });
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible')verComprobar(); });
 setTimeout(verComprobar,1500); setInterval(verComprobar,10*60*1000);
+
+/* ==========================================================================
+   Carpeta de documentos de factores de emisión (en «Factores de emisión por país»)
+   Ordena los factores que puede necesitar una organización de productores y
+   exportadora en carpetas por tipo de fuente, y permite descargar una carpeta
+   o todas: cada carpeta trae su ficha imprimible (PDF desde el navegador), la
+   tabla en CSV y las fuentes con su enlace. Solo lee el registro del programa:
+   no cambia ningún factor ni ningún cálculo.
+   ========================================================================== */
+var CFE={abierta:''};
+var CFE_CARPETAS=[
+ ['01','Electricidad','⚡',/elec|kwh|electric/],
+ ['02','Combustibles','⛽',/diesel|gasolina|glp|gas licuado|lena|leña|bunker|combust|vapor|carbon vegetal|quemad|secadora/],
+ ['03','Residuos, pulpa y aguas mieles','♻',/pulpa|miel|mucilag|residu|desech|compostaje|fosa|lagun|efluent/],
+ ['04','Fertilizantes y enmiendas','🌱',/fert|urea|sulfato|nitrato|\bcal\b|cal_|compost|abono|biochar|enmienda|\bdap\b|\bmap\b|muriato|sulpomag|gallinaza/],
+ ['05','Plaguicidas y otros insumos','🧪',/plaguic|herbic|fungic|insectic|quimic|agroquim/],
+ ['06','Empaques','📦',/yute|polipropileno|saco|bolsa|empaque|big ?bag|malla/],
+ ['07','Transporte terrestre','🚚',/transp|flete|viaje|camion|vehic|kilomet|carga|traslad|recorrid|entrega|desplaz|motociclet/],
+ ['08','Transporte marítimo y puerto','🚢',/maritim|buque|naviera|puerto/],
+ ['09','Refrigerantes','❄',/refrig|r-?22|r-?410|r-?134/],
+ ['10','Otros factores','📄',/[\s\S]*/]
+];
+function cfeCarpetaDe(txt){
+ var t=String(txt||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+ var orden=['03','01','02','04','05','06','07','08','09','10'];
+ for(var j=0;j<orden.length;j++){ var c=CFE_CARPETAS.filter(function(x){return x[0]===orden[j];})[0]; if(c&&c[3].test(t))return c[0]; }
+ return '10';
+}
+function cfeItems(cod){
+ cod=cod||paisProyecto();
+ var out=[], f0=S.fincas[0]&&S.fincas[0].id;
+ lineasUnicas().forEach(function(x){
+  var l=x.l; if(esDirecta(l))return;
+  var cat=(x.amb==='Finca')?'finca':'org', fid=(cat==='finca')?(f0||null):null;
+  var p=facPaisDe(l.id,cod), usado=NaN, ut='';
+  try{ usado=factor(l,cat,fid); ut=unTecDe(l,cat,fid); }catch(e){}
+  var dd=null; try{ dd=docDeLinea(l); }catch(e){}
+  var nivel=(p&&p.nivel)||(function(){try{return nivelDe(l);}catch(e){return '';}})();
+  out.push({carpeta:cfeCarpetaDe(l.id+' '+l.et),nombre:l.et,amb:x.amb,
+   valor:p?numOpc(p.f):NaN,unidad:p?(p.unidadOrigen||''):'',usado:usado,unidadUso:ut?('kg CO₂e por '+ut):'',
+   nivel:nivel,fuente:(p&&p.fuente)||(function(){try{return fuenteDe(l);}catch(e){return '';}})(),
+   anio:(p&&p.anio)||(function(){try{return anioDe(l);}catch(e){return '';}})(),
+   documento:(p&&p.doc)||'',organismo:(p&&p.loc)||'',gases:(p&&p.gases)||'',nota:(p&&p.nota)||'',
+   bib:dd&&dd.doc?{cod:dd.doc.cod||'',titulo:dd.doc.titulo||'',ref:dd.doc.ref||'',url:dd.doc.url||'',modo:dd.modo}:null});
+ });
+ try{ if(typeof FLETE_MAR==='object'&&FLETE_MAR)out.push({carpeta:'08',nombre:'Flete marítimo en buque portacontenedores',amb:'Exportación',valor:FLETE_MAR.f,unidad:'kg CO₂e por tonelada-kilómetro',
+  usado:FLETE_MAR.f,unidadUso:'kg CO₂e por t·km',nivel:'generico',fuente:FLETE_MAR.fue,anio:FLETE_MAR.anio,documento:'',organismo:'',gases:'',nota:'Se usa en la huella por presentación puesta en el puerto de destino.',bib:null}); }catch(e){}
+ try{ if(typeof MAT_EMP==='object'&&MAT_EMP)Object.keys(MAT_EMP).forEach(function(k){ (MAT_EMP[k].partes||[]).forEach(function(pt){
+  out.push({carpeta:'06',nombre:MAT_EMP[k].nom+' · '+pt.t,amb:'Exportación',valor:pt.f,unidad:'kg CO₂e por kg de material',usado:pt.f,unidadUso:'kg CO₂e por kg',
+   nivel:pt.est==='supuesto'?'supuesto':'generico',fuente:pt.fue,anio:'',documento:'',organismo:'',gases:'',nota:pt.est==='supuesto'?'Supuesto conservador: sustituir por la declaración del fabricante.':'',bib:null}); }); }); }catch(e){}
+ return out;
+}
+function cfeNivelNom(n){ try{ return nivelNom(n); }catch(e){ return n||''; } }
+function cfeCuenta(L){ var r={n:L.length,nac:0,ipcc:0,sin:0}; L.forEach(function(x){ if(x.nivel==='nacional')r.nac++; else if(x.nivel==='defecto'||/ipcc/i.test(x.fuente))r.ipcc++; if(!isFinite(x.usado)||!x.fuente)r.sin++; }); return r; }
+function cfeFuentes(L){
+ var vis={}, o=[];
+ L.forEach(function(x){ var k=(x.bib&&x.bib.cod)||x.fuente; if(!k||vis[k])return; vis[k]=1;
+  o.push(x.bib?{t:(x.bib.cod?x.bib.cod+' · ':'')+x.bib.titulo,ref:x.bib.ref,url:x.bib.url}:{t:x.fuente,ref:x.documento,url:''}); });
+ return o;
+}
+function cfeFicha(car,L,cod){
+ var org=S.perfil.organizacion||(pryActual()&&pryActual().empresa)||'Organización';
+ var e=function(v){return esc(v==null?'':String(v));};
+ var fil=L.map(function(x){ return '<tr><td>'+e(x.nombre)+'<br><small>'+e(x.amb)+'</small></td><td class="n">'+(isFinite(x.valor)?e(fmt(x.valor,4)):'—')+'<br><small>'+e(x.unidad)+'</small></td>'+
+  '<td class="n">'+(isFinite(x.usado)?e(fmt(x.usado,4)):'—')+'<br><small>'+e(x.unidadUso)+'</small></td><td>'+e(cfeNivelNom(x.nivel))+'</td><td>'+e(x.fuente)+(x.anio?(' ('+e(x.anio)+')'):'')+
+  (x.nota?('<br><small>'+e(x.nota)+'</small>'):'')+'</td></tr>'; }).join('');
+ var fu=cfeFuentes(L).map(function(f,i){ return '<li>'+e(f.t)+(f.ref?('. '+e(f.ref)):'')+(f.url?(' <a href="'+e(f.url)+'">'+e(f.url)+'</a>'):'')+'</li>'; }).join('');
+ return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+e(car[1])+' · factores de emisión</title><style>'+
+  'body{font-family:"Times New Roman",Times,serif;font-size:12pt;line-height:1.5;color:#1d2420;margin:28px 36px}h1{font-size:18pt;margin:0 0 4px;color:#15513a}'+
+  '.sub{color:#4d5852;margin:0 0 16px}table{width:100%;border-collapse:collapse;font-size:10.5pt}th,td{border:1px solid #9aa39c;padding:6px 8px;vertical-align:top;text-align:left}'+
+  'th{background:#e8f3ec}td.n{text-align:right;white-space:nowrap}small{color:#4d5852}p,li{text-align:justify}h2{font-size:13pt;color:#15513a;margin-top:22px}'+
+  '@media print{body{margin:14mm}}</style></head><body>'+
+  '<h1>'+e(car[0])+' · '+e(car[1])+'</h1><p class="sub">'+e(org)+' · país de origen: '+e(nombrePais(cod))+' · emitido el '+e(hoy())+' · Programa ARRAIGO</p>'+
+  '<table><thead><tr><th>Fuente de emisión</th><th>Valor publicado</th><th>Factor usado en el cálculo</th><th>Nivel</th><th>Origen del dato</th></tr></thead><tbody>'+fil+'</tbody></table>'+
+  '<h2>Documentos de origen</h2><ol>'+(fu||'<li>Sin documento registrado.</li>')+'</ol>'+
+  '<p>El factor usado en el cálculo puede diferir del valor publicado porque se convierte a la unidad técnica del renglón y, cuando el valor es por defecto, se aplica el descuento conservador del programa. Antes de citar un valor, confirme en el documento de origen que la versión sigue vigente.</p>'+
+  '<p>Huella de carbono de producto conforme a ISO 14067:2018. Medición propia de la organización, sin evaluación de un organismo independiente.</p></body></html>';
+}
+function cfeCSV(L){
+ var q=function(v){ v=(v==null)?'':String(v); return /[",;\n]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; };
+ var cab=['carpeta','fuente_de_emision','ambito','valor_publicado','unidad_publicada','factor_usado','unidad_usada','nivel','origen','anio','documento','organismo','gases','codigo_biblioteca','enlace','nota'];
+ return '﻿'+cab.join(',')+'\r\n'+L.map(function(x){ return [x.carpeta,x.nombre,x.amb,isFinite(x.valor)?x.valor:'',x.unidad,isFinite(x.usado)?x.usado:'',x.unidadUso,cfeNivelNom(x.nivel),x.fuente,x.anio,x.documento,x.organismo,x.gases,x.bib?x.bib.cod:'',x.bib?x.bib.url:'',x.nota].map(q).join(','); }).join('\r\n')+'\r\n';
+}
+async function cfeDescargar(cual){
+ var cod=paisProyecto(), I=cfeItems(cod), arch=[], base='Factores-de-emision-'+cdsNomSeguro(nombrePais(cod));
+ CFE_CARPETAS.forEach(function(c){
+  if(cual&&c[0]!==cual)return;
+  var L=I.filter(function(x){return x.carpeta===c[0];}); if(!L.length)return;
+  var dir=base+'/'+c[0]+'-'+cdsNomSeguro(c[1])+'/';
+  arch.push({nombre:dir+'ficha-de-factores.html',datos:cfeFicha(c,L,cod)});
+  arch.push({nombre:dir+'factores.csv',datos:cfeCSV(L)});
+  arch.push({nombre:dir+'documentos-de-origen.txt',datos:cfeFuentes(L).map(function(f,i){return (i+1)+'. '+f.t+(f.ref?('\r\n   '+f.ref):'')+(f.url?('\r\n   '+f.url):'');}).join('\r\n\r\n')+'\r\n'});
+ });
+ if(!arch.length){ msg('No hay factores en esa carpeta'); return; }
+ if(!cual){ arch.push({nombre:base+'/indice-de-factores.csv',datos:cfeCSV(I)});
+  arch.push({nombre:base+'/LEEME.txt',datos:'Carpeta de factores de emisión · Programa ARRAIGO\r\nPaís de origen: '+nombrePais(cod)+' · '+hoy()+'\r\n\r\nCada carpeta trae:\r\n- ficha-de-factores.html: ábrala en el navegador e imprímala o guárdela como PDF.\r\n- factores.csv: la tabla para Excel.\r\n- documentos-de-origen.txt: de qué documento sale cada valor, con su enlace.\r\n'}); }
+ var blob=armarZip(arch), nom=cual?(base+'-'+cual+'.zip'):(base+'.zip');
+ try{ var dl=await usarCap('downloads'); if(dl){ await dl.save({filename:nom,data:blob}); msg('Carpeta descargada'); return; } }catch(e){ if(e&&e.code==='declined')return; }
+ var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=nom; document.body.appendChild(a); a.click();
+ setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },4000); msg('Carpeta descargada');
+}
+function cfeVerFicha(cual){
+ var cod=paisProyecto(), c=CFE_CARPETAS.filter(function(x){return x[0]===cual;})[0]; if(!c)return;
+ var L=cfeItems(cod).filter(function(x){return x.carpeta===cual;});
+ var w=window.open('','_blank'); if(!w){ msg('El navegador bloqueó la ventana; use «Descargar»'); return; }
+ w.document.open(); w.document.write(cfeFicha(c,L,cod)); w.document.close();
+}
+function tarjetaCarpetaFactores(){
+ var cod=paisProyecto(), I=cfeItems(cod);
+ var h='<div class="tarjeta cfe"><h3>Carpeta de documentos de factores · '+esc(nombrePais(cod))+'</h3><div class="cuerpo">'+
+  '<p>Los factores que usa una organización de productores y exportadora, ordenados por tipo de fuente. Abra una carpeta para ver sus factores y documentos, o descárguela: cada una trae su ficha para imprimir o guardar en PDF, la tabla en Excel (CSV) y los documentos de origen con su enlace.</p>'+
+  '<div class="acciones"><button type="button" class="primario" data-cfe="todo">Descargar todas las carpetas (ZIP)</button></div><div class="cfe-rejilla">';
+ CFE_CARPETAS.forEach(function(c){
+  var L=I.filter(function(x){return x.carpeta===c[0];}); if(!L.length)return;
+  var r=cfeCuenta(L), ab=CFE.abierta===c[0];
+  h+='<button type="button" class="cfe-car'+(ab?' abierta':'')+'" data-cfe="abrir" data-c="'+c[0]+'"><span class="cfe-ic" aria-hidden="true">'+c[2]+'</span>'+
+   '<span class="cfe-tx"><b>'+esc(c[1])+'</b><small>'+r.n+' factor'+(r.n===1?'':'es')+(r.nac?(' · '+r.nac+' nacional'+(r.nac===1?'':'es')):'')+(r.sin?(' · <span class="falta">'+r.sin+' sin dato</span>'):'')+'</small></span></button>';
+ });
+ h+='</div>';
+ if(CFE.abierta){
+  var c=CFE_CARPETAS.filter(function(x){return x[0]===CFE.abierta;})[0], L=I.filter(function(x){return x.carpeta===CFE.abierta;});
+  if(c&&L.length){
+   h+='<div class="cfe-det"><div class="cfe-det-cab"><b>'+c[2]+' '+esc(c[1])+'</b><span><button type="button" data-cfe="ficha" data-c="'+c[0]+'">Ver la ficha</button> <button type="button" data-cfe="bajar" data-c="'+c[0]+'">Descargar esta carpeta</button></span></div>'+
+    '<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Fuente de emisión</th><th class="n">Factor usado</th><th>Nivel</th><th>Documento de origen</th></tr></thead><tbody>'+
+    L.map(function(x){ return '<tr><td>'+esc(x.nombre)+'<div class="muted">'+esc(x.amb)+'</div></td><td class="n">'+(isFinite(x.usado)?fmt(x.usado,4):'<span class="falta">sin dato</span>')+'<div class="muted">'+esc(x.unidadUso)+'</div></td>'+
+     '<td>'+esc(cfeNivelNom(x.nivel))+'</td><td>'+esc(x.fuente||'sin documento')+(x.anio?(' · '+esc(x.anio)):'')+(x.bib&&x.bib.url?(' <a href="'+esc(x.bib.url)+'" target="_blank" rel="noopener">abrir ↗</a>'):'')+'</td></tr>'; }).join('')+
+    '</tbody></table></div></div>';
+  }
+ }
+ return h+'</div></div>';
+}
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-cfe]'); if(!b)return;
+ var a=b.dataset.cfe, c=b.dataset.c;
+ if(a==='abrir'){ CFE.abierta=(CFE.abierta===c)?'':c; pintar(); var d=document.querySelector('.cfe-det'); if(d&&CFE.abierta)d.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+ else if(a==='todo')cfeDescargar('');
+ else if(a==='bajar')cfeDescargar(c);
+ else if(a==='ficha')cfeVerFicha(c);
+});
+
+/* ====== Crear fincas desde Excel ======
+   Plantilla .xlsx con las columnas del padrón (una fila por finca) y una hoja de instrucciones.
+   Al subirla llena, pasa por la carga masiva de fincas: se revisa, se corrigen coordenadas y
+   nada se crea hasta que la persona confirma.                                                  */
+var FXL_AYUDA={codigo:'Obligatorio. Código único de la finca, p. ej. CFC-001. Si ya existe, la fila actualiza esa finca.',
+ productor:'Nombre del productor o productora.',documento:'Número de identidad. Opcional.',comunidad:'Comunidad, aldea o municipio.',
+ lat:'Latitud en grados decimales, p. ej. 14.7123. O use UTM en las columnas Este y Norte.',lon:'Longitud en grados decimales, p. ej. -88.8456 (negativa en Centroamérica).',
+ este:'UTM Este en metros, si no trae grados.',norte:'UTM Norte en metros, si no trae grados.',zona:'Zona UTM y datum, p. ej. 16P WGS84.',
+ altitud:'Metros sobre el nivel del mar.',superficie:'Superficie total en hectáreas (1 manzana = 0,7 ha).',sombra:'Hectáreas bajo sombra.',
+ cultivo:'Café o cacao.',anio:'Año de establecimiento del cultivo.',consentimiento:'Sí o No: consentimiento firmado del productor.',
+ certificaciones:'Sellos vigentes, separados por coma.',produccion:'Producción del ciclo, en quintales oro.',obs:'Cualquier observación.'};
+function fxlXml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fxlCol(i){ var s=''; i++; while(i>0){ var m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; }
+function fxlHoja(filas,anchos,cabEstilo){
+ var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+
+  anchos.map(function(w,i){return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>';}).join('')+'</cols><sheetData>';
+ filas.forEach(function(f,r){
+  x+='<row r="'+(r+1)+'">'+f.map(function(v,c){ return '<c r="'+fxlCol(c)+(r+1)+'" t="inlineStr"'+(r===0&&cabEstilo?' s="1"':(c===0&&!cabEstilo?' s="2"':''))+'><is><t xml:space="preserve">'+fxlXml(v)+'</t></is></c>'; }).join('')+'</row>';
+ });
+ return x+'</sheetData></worksheet>';
+}
+function plantillaFincasXlsx(){
+ var cab=CAMPOS_FIN.map(function(x){return x[1]+(x[2]?' *':'');});
+ var h1=fxlHoja([cab],CAMPOS_FIN.map(function(x){return Math.max(16,Math.min(34,x[1].length+4));}),true);
+ var ins=[['Columna','Qué escribir']].concat(CAMPOS_FIN.map(function(x){return [x[1]+(x[2]?' (obligatoria)':''),FXL_AYUDA[x[0]]||''];}));
+ ins.push(['','']);ins.push(['Cómo usarla','Pegue los datos de su base en la hoja «Fincas», una fila por finca, sin cambiar los títulos. Guarde y súbala en ARRAIGO, en «Fincas y productores» → «Subir la plantilla llena».']);
+ ins.push(['','La aplicación muestra la revisión antes de crear: nada se guarda hasta que usted confirma.']);
+ var h2=fxlHoja(ins,[30,95],true);
+ var arch=[
+  {nombre:'[Content_Types].xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+  {nombre:'_rels/.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+  {nombre:'xl/workbook.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Fincas" sheetId="1" r:id="rId1"/><sheet name="Instrucciones" sheetId="2" r:id="rId2"/></sheets></workbook>'},
+  {nombre:'xl/_rels/workbook.xml.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+  {nombre:'xl/styles.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF15513A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/></border></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1"><alignment wrapText="1" vertical="center"/></xf><xf fontId="2" applyFont="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>'},
+  {nombre:'xl/worksheets/sheet1.xml',datos:h1},
+  {nombre:'xl/worksheets/sheet2.xml',datos:h2}];
+ return armarZip(arch);
+}
+async function bajarPlantillaFincas(){
+ var blob=new Blob([plantillaFincasXlsx()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), nom='ARRAIGO-plantilla-fincas.xlsx';
+ try{ var dl=await usarCap('downloads'); if(dl){ await dl.save({filename:nom,data:blob}); msg('Plantilla descargada'); return; } }catch(e){ if(e&&e.code==='declined')return; }
+ var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=nom; document.body.appendChild(a); a.click();
+ setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },4000); msg('Plantilla descargada: péguele sus datos y súbala aquí');
+}
+function subirPlantillaFincas(fa){
+ if(!puedeEditar()){ msg('Su perfil no puede crear fincas'); return; }
+ msg('Abriendo '+fa.name+'…');
+ leerArchivoCarga(fa).then(function(res){
+  var Cf=cfgCarga(), hs=res.hojas||[], k=0;
+  for(var i=0;i<hs.length;i++){ if(/finca/i.test(hs[i].nombre||'')){ k=i; break; } }
+  Cf.hojas=hs; Cf.hoja=k; Cf.clase=res.clase; Cf.crudo=!!res.crudo; Cf.nombre=fa.name; Cf.A=null; Cf.paquete=null;
+  Cf.cfg.clase='fincas';
+  Cf.texto=(hs[k]&&hs[k].tsv)||'';
+  Cf.T=leerTabla(Cf.texto); Cf.mapa=adivinarMapa(Cf.T.cab); Cf.mapaF=adivinarMapaFinca(Cf.T.cab); Cf.AF=null;
+  if(!Cf.T.filas.length){ msg('La hoja «Fincas» no tiene filas con datos'); return; }
+  ir('car');
+  msg('Leídas '+Cf.T.filas.length+' fincas. Revise y confirme para crearlas.');
+ }).catch(function(e){ msg((e&&e.message)||'No se pudo abrir el archivo'); });
+}
+function tarjetaFincasExcel(){
+ if(!puedeEditar())return '';
+ return '<div class="tarjeta fxl"><h3>Crear fincas desde Excel</h3><div class="cuerpo">'+
+  '<ol class="fxl-pasos"><li><b>Descargue la plantilla</b><span>Un Excel con una columna por dato de la finca y una hoja de instrucciones.</span>'+
+   '<button type="button" data-fxl="plantilla">Descargar la plantilla (Excel)</button></li>'+
+  '<li><b>Pegue los datos de su base</b><span>Una fila por finca, sin cambiar los títulos. Solo el código es obligatorio.</span></li>'+
+  '<li><b>Súbala</b><span>La aplicación muestra la revisión y crea las fincas cuando usted confirma.</span>'+
+   '<label class="adj-boton primario"><input type="file" accept=".xlsx,.xls,.csv,.ods" data-fxl-subir="1" hidden>Subir la plantilla llena</label></li></ol>'+
+  '</div></div>';
+}
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-fxl]'); if(b&&b.dataset.fxl==='plantilla')bajarPlantillaFincas(); });
+document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.fxlSubir){ var f=t.files&&t.files[0]; t.value=''; if(f)subirPlantillaFincas(f); } });
 
 function pintar(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
