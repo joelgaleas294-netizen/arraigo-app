@@ -1747,6 +1747,8 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
 .cap-cola li>button.cap-quitar{width:auto;display:flex;align-items:center;padding:0 12px;color:#9b2c2c;font-weight:600;white-space:nowrap}
 .cl-sub{margin:12px 0 6px}
+.per-tabla{table-layout:fixed;width:100%;border-collapse:collapse}.per-tabla th,.per-tabla td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}.per-tabla th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3,#6b7a76)}.per-tabla input{width:18px;height:18px}.per-tabla td,.per-tabla td b{white-space:normal!important;overflow-wrap:anywhere}.per-tabla th:nth-child(1){width:44px}.per-tabla th:nth-child(2){width:20%}.per-tabla th:nth-child(3){width:46%}
+.per-tabla td{vertical-align:top;overflow-wrap:anywhere}.per-tabla td.per-txt{font-size:14px;line-height:1.5;white-space:normal}
 .cl-selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:8px 12px;border:1px dashed var(--line);border-radius:8px;font-size:14px}
 .cl-selbar span{flex:1}
 .hcp-pry{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 14px}
@@ -23162,7 +23164,7 @@ function capComprobarApi(){
  CAP.api=false;
  try{
   fetch(ARR_BASE+'/api/leer-factura',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
-   .then(function(o){ CAP.api=!!(o&&o.disponible); if(vista==='cap')pintar(); }).catch(function(){});
+   .then(function(o){ CAP.api=!!(o&&o.disponible); if(vista==='cap'||vista==='per')pintar(); }).catch(function(){});
  }catch(e){}
 }
 function capPrompt(){
@@ -24552,12 +24554,14 @@ function perSel(et,k,ops){
 }
 function vistaPerfil(){
  var A=perAvance(), ed=puedeEditar(), D=perDocs().adjuntos||[];
+ capComprobarApi();
  var h=cabModulo('per','<p class="vista-sub">La presentación de la organización que realiza el estudio: su identificación, su actividad, el contexto en que opera y la parte de la organización que el estudio abarca. Este contenido forma el capítulo 1 del informe ISO 14067.</p>');
  h+='<dl class="cifras">'+
   tarjetaCifra('Perfil completo',A.pct+' %',A.n+' de '+A.de+' apartados')+
   tarjetaCifra('Documentos de presentación',String(D.length),D.length?'cargados':'ninguno todavía')+
   tarjetaCifra('País',esc(perV('pais')||'sin declarar'),'de operación')+
   tarjetaCifra('Productores o proveedores',esc(perV('nprod')||'—'),'declarados')+'</dl>';
+ if(D.length||PER_IA.estado)h+=tarjetaPerIA();
  h+='<div class="tarjeta"><h3>1. Identificación</h3><div class="cuerpo"><div class="campos">'+
   perCampo('Razón social','razon',true)+perCampo('Nombre comercial','comercial')+perCampo('Registro tributario','registro')+
   perSel('Naturaleza jurídica','tipo',['Sociedad anónima','Sociedad de responsabilidad limitada','Cooperativa','Asociación de productores','Empresa individual','Otra'])+
@@ -24595,6 +24599,105 @@ function vistaPerfil(){
  h+='<p class="pista">El directorio de organizaciones atendidas y sus usuarios se administra en <button type="button" class="enlace" data-vista="org">Directorio de organizaciones</button>.</p>';
  return h;
 }
+/* Construir el perfil a partir de los documentos de presentación: se extrae el texto (y, si el documento
+   es escaneado, algunas páginas en imagen), se lee con la IA de Origen y se propone cada apartado.
+   Nada se escribe en el perfil hasta que la persona revisa y aplica la propuesta. */
+var PER_IA={estado:'',prop:null,marca:{},error:''};
+var PER_CAMPOS=[['razon','Razón social'],['comercial','Nombre comercial'],['registro','Registro tributario'],['tipo','Naturaleza jurídica'],['fundacion','Año de constitución'],
+ ['pais','País'],['depto','Departamento y municipio'],['direccion','Dirección de la sede'],['web','Sitio web'],['representante','Representante legal'],
+ ['descripcion','Presentación'],['actividad','Actividad principal'],['productos','Productos y presentaciones'],['cadena','Cadena de valor'],['instalaciones','Instalaciones y sitios'],
+ ['mercados','Mercados de destino'],['certificaciones','Certificaciones vigentes'],['nprod','Productores asociados o proveedores'],['nempl','Personas empleadas'],
+ ['area','Superficie en producción, ha'],['volumen','Volumen comercializado por ciclo'],['limiteorg','Parte de la organización que abarca el estudio']];
+async function perTextoDoc(a){
+ var b=await cdsBlob(a); if(!b)return {texto:'',imgs:[]};
+ var nom=String(a.nombre||'').toLowerCase(), imgs=[], tx='';
+ if(/\.pdf$/.test(nom)||/pdf/.test(a.mime||'')){
+  var doc=await (await lecPdfLib()).getDocument({data:new Uint8Array(await b.arrayBuffer())}).promise;
+  tx=await capTextoPdf(doc,50000);
+  var util=tx.replace(/--- página \d+ ---/g,'').replace(/\s+/g,' ').trim().length;
+  if(util<400*Math.min(doc.numPages,5)){ for(var i=1;i<=Math.min(doc.numPages,5);i++){ var pg=await capPaginaPdf(doc,i); imgs.push(pg.img); } }
+  try{doc.destroy();}catch(e){}
+ } else if(/\.pptx$/.test(nom)){
+  var Z=await leerZip(await b.arrayBuffer());
+  var sl=Z.entradas.map(function(e){return e.nombre;}).filter(function(n){return /^ppt\/slides\/slide\d+\.xml$/.test(n);}).sort(function(x,y){return parseInt(x.replace(/\D/g,''),10)-parseInt(y.replace(/\D/g,''),10);});
+  for(var j=0;j<sl.length&&tx.length<50000;j++){ var xml=await sacarDelZip(Z,sl[j]); if(xml)tx+='--- diapositiva '+(j+1)+' ---\n'+(xml.match(/<a:t>[^<]*<\/a:t>/g)||[]).map(function(t){return t.replace(/<\/?a:t>/g,'');}).join(' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')+'\n'; }
+ } else if(/\.docx$/.test(nom)){ tx=await capTextoWord(b); }
+ else if(/^image\//.test(a.mime||'')){ imgs.push((await comprimir(b,1800,0.82)).blob); }
+ return {texto:tx,imgs:imgs};
+}
+function perPrompt(){
+ return 'Lee la presentación institucional de una organización del sector café o cacao y devuelve SOLO un objeto JSON con estas claves: '+
+  PER_CAMPOS.map(function(c){return '"'+c[0]+'"';}).join(', ')+'.\n'+
+  'Reglas de redacción: español formal y técnico, tercera persona, oraciones completas y sobrias; sin adjetivos promocionales, sin frases de mercadeo, sin listas con viñetas ni signos de exclamación. '+
+  'Usa únicamente información que esté en el documento. Si un dato no aparece, deja la cadena vacía; no lo supongas ni lo completes. Las cifras se copian como aparecen, con su unidad. '+
+  '"descripcion": dos o tres párrafos separados por una línea en blanco: qué es la organización, cuándo y para qué se constituyó, a quién agrupa y qué hace. '+
+  '"cadena": el recorrido del producto desde la finca hasta la entrega al cliente, indicando quién realiza cada etapa. '+
+  '"limiteorg": solo si el documento permite saber qué fincas, instalaciones u operaciones intervienen en el producto. '+
+  '"tipo": una de estas opciones si se deduce del documento: Sociedad anónima, Sociedad de responsabilidad limitada, Cooperativa, Asociación de productores, Empresa individual, Otra. '+
+  'No copies números de identidad de personas.';
+}
+async function perConstruir(){
+ var D=perDocs().adjuntos||[];
+ if(!D.length){ msg('Primero suba la presentación de la organización'); return; }
+ if(!capLector()){ capComprobarApi(); msg('La lectura con IA no está disponible en este momento'); return; }
+ PER_IA={estado:'leyendo',prop:null,marca:{},error:''}; pintar();
+ try{
+  var texto='', imgs=[];
+  for(var i=0;i<D.length&&texto.length<70000;i++){ var r=await perTextoDoc(D[i]); if(r.texto)texto+='### '+D[i].nombre+'\n'+r.texto+'\n'; imgs=imgs.concat(r.imgs).slice(0,5); }
+  if(!texto.trim()&&!imgs.length)throw new Error('no se pudo extraer contenido de los documentos (formato no admitido o archivo no disponible en este equipo)');
+  var urls=[]; for(var k=0;k<imgs.length;k++)urls.push(await capDataURL(imgs[k]));
+  var cuerpo=JSON.stringify({imagenes:urls,texto:texto.slice(0,78000),instruccion:perPrompt()}), resp, o;
+  for(var t=0;t<4;t++){ resp=await fetch(ARR_BASE+'/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:cuerpo});
+   o=await resp.json().catch(function(){return null;}); if(resp.status!==429)break; await capEspera(15000*(t+1)); }
+  if(!resp.ok||!o||!o.ok)throw new Error((o&&o.text)||('el servicio respondió '+resp.status));
+  var P={}; PER_CAMPOS.forEach(function(c){ var v=o.datos&&o.datos[c[0]]; if(v!=null&&String(v).trim())P[c[0]]=String(v).trim().slice(0,c[0]==='descripcion'?4000:1500); });
+  PER_IA={estado:'listo',prop:P,marca:{},error:''};
+  Object.keys(P).forEach(function(k){ if(!String(perV(k)||'').trim())PER_IA.marca[k]=true; });
+  anotar('dato','Perfil de la organización · propuesta leída de los documentos','',Object.keys(P).length+' apartados propuestos',D.map(function(a){return a.nombre;}).join('; ').slice(0,200));
+ }catch(e){ PER_IA={estado:'error',prop:null,marca:{},error:(e&&e.message)||'error'}; }
+ pintar();
+ var c=document.querySelector('.per-prop'); if(c)c.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function tarjetaPerIA(){
+ var ed=puedeEditar(), D=perDocs().adjuntos||[];
+ var h='<div class="tarjeta per-prop"><h3>Construir el perfil a partir de los documentos</h3><div class="cuerpo">'+
+  '<p>La aplicación lee los documentos de presentación cargados y propone el contenido de cada apartado del perfil. Usted revisa la propuesta, marca lo que acepta y lo aplica; nada se escribe sin su confirmación.</p>';
+ if(PER_IA.estado==='leyendo')return h+'<p><b>Leyendo los documentos…</b> Un documento extenso puede tardar uno o dos minutos.</p></div></div>';
+ if(PER_IA.estado==='error')h+='<div class="aviso">No se pudo construir la propuesta: '+esc(PER_IA.error)+'.</div>';
+ if(PER_IA.estado==='listo'&&PER_IA.prop){
+  var ks=Object.keys(PER_IA.prop);
+  if(!ks.length)h+='<div class="aviso">El documento no trae datos que correspondan a los apartados del perfil.</div>';
+  else{
+   h+='<div class="tabla-caja"><table class="per-tabla"><thead><tr><th></th><th>Apartado</th><th>Propuesta leída del documento</th><th>Valor actual</th></tr></thead><tbody>'+
+    PER_CAMPOS.filter(function(c){return PER_IA.prop[c[0]];}).map(function(c){ var act=String(perV(c[0])||'');
+     return '<tr><td><input type="checkbox" data-perp="'+c[0]+'"'+(PER_IA.marca[c[0]]?' checked':'')+' aria-label="Aceptar"></td><td><b>'+esc(c[1])+'</b></td>'+
+      '<td class="per-txt">'+esc(PER_IA.prop[c[0]]).replace(/\n/g,'<br>')+'</td><td class="per-txt muted">'+(act?esc(act).replace(/\n/g,'<br>'):'vacío')+'</td></tr>'; }).join('')+
+    '</tbody></table></div>'+
+    '<div class="acciones"><button type="button" class="primario" data-perp-acc="aplicar">Aplicar lo marcado ('+Object.keys(PER_IA.marca).length+')</button>'+
+    '<button type="button" data-perp-acc="todos">Marcar todo</button><button type="button" data-perp-acc="descartar">Descartar la propuesta</button></div>'+
+    '<p class="pista">Lo aplicado queda editable en cada apartado. Revise en especial las cifras y los nombres propios contra el documento original.</p>';
+  }
+ }
+ if(ed&&PER_IA.estado!=='listo')h+='<div class="acciones"><button type="button" class="primario" data-perp-acc="construir"'+(D.length?'':' disabled')+'>Leer los documentos y proponer el perfil</button>'+
+  (D.length?'':'<span class="muted" style="align-self:center">Suba primero un documento en el apartado 5.</span>')+'</div>';
+ return h+'</div></div>';
+}
+document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.perp){ if(t.checked)PER_IA.marca[t.dataset.perp]=true; else delete PER_IA.marca[t.dataset.perp]; pintar(); } });
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-perp-acc]'); if(!b)return;
+ var a=b.dataset.perpAcc;
+ if(a==='construir')perConstruir();
+ else if(a==='todos'){ Object.keys(PER_IA.prop||{}).forEach(function(k){PER_IA.marca[k]=true;}); pintar(); }
+ else if(a==='descartar'){ PER_IA={estado:'',prop:null,marca:{},error:''}; pintar(); }
+ else if(a==='aplicar'){
+  var ks=Object.keys(PER_IA.marca); if(!ks.length){ msg('Marque al menos un apartado'); return; }
+  ks.forEach(function(k){ S.perfil['emp_'+k]=PER_IA.prop[k]; });
+  marcar('org/perfil'); guardarLocal();
+  anotar('dato','Perfil de la organización · propuesta aplicada','',ks.length+' apartados','revisados y aceptados por '+quienEdita());
+  PER_IA={estado:'',prop:null,marca:{},error:''}; pintar(); msg(ks.length+' apartados aplicados al perfil'); window.scrollTo(0,0);
+ }
+});
+
 async function perSubir(files){
  if(!puedeEditar())return;
  perDocs(); var ok=0;
