@@ -1647,6 +1647,60 @@ table.hoja.cds-tabla td{white-space:normal;font-size:var(--t-2)} table.hoja.cds-
 .cds-filtros{display:flex;gap:var(--e-4);flex-wrap:wrap;margin-bottom:var(--e-5)}.cds-filtros input{flex:1 1 260px}
 .cds-acc{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--e-6)}.cds-acc>div{border:1px solid var(--line);border-radius:var(--r-1);padding:var(--e-5);background:var(--surface-2)}
 .cds-acc p{font-size:var(--t-2);color:var(--ink-2)}
+
+/* ====== Lateral con la identidad de Origen (verde profundo, acento lima y oro) ====== */
+html body .lateral{--lat-bg:#14231c;--lat-bg2:#1b2e25;--lat-ink:#e6efe9;--lat-ink-2:#9fb5a8;--lat-line:rgba(255,255,255,.08);--lat-marca:#8dbf3f;
+ background:#14231c!important;border-right:0;color:var(--lat-ink)}
+html body .lateral .marca-lat{padding:18px 16px 16px;border-bottom:1px solid rgba(255,255,255,.07);gap:6px}
+html body .lateral .marca-lat:hover{background:rgba(255,255,255,.04)}
+html body .lateral .marca-lat b{color:#fff;font-family:Georgia,'Times New Roman',serif;font-weight:700;letter-spacing:.01em}
+html body .lateral .marca-lat span{color:#c99a3e;opacity:.9;letter-spacing:.14em}
+html body .lateral nav{padding:10px 10px 14px;gap:6px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+html body .lateral .nv-bloque{background:rgba(255,255,255,.035);border-radius:12px;padding:3px 4px 6px;display:flex;flex-direction:column;gap:1px}
+html body .lateral .nv-grupo{color:#8dbf3f;opacity:1;font-size:.68rem;letter-spacing:.1em;font-weight:700;padding:9px 10px 5px}
+html body .lateral nav button{border-radius:9px;padding:7px 10px;gap:10px;font-size:.9rem;line-height:1.25;color:#dfe9e3;background:none;border:0;border-left:0;box-shadow:none}
+html body .lateral nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+html body .lateral nav button[aria-current="page"]{background:#fff;color:#15513a;font-weight:650;border-left:0;box-shadow:0 4px 12px rgba(0,0,0,.22)}
+html body .lateral .nv-ico{width:28px;height:28px;border-radius:8px;
+ background:color-mix(in srgb,var(--mod,#8dbf3f) 20%,transparent);border:1px solid color-mix(in srgb,var(--mod,#8dbf3f) 40%,transparent);
+ color:color-mix(in srgb,var(--mod,#8dbf3f) 65%,#ffffff)}
+html body .lateral .nv-ico svg{width:16px;height:16px}
+html body .lateral nav button[aria-current="page"] .nv-ico{background:#e8f3ec;border-color:transparent;color:#1e6b47}
+html body .lateral .nv-num{font-family:inherit;font-size:.72rem;font-weight:600;color:#cfe0d6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px;opacity:1;min-width:0}
+html body .lateral .nv-num:empty{display:none}
+html body .lateral nav button[aria-current="page"] .nv-num{background:#c99a3e;color:#fff}
+html body .lateral nav button.nv-panel{margin:0 0 2px}
+html body .lateral nav .nv-comp button{border-radius:8px;border:1px solid rgba(255,255,255,.18);color:#dfe9e3}
+html body .lateral nav .nv-comp button[aria-pressed="true"]{background:#8dbf3f;border-color:#8dbf3f;color:#14231c}
+html body .lateral .lat-pie{background:rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.07);padding:10px 12px;gap:8px;align-items:stretch}
+html body .lateral .lat-pie button{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#e6efe9;border-radius:8px;font-size:.8rem;padding:7px 10px}
+html body .lateral .lat-pie button:hover{background:rgba(255,255,255,.14)}
+html body .lateral .lp-usuario .sesion{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:2px 9px;background:rgba(255,255,255,.06);
+ border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 9px;grid-auto-rows:min-content}
+html body .lateral .ses-av{grid-row:span 2;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#8dbf3f;color:#14231c;font-weight:800;font-size:.8rem}
+html body .lateral .sesion .ses-quien{gap:0;grid-column:2;flex-direction:column;align-items:flex-start;min-width:0}
+html body .lateral .sesion .ses-quien b{color:#fff;text-transform:none}
+html body .lateral .sesion .ses-rol{border:0;padding:0;color:#9fb5a8;font-size:.64rem;text-transform:uppercase;letter-spacing:.08em}
+html body .lateral .sesion button{grid-column:3;grid-row:1/span 2;width:auto;margin:0;padding:5px 8px;font-size:.68rem;background:transparent;border-color:rgba(255,255,255,.16)}
+html body .lateral .lp-estado{display:flex;align-items:center;justify-content:space-between;gap:8px}
+html body .lateral .lp-estado .sync{font-size:.8rem;color:#cfe0d6;display:flex;align-items:center;gap:6px;min-width:0}
+html body .lateral .lp-usuario .sesion:empty{display:none}
+html body .lateral .lp-estado #btn-sync{width:auto;flex:none;background:#8dbf3f;border-color:#8dbf3f;color:#14231c;font-weight:700}
+html body .lateral .lp-estado #btn-sync:hover{background:#9fcf52}
+html body .lateral .lp-chips{display:flex;gap:6px;flex-wrap:wrap}
+html body .lateral .lp-chips .chip-modo{font-size:.66rem}
+html body .lateral .lp-chips .chip-modo.edicion{border-color:#c99a3e;color:#f0d9a8;background:rgba(201,154,62,.14)}
+html body .lateral .lp-vista{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+html body .lateral .lp-vista button{font-size:.68rem;padding:5px 7px;justify-content:flex-start;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;min-width:0}
+html body .lateral .lp-vista button span:last-child{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:760px){
+ html body .lateral nav{padding:6px 6px 7px;gap:2px}
+ html body .lateral .nv-bloque{display:contents}
+ html body .lateral .nv-grupo{display:none}
+ html body .lateral nav button{flex-direction:column;gap:3px;font-size:.66rem;padding:6px 7px;min-width:68px}
+ html body .lateral nav button[aria-current="page"]{box-shadow:none}
+ html body .lateral .nv-num{display:none}
+}
 </style>
 </head>
 <body>
@@ -1671,14 +1725,17 @@ table.hoja.cds-tabla td{white-space:normal;font-size:var(--t-2)} table.hoja.cds-
   </button>
   <nav id="nav"></nav>
   <div class="lat-pie">
-   <button type="button" class="mini aspecto" id="btn-aspecto" aria-pressed="false">
-    <span class="asp-ico" aria-hidden="true"></span><span id="asp-txt">Aspecto oscuro</span></button>
-   <button type="button" class="mini aspecto" id="btn-piel"><span class="asp-ico" aria-hidden="true"></span><span id="piel-txt">Vista automática</span></button>
-   <span class="sesion" id="sesion"></span>
-   <span class="chip-modo" id="chip-modo">Comprobando acceso</span>
-   <span class="chip-modo" id="chip-lic" hidden></span>
-   <span class="sync"><i class="punto" id="punto"></i><span id="sync-txt">Comprobando</span></span>
-   <button type="button" class="mini" id="btn-sync">Sincronizar</button>
+   <div class="lp-usuario"><span class="sesion" id="sesion"></span></div>
+   <div class="lp-estado">
+    <span class="sync"><i class="punto" id="punto"></i><span id="sync-txt">Comprobando</span></span>
+    <button type="button" class="mini" id="btn-sync">Sincronizar</button>
+   </div>
+   <div class="lp-chips"><span class="chip-modo" id="chip-modo">Comprobando acceso</span><span class="chip-modo" id="chip-lic" hidden></span></div>
+   <div class="lp-vista">
+    <button type="button" class="mini aspecto" id="btn-aspecto" aria-pressed="false">
+     <span class="asp-ico" aria-hidden="true"></span><span id="asp-txt">Aspecto oscuro</span></button>
+    <button type="button" class="mini aspecto" id="btn-piel"><span class="asp-ico" aria-hidden="true"></span><span id="piel-txt">Vista automática</span></button>
+   </div>
   </div>
  </aside>
 
@@ -5273,6 +5330,7 @@ function odsDeclarables(){
 
 /* ====== módulos ====== */
 var ICO={
+ con:'<path d="M9 11l2 2 4-4"/><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 17h8"/>',
  cds:'<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/>',
  cap:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M12.5 17v-6"/><path d="M10 13.5l2.5-2.5 2.5 2.5"/>',
  bos:'<path d="M12 21v-5"/><path d="M12 16 6.5 12.5h3L5 8.5h3L12 4l4 4.5h3l-4.5 4h3z"/><path d="M8 21h8"/>',
@@ -5648,19 +5706,21 @@ function pintarNav(){
  ETAPAS.forEach(function(e){
   var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);});
   if(!ms.length)return;
-  h+='<span class="nv-grupo">'+esc(e[1])+'</span>';
+  h+='<div class="nv-bloque"><span class="nv-grupo">'+esc(e[1])+'</span>';
   ms.forEach(function(m){
    var d=datoModulo(m), nom=nomMod(m);
    h+='<button type="button" data-vista="'+m.id+'" style="--mod:var(--'+m.scol+')"'+(vista===m.id?' aria-current="page"':'')+'>'+
     '<span class="nv-ico">'+svgIco(m.id)+'</span><span class="nv-txt">'+esc(nom)+'</span>'+
     '<span class="nv-num">'+(m.id==='cfg'?'':esc(d[0]))+'</span></button>';
   });
+  h+='</div>';
  });
- h+='<span class="nv-grupo">Herramientas</span>';
+ h+='<div class="nv-bloque"><span class="nv-grupo">Herramientas</span>';
  [['rep','Reportes'],['map','Mapa'],['asi','Asistente'],['pre','Presentación'],['aju','Ajustes y ayuda']].forEach(function(t){
   h+='<button type="button" data-vista="'+t[0]+'" style="--mod:var(--lat-marca)"'+(vista===t[0]?' aria-current="page"':'')+'>'+
    '<span class="nv-ico">'+svgIco(t[0])+'</span><span class="nv-txt">'+esc(t[1])+'</span></button>';
  });
+ h+='</div>';
  n.innerHTML=h;
  var c=$('ctx');
  if(c){var fp=pryActual();
@@ -5785,7 +5845,8 @@ function pintarSesion(){
  if(!e)return;
  if(!SES){e.innerHTML='';return;}
  var f=pryActual();
- e.innerHTML='<span class="ses-quien"><b>'+esc(SES.usuario)+'</b>'+
+ var ini=String(SES.usuario||'?').trim().split(/\s+/).slice(0,2).map(function(x){return x.charAt(0);}).join('').toUpperCase();
+ e.innerHTML='<span class="ses-av" aria-hidden="true">'+esc(ini)+'</span><span class="ses-quien"><b>'+esc(SES.usuario)+'</b>'+
   '<span class="ses-rol">'+(SES.tipo==='portal'?'portal':({responsable:'responsable',tecnico:'campo',auditor:'auditor',lector:'consulta'}[SES.rol]||'campo'))+'</span></span>'+
   (SES.tipo==='proyecto'&&f?('<span class="ses-quien" style="font-size:10.5px">'+esc(f.codigo)+'</span>'):'')+
   '<button type="button" class="mini" data-accion="acc-salir">Cerrar sesión</button>';
