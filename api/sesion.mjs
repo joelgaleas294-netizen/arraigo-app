@@ -11,7 +11,34 @@ function mismoOrigen(req) {
   try { return new URL(o).host === req.headers.get('host'); } catch { return false; }
 }
 
+// Entrada desde Origen: formulario (POST) con un pase firmado de un solo uso que se canjea con el SGD.
+// Llega aquí también por /api/entrar (vercel.json). El pase nunca viaja en la dirección (URL) ni se guarda.
+const ir = (destino, extra = {}) => new Response(null, { status: 303, headers: { location: destino, 'cache-control': 'no-store', ...extra } });
+export function origenSgd(req, sgd = SGD) {
+  const o = req.headers.get('origin');
+  if (!o || o === 'null') return false;
+  try { return new URL(o).host === new URL(sgd).host; } catch { return false; }
+}
+export function destinoSeguro(r) {
+  r = String(r || '/');
+  return r.startsWith('/') && !r.startsWith('//') && !r.includes('\\') ? r.slice(0, 300) : '/';
+}
+async function entradaOrigen(req) {
+  if (!origenSgd(req)) return ir('/login.html?e=origen');
+  let pase = '', r = '/';
+  try { const d = new URLSearchParams(await req.text()); pase = String(d.get('pase') || ''); r = destinoSeguro(d.get('r')); } catch { return ir('/login.html?e=entrada'); }
+  if (!pase || pase.length > 2000) return ir('/login.html?e=entrada');
+  let x, d = {};
+  try {
+    x = await globalThis.fetch(SGD + '/api/arraigo/sesion', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entrada: pase }) });
+    d = await x.json().catch(() => ({}));
+  } catch { return ir('/login.html?e=red'); }
+  if (!x.ok || !d.ok || !d.token) return ir('/login.html?e=entrada');
+  return ir(r, { 'set-cookie': `${COOKIE}=${encodeURIComponent(d.token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${12 * 3600}` });
+}
+
 export async function POST(req) {
+  if ((req.headers.get('content-type') || '').includes('application/x-www-form-urlencoded')) return entradaOrigen(req);
   if (!mismoOrigen(req)) return json({ ok: false, error: 'Origen no permitido.' }, 403);
   let b;
   try { b = await req.json(); } catch { return json({ ok: false, error: 'Solicitud no válida.' }, 400); }
