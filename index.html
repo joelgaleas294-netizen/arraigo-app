@@ -1794,6 +1794,7 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-mes th:first-child{position:sticky;left:0;background:var(--surface)}
 .calc-mes tr.calc-sin td{color:var(--ink-3,#6b7a76)}
 .calc-nf{display:block;font-size:11px;color:var(--ink-3,#6b7a76)}
+.calc-susp td{background:#fbefee}
 .calc-facts{margin:10px 0 0}.calc-facts summary{cursor:pointer;font-size:14px;padding:6px 0}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
@@ -23349,10 +23350,16 @@ function capBuscarFinca(cod,prod){
 /* Fechas a AAAA-MM-DD: las facturas traen 15/01/2026, 15-01-26, 15 de enero de 2026… y el modelo no siempre las convierte */
 var MESES_N={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
 /* El modelo a veces lee «05/12/25» como 2005-12-25. Si el año no es plausible y el día sí lo es como año, se corrige a 2025-12-05. */
+function aniosRef(){
+ var r=[new Date().getFullYear()], c=String((S&&S.perfil&&S.perfil.ciclo)||'').match(/\d{4}/g)||[], P=(S&&S.prod)||{};
+ c.forEach(function(x){r.push(+x);}); [P.per_inicio,P.per_fin].forEach(function(x){ var y=+String(x||'').slice(0,4); if(y>2000)r.push(y); });
+ return r;
+}
 function fechaPlausible(f){
  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(f||'')); if(!m)return f;
- var y=+m[1], mo=+m[2], d=+m[3], hoyY=new Date().getFullYear();
- if((y<2013||y>hoyY+1)&&y>=2000&&y<=2031&&d>=13&&d<=hoyY-2000+1){ var y2=2000+d, d2=y-2000; if(d2>=1&&d2<=31)return y2+'-'+m[2]+'-'+('0'+d2).slice(-2); }
+ var y=+m[1], d=+m[3], R=aniosRef(), cerca=function(a){ return R.some(function(x){return Math.abs(a-x)<=1;}); };
+ /* «15/12/25» leída como 2015-12-25: el año no está cerca del ciclo y, intercambiado con el día, sí lo está */
+ if(!cerca(y)&&y>=2000&&y<=2031){ var y2=2000+d, d2=y-2000; if(d2>=1&&d2<=31&&cerca(y2))return y2+'-'+m[2]+'-'+('0'+d2).slice(-2); }
  return f;
 }
 function normFecha(t){ return fechaPlausible(normFechaBase(t)); }
@@ -25538,7 +25545,7 @@ function calcEstructura(){
 var MES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 function calcMeses(){
  var P=S.prod||{}, a=String(P.per_inicio||'').slice(0,7), b=String(P.per_fin||'').slice(0,7);
- if(!(a&&b)){ var yM=new Date().getFullYear()+1; var fs=registros().filter(function(r){ var y=+String(r.fecha||'').slice(0,4); return r.estado!=='anulado'&&/^\d{4}-\d{2}/.test(r.fecha||'')&&y>=2013&&y<=yM;}).map(function(r){return r.fecha.slice(0,7);}).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
+ if(!(a&&b)){ var yM=new Date().getFullYear()+1; var fs=registros().filter(function(r){ var y=+String(r.fecha||'').slice(0,4), RA=aniosRef(); return r.estado!=='anulado'&&/^\d{4}-\d{2}/.test(r.fecha||'')&&y<=yM&&RA.some(function(x){return Math.abs(y-x)<=2;});}).map(function(r){return r.fecha.slice(0,7);}).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
  var out=[], y=+a.slice(0,4), m=+a.slice(5,7);
  while(out.length<24){ var k=y+'-'+String(m).padStart(2,'0'); out.push(k); if(k>=b)break; m++; if(m>12){m=1;y++;} }
  return out;
@@ -25555,8 +25562,15 @@ function calcListaFacturas(C){
  var R=registros().filter(function(r){ return r.estado!=='anulado'&&ids[r.linea+'|'+r.cat]; }).sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha));});
  var cola=capCola().filter(function(q){ return q.estado!=='leyendo'&&(q.datos.items||[]).some(function(it){ return ids[it.linea+'|'+(q.cat==='finca'?'finca':'org')]; }); }).length;
  var h='<details class="calc-facts"><summary>Facturas registradas de esta categoría: <b>'+R.length+'</b>'+(cola?(' · <span class="falta">'+cola+' más leídas sin confirmar en «Subir facturas y registros»</span>'):'')+'</summary>';
- if(R.length)h+='<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th>Fuente</th><th class="n">Cantidad</th><th>Unidad</th><th>Archivo</th></tr></thead><tbody>'+
-  R.map(function(r){ return '<tr><td>'+esc(r.fecha||'sin fecha')+(r.fechaLeida?(' <small class="calc-nf">leída «'+esc(r.fechaLeida)+'»</small>'):'')+'</td><td>'+esc(r.numero||'s/n')+'</td><td>'+esc(r.proveedor||'')+'</td><td>'+esc(r.lineaNom)+'</td><td class="n">'+fmt(r.cantidadLinea,2)+'</td><td>'+esc(r.unidadLinea)+'</td><td>'+esc(r.archivo||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
+ /* Precio por litro: si la cantidad salió igual al monto, o el precio no es de combustible, probablemente se leyó el valor en lempiras */
+ var susp=function(r){ var u=r.unidadLinea||'', im=nv(r.importe), q=nv(r.cantidadLinea); if(!(im>0&&q>0))return false; var pu=im/q;
+  if(/litro/i.test(u))return pu<10||pu>80; if(/kwh/i.test(u))return pu<1.5||pu>15; return Math.abs(im-q)<0.005; };
+ var nS=R.filter(susp).length;
+ if(nS)h+='<div class="aviso" style="margin:8px 0"><b>'+nS+' factura'+(nS===1?'':'s')+' con precio por unidad fuera de rango</b> (combustible fuera de L 10 a L 80 por litro, o electricidad fuera de L 1,50 a L 15 por kWh). Lo más probable es que se haya leído el monto en lempiras como cantidad: revíselas y, si es así, elimínelas y vuelva a subirlas.</div>';
+ if(R.length)h+='<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th>Fuente</th><th class="n">Cantidad</th><th>Unidad</th><th class="n">Monto, L</th><th class="n">Precio por unidad</th><th>Archivo</th></tr></thead><tbody>'+
+  R.map(function(r){ var im=nv(r.importe), pu=(im>0&&nv(r.cantidadLinea)>0)?im/nv(r.cantidadLinea):NaN, sp=susp(r);
+   return '<tr'+(sp?' class="calc-susp"':'')+'><td>'+esc(r.fecha||'sin fecha')+(r.fechaLeida?(' <small class="calc-nf">leída «'+esc(r.fechaLeida)+'»</small>'):'')+'</td><td>'+esc(r.numero||'s/n')+'</td><td>'+esc(r.proveedor||'')+'</td><td>'+esc(r.lineaNom)+'</td><td class="n">'+fmt(r.cantidadLinea,2)+'</td><td>'+esc(r.unidadLinea)+'</td>'+
+    '<td class="n">'+(im>0?fmt(im,2):'—')+'</td><td class="n">'+(isFinite(pu)?fmt(pu,2):'—')+(sp?' <b class="falta">revisar</b>':'')+'</td><td>'+esc(r.archivo||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
  return h+'</details>';
 }
 function tarjetaEstructura(){
@@ -25581,7 +25595,7 @@ function tarjetaEstructura(){
      return '<tr class="'+(f.q>0?'':'calc-sin')+'"><td>'+esc(f.l.et)+'</td><td>'+esc(f.l.un)+'</td>'+
       MS.map(function(k){ return '<td class="n">'+(M[k]?(fmt(M[k],1)+'<small class="calc-nf">'+NN[k]+' fact.</small>'):'·')+'</td>'; }).join('')+
       (MS.length?'<td class="n'+(fuera>0.0001?' falta':'')+'">'+(fuera>0.0001?fmt(fuera,1):'·')+'</td><td class="n">'+(resto>0.0001?fmt(resto,1):'·')+'</td>':'')+
-      '<td class="n"><b>'+(f.q>0?fmt(f.q,2):'—')+'</b></td><td class="n">'+(f.fac?fmt(f.fac,4):'—')+'</td><td class="n">'+(f.q>0?fmt(f.t,3):'—')+'</td>'+
+      '<td class="n"><b>'+(f.q>0?fmt(f.q,2):'—')+'</b></td><td class="n" title="'+esc(fuenteDe(f.l))+'">'+(f.fac?(fmt(f.fac,4)+'<small class="calc-nf">kg CO₂e/'+esc(f.ut||'')+'</small>'):'—')+'</td><td class="n">'+(f.q>0?fmt(f.t,3):'—')+'</td>'+
       '<td>'+(f.q>0?(f.ev?('✓ '+f.ev):'<b class="falta">sin archivo</b>'):'')+'</td></tr>'; }).join('')+
     '</tbody></table></div>'+calcListaFacturas(C)+
     '<div class="acciones" style="margin:8px 0 0"><button type="button" class="mini" data-vista="ing">Ingresar datos</button><button type="button" class="mini" data-vista="'+(CALC.amb==='finca'?'ins':'ben')+'">Ver en el inventario</button></div></div>';
