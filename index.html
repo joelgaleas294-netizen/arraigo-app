@@ -23129,6 +23129,7 @@ function capPrompt(){
  var lf=capLineas('finca').map(function(l){return 'finca:'+l.id+' = '+l.et+' (se anota en '+l.un+')';});
  return 'Lee este documento de un programa de huella de carbono de café y cacao (factura, recibo, orden de entrega, bitácora o registro) y devuelve SOLO un objeto JSON, sin texto antes ni después, con esta forma:\n'+
   '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","ambito":"org|finca","finca_codigo":"","productor":"","items":[{"descripcion":"","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
+  'La imagen puede venir girada o escrita a mano: léela en su orientación correcta. Si es un talonario o un escaneo con varias facturas, lee solo la factura de esta página; si en la página hay más de una, devuelve la más completa y anota las demás en "observacion". '+
   'Reglas: copia solo lo que se lee en el documento; si un dato no se lee, déjalo vacío y anótalo en "ilegible"; no estimes ni completes cantidades. '+
   'La cantidad es la cantidad física (galones, litros, kWh, quintales, libras, sacos, kilómetros), nunca el precio. En una factura de electricidad, el item es el consumo del período en kWh. '+
   'Si el documento es una bitácora o un registro con muchas filas, suma las cantidades por producto, unidad y finca, y devuelve un item por cada suma; en "observacion" anota el período que cubre. '+
@@ -23138,11 +23139,56 @@ function capPrompt(){
   'En "renglon_sugerido" usa uno de estos códigos con su prefijo, o déjalo vacío si ninguno corresponde:\n'+lo.concat(lf).join('\n');
 }
 function capEsHoja(file){ return /\.(xlsx|xls|csv|ods|tsv)$/i.test(file.name||'')||/spreadsheet|excel|csv/i.test(file.type||''); }
-async function capImagenes(file){
- var t=file.type||'';
- if(t.indexOf('image/')===0){ var r=await comprimir(file,1800,0.82); return [r.blob]; }
- if(t.indexOf('pdf')>=0||/\.pdf$/i.test(file.name||''))return await lecPdfAImagenes(file,3);
- throw new Error('Suba una foto, un PDF o una hoja de Excel');
+function capEsPdf(file){ return (file.type||'').indexOf('pdf')>=0||/\.pdf$/i.test(file.name||''); }
+function capEsWord(file){ return /\.docx$/i.test(file.name||'')||/wordprocessingml/i.test(file.type||''); }
+/* El PDF se abre una sola vez por archivo, aunque tenga cuarenta páginas */
+var CAP_PDF={};
+async function capPdf(file,hash){
+ if(CAP_PDF[hash])return CAP_PDF[hash];
+ var lib=await lecPdfLib();
+ var doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+ return (CAP_PDF[hash]=doc);
+}
+/* Una página del PDF: imagen de unos 2000 px (alcanza para letra a mano) y la capa de texto, si la tiene */
+async function capPaginaPdf(doc,i){
+ var pg=await doc.getPage(i);
+ var v1=pg.getViewport({scale:1}), k=Math.min(2000/Math.max(v1.width,v1.height),3), vp=pg.getViewport({scale:k});
+ var c=document.createElement('canvas'); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+ var cx=c.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,c.width,c.height);
+ await pg.render({canvasContext:cx,viewport:vp}).promise;
+ var img=await new Promise(function(r){ c.toBlob(r,'image/jpeg',0.85); });
+ c.width=c.height=0;
+ var tx='';
+ try{ var tc=await pg.getTextContent(); tx=tc.items.map(function(x){return x.str+(x.hasEOL?'\n':' ');}).join('').replace(/[ \t]+/g,' ').trim(); }catch(e){}
+ return {img:img,texto:tx};
+}
+async function capTextoPdf(doc,max){
+ var out='';
+ for(var i=1;i<=doc.numPages&&out.length<(max||60000);i++){
+  try{ var tc=await (await doc.getPage(i)).getTextContent();
+   out+='--- página '+i+' ---\n'+tc.items.map(function(x){return x.str+(x.hasEOL?'\n':' ');}).join('')+'\n'; }catch(e){}
+ }
+ return out.slice(0,max||60000);
+}
+async function capTextoWord(file){
+ var Z=await leerZip(await file.arrayBuffer());
+ var x=await sacarDelZip(Z,'word/document.xml'); if(!x)return '';
+ return x.replace(/<\/w:p>/g,'\n').replace(/<w:tab\/>/g,'\t').replace(/<[^>]+>/g,'')
+  .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&').slice(0,60000);
+}
+/* Lo que se envía a leer de cada documento de la cola: imágenes y texto */
+async function capMaterial(Q){
+ var f=Q.file;
+ if(capEsHoja(f))return {imgs:null,texto:await capTextoHoja(f),tipo:'hoja'};
+ if(capEsWord(f))return {imgs:null,texto:await capTextoWord(f),tipo:'word'};
+ if((f.type||'').indexOf('image/')===0){ var r=await comprimir(f,2000,0.85); return {imgs:[r.blob],texto:''}; }
+ if(capEsPdf(f)){
+  var doc=await capPdf(f,Q.hash);
+  if(Q.pagina){ var pg=await capPaginaPdf(doc,Q.pagina); return {imgs:[pg.img],texto:pg.texto}; }
+  var imgs=[]; for(var i=1;i<=Math.min(doc.numPages,4);i++)imgs.push((await capPaginaPdf(doc,i)).img);
+  return {imgs:imgs,texto:await capTextoPdf(doc,60000),tipo:'pdf'};
+ }
+ throw new Error('Suba una foto, un PDF, un Word o una hoja de Excel');
 }
 async function capTextoHoja(file){
  var res=await leerArchivoCarga(file), out='';
@@ -23187,27 +23233,36 @@ function capNormalizar(r){
   items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
   confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)}};
 }
-async function capLeerConLector(imgs,texto){
- var lector=capLector(), instr=capPrompt()+(texto?('\n\nContenido del documento (hoja de cálculo, columnas separadas por tabulador):\n'+texto):'');
+function capEspera(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+async function capLeerConLector(imgs,texto,tipo){
+ var lector=capLector(), instr=capPrompt();
+ var cab=tipo==='hoja'?'Contenido del documento (hoja de cálculo, columnas separadas por tabulador):':
+  'Texto extraído del documento (puede venir incompleto; manda lo que se ve en la imagen):';
  if(lector==='claude'){
-  var r=await LEC.fn.json(instr,imgs&&imgs.length?{images:imgs,modelTier:'default',cache:false}:{modelTier:'default',cache:false});
+  var r=await LEC.fn.json(instr+(texto?('\n\n'+cab+'\n'+texto):''),imgs&&imgs.length?{images:imgs,modelTier:'default',cache:false}:{modelTier:'default',cache:false});
   return capNormalizar(r);
  }
  if(lector==='api'){
   var urls=[]; for(var i=0;imgs&&i<imgs.length;i++)urls.push(await capDataURL(imgs[i]));
-  var resp=await fetch('/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imagenes:urls,instruccion:instr})});
-  var o=await resp.json().catch(function(){return null;});
-  if(!resp.ok||!o||!o.ok)throw new Error((o&&o.text)||('el servicio respondió '+resp.status));
+  var cuerpo=JSON.stringify({imagenes:urls,texto:texto?(cab+'\n'+texto):'',instruccion:instr}), resp, o;
+  /* Si Origen pide pausa (muchas páginas seguidas), se espera y se reintenta, sin perder el documento */
+  for(var intento=0;intento<5;intento++){
+   resp=await fetch('/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:cuerpo});
+   o=await resp.json().catch(function(){return null;});
+   if(resp.status!==429)break;
+   await capEspera(15000*(intento+1));
+  }
+  if(!resp.ok||!o||!o.ok){ var er=new Error((o&&o.text)||('el servicio respondió '+resp.status)); er.code=o&&o.code; throw er; }
   return capNormalizar(o.datos);
  }
  return null;
 }
-function capDuplicado(hash,proveedor,numero){
+function capDuplicado(hash,proveedor,numero,pagina){
  var norm=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');};
  var p=norm(proveedor), n=norm(numero);
  return registros().filter(function(x){
   if(x.estado==='anulado')return false;
-  if(hash&&x.hash===hash)return true;
+  if(hash&&x.hash===hash&&(x.pagina||0)===(pagina||0))return true;
   return !!(n&&p&&norm(x.numero)===n&&norm(x.proveedor)===p);
  })[0]||null;
 }
@@ -23222,11 +23277,27 @@ async function capSubirVarios(files){
   if(file.size>MAX_ARCHIVO){ msg(file.name+' pesa más de 200 MB'); continue; }
   var s0=await selloDeBytes(new Uint8Array(await file.arrayBuffer()));
   if(capCola().some(function(x){return x.hash===s0.val;})){ msg(file.name+' ya está en la cola'); continue; }
-  var P={id:uid('doc'),file:file,nombre:file.name||'documento',hash:s0.val,metHash:s0.met,cat:'org',fid:'',fincaLeida:'',
-   url:(file.type.indexOf('image/')===0)?URL.createObjectURL(file):'',origen:'manual',estado:'leyendo',
-   datos:{proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''},error:''};
-  P.dup=capDuplicado(s0.val,'','');
-  capCola().push(P); nuevos.push(P);
+  /* Un PDF escaneado de varias páginas suele ser un talonario: cada página es una factura y entra a la cola por separado.
+     Si el PDF trae texto propio y pocas páginas, se lee como un solo documento (informe, bitácora, estado de cuenta). */
+  var pags=[0];
+  if(capEsPdf(file)){
+   try{
+    var doc=await capPdf(file,s0.val), n=doc.numPages;
+    if(n>1){
+     var tx=(await capTextoPdf(doc,4000)).replace(/--- página \d+ ---/g,'').trim();
+     if(!(tx.length>150*Math.min(n,3)&&n<=12)){ pags=[]; for(var j=1;j<=Math.min(n,300);j++)pags.push(j); }
+    }
+   }catch(e){}
+  }
+  pags.forEach(function(pg){
+   var P={id:uid('doc'),file:file,nombre:(file.name||'documento')+(pg?(' · página '+pg+' de '+pags.length):''),pagina:pg,paginas:pg?pags.length:0,
+    hash:s0.val,metHash:s0.met,cat:'org',fid:'',fincaLeida:'',
+    url:(file.type.indexOf('image/')===0)?URL.createObjectURL(file):'',origen:'manual',estado:'leyendo',
+    datos:{proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''},error:''};
+   P.dup=capDuplicado(s0.val,'','',pg);
+   capCola().push(P); nuevos.push(P);
+  });
+  if(pags.length>1)msg(file.name+': '+pags.length+' páginas; cada una se lee como una factura');
  }
  if(!nuevos.length)return;
  if(!CAP.pend)capSel(nuevos[0]);
@@ -23235,9 +23306,11 @@ async function capSubirVarios(files){
   var Q=nuevos[k];
   if(capLector()){
    try{
-    var hoja=capEsHoja(Q.file), r=hoja?await capLeerConLector(null,await capTextoHoja(Q.file)):await capLeerConLector(await capImagenes(Q.file),'');
+    var M=await capMaterial(Q), r=await capLeerConLector(M.imgs,M.texto,M.tipo);
+    if(!Q.url&&Q.pagina&&M.imgs&&M.imgs[0])Q.url=URL.createObjectURL(M.imgs[0]);
     if(r){ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; }
     if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero);
+    if(Q.pagina&&!Q.dup)Q.dup=capCola().filter(function(x){ return x!==Q&&x.pagina&&x.datos.numero&&x.datos.numero===Q.datos.numero&&x.datos.proveedor===Q.datos.proveedor; })[0]?{numero:Q.datos.numero,fecha:Q.datos.fecha||'s/f',lineaNom:'en otra página de este mismo PDF'}:null;
    }catch(e){
     var c=(e&&e.code)||'';
     Q.error=(c==='rate_limited')?'Demasiadas lecturas seguidas; espere un momento o anote a mano.':('No se pudo leer ('+((e&&e.message)||'error')+'). Anote los datos a mano.');
@@ -23297,7 +23370,7 @@ async function capConfirmar(P0,silencio){
   var reg={id:uid('reg'),fecha:d.fecha,numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
    linea:l.id,lineaNom:l.et,desc:it.desc,cantidad:it.cant,unidad:it.uni,conversion:cv.f,convAuto:cv.auto,
    cantidadLinea:Math.round(it.cant*cv.f*1e6)/1e6,unidadLinea:l.un,importe:isFinite(it.importe)?it.importe:null,
-   adjuntoId:adj[ref]||'',archivo:P.nombre||'',hash:P.hash||'',metHash:P.metHash||'',
+   adjuntoId:adj[ref]||'',archivo:P.nombre||'',pagina:P.pagina||0,hash:P.hash||'',metHash:P.metHash||'',
    origen:P.origen,confianza:it.conf||d.confianza||'',por:quien,cuando:ahora,nota:d.observacion||'',estado:'vigente'};
   registros().push(reg);
   anotar('dato','Captura · '+l.et,'', fmt(reg.cantidadLinea,2)+' '+l.un,
@@ -23407,9 +23480,9 @@ function vistaCaptura(){
 
  /* 1 · subir: uno o varios documentos; la aplicación decide a qué fuente y a qué finca va cada uno */
  h+='<div class="tarjeta cap-subir"><h3>1 · Subir facturas y registros</h3><div class="cuerpo">'+
-  (ed?('<label class="cap-zona"><input type="file" multiple accept="image/*,application/pdf,.xlsx,.xls,.csv,.ods" data-cap-subir="1" hidden>'+
-    '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Elegir uno o varios documentos</b><small>Facturas, órdenes de entrega, recibos, bitácoras o registros · foto, PDF o Excel hasta 200 MB cada uno</small></label>'+
-    '<p class="cap-lector">La aplicación lee cada documento y lo manda a su lugar: si es de la organización (diésel de los vehículos, electricidad de la planta, sacos) o de una finca (compost, fertilizante, combustible de la finca), y a qué fuente de emisión. '+
+  (ed?('<label class="cap-zona"><input type="file" multiple accept="image/*,application/pdf,.docx,.xlsx,.xls,.csv,.ods" data-cap-subir="1" hidden>'+
+    '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Elegir uno o varios documentos</b><small>Facturas, órdenes de entrega, recibos, bitácoras o registros · foto, PDF, Word o Excel hasta 200 MB cada uno</small></label>'+
+    '<p class="cap-lector">La lectura usa la misma IA de Origen. Un PDF escaneado de varias páginas (un talonario de facturas) se lee página por página: cada página entra como un documento aparte. La aplicación lee cada documento y lo manda a su lugar: si es de la organización (diésel de los vehículos, electricidad de la planta, sacos) o de una finca (compost, fertilizante, combustible de la finca), y a qué fuente de emisión. '+
     (lector?'':'<b>La lectura automática no está disponible en esta copia</b>: los datos se anotan a mano. ')+'Nada se suma sin su confirmación.</p>'+
     '<div class="acciones cap-alt"><button type="button" data-cap="manual">Anotar sin archivo</button><span class="muted">solo si el documento no existe; queda marcado «sin respaldo»</span></div>')
    :'<div class="aviso">Su perfil puede consultar, pero no capturar.</div>')+'</div></div>';
@@ -23583,6 +23656,9 @@ document.addEventListener('click',function(ev){
    SHA-256 siga siendo el del documento original y se pueda comprobar después. */
 async function capGuardarOriginal(ref,file,sello,met){
  var c=contenedor(ref); if(!c)return '';
+ /* Las páginas de un mismo PDF comparten el original: se guarda una sola vez por fuente */
+ var ya=(c.obj.adjuntos||[]).filter(function(a){ return sello&&a.sello===sello; })[0];
+ if(ya)return ya.id;
  var id='ev-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
  var meta={id:id,tipo:'documento',nombre:file.name||'factura',mime:file.type||'application/octet-stream',bytes:file.size,
   ancho:0,alto:0,fecha:new Date().toISOString(),tecnico:tecnico(),lat:null,lon:null,acc:null,assetId:null,
