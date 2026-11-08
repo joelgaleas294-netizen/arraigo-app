@@ -25616,6 +25616,8 @@ function calcListaFacturas(C){
   if(/litro/i.test(u))return pu<10||pu>80; if(/kwh/i.test(u))return pu<1.5||pu>15; return Math.abs(im-q)<0.005; };
  var nS=R.filter(susp).length, nRep=calcRepetidas(C).length, nDif=calcSoloFacturas(C.filas).length;
  CALC.catObj=C; var pre='';
+ var sinRegs=!R.length&&C.filas.some(function(f){return f.q>0;});
+ if(sinRegs&&puedeEditar())pre+='<div class="aviso" style="margin:8px 0"><b>Hay cantidades en esta categoría, pero sus facturas no están en esta dirección.</b> Las facturas se registraron con ARRAIGO abierto en otra dirección. Ábrala una vez con la versión actualizada: las facturas suben solas al proyecto y aquí aparecen por mes. Si prefiere empezar de nuevo, deje la categoría en cero y vuelva a cargar las facturas. <button type="button" class="mini peligro" data-calc-cero="1">Dejar en cero esta categoría</button></div>';
  if(puedeEditar()&&(nRep||nDif))pre='<div class="aviso" style="margin:8px 0">'+(nRep?('<b>'+nRep+' factura'+(nRep===1?'':'s')+' repetida'+(nRep===1?'':'s')+'</b> (mismo proveedor y número). '):'')+(nDif?('<b>'+nDif+' fuente'+(nDif===1?'':'s')+'</b> con un dato distinto de la suma de sus facturas (hay cantidad anotada aparte). '):'')+
   (nRep?'<button type="button" class="mini" data-calc-rep="1">Anular las repetidas</button> ':'')+(nDif?'<button type="button" class="mini" data-calc-solo="1">Usar solo las facturas registradas</button>':'')+'</div>';
  if(nS)h+='<div class="aviso" style="margin:8px 0"><b>'+nS+' factura'+(nS===1?'':'s')+' con precio por unidad fuera de rango</b> (combustible fuera de L 10 a L 80 por litro, o electricidad fuera de L 1,50 a L 15 por kWh). Lo más probable es que se haya leído el monto en lempiras como cantidad: revíselas y, si es así, elimínelas y vuelva a subirlas.</div>';
@@ -25794,7 +25796,20 @@ async function calcExcel(){
 }
 document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-calc-xls]'); if(b)calcExcel();
  var r=ev.target.closest&&ev.target.closest('[data-calc-rep]'); if(r&&CALC.catObj)calcQuitarRepetidas(CALC.catObj);
- var o=ev.target.closest&&ev.target.closest('[data-calc-solo]'); if(o&&CALC.catObj)calcAplicarSoloFacturas(CALC.catObj); });
+ var o=ev.target.closest&&ev.target.closest('[data-calc-solo]'); if(o&&CALC.catObj)calcAplicarSoloFacturas(CALC.catObj);
+ var z=ev.target.closest&&ev.target.closest('[data-calc-cero]'); if(z&&CALC.catObj)calcCero(CALC.catObj); });
+function calcCero(C){
+ var L=[]; C.filas.forEach(function(f){ var fids=f.cat==='finca'?S.fincas.map(function(x){return x.id;}):[null];
+  fids.forEach(function(fid){ var st=(f.cat==='org')?S.beneficio:(S.insumos[fid]||null); if(!st||!st.valores)return; var v=numDe(st.valores[f.l.id]); if(isFinite(v)&&v>0&&!(capSumaRef(refLinea(f.l,f.cat,fid))>0))L.push({f:f,fid:fid,st:st,v:v}); }); });
+ if(!L.length)return;
+ pedir({titulo:'Dejar en cero «'+C.nom+'»',peligro:true,ok:'Dejar en cero',texto:['Las fuentes de esta categoría que no tienen facturas registradas quedan en cero, para volver a cargar sus facturas desde «Subir facturas y registros».',
+  L.slice(0,8).map(function(x){return esc(x.f.l.et)+': '+fmt(x.v,2)+' → 0';}).join('<br>'),'Los archivos de respaldo se conservan en el Centro de datos. El cambio queda en la bitácora.']}).then(function(si){
+  if(!si)return;
+  L.forEach(function(x){ x.st.valores[x.f.l.id]='0'; var ref=refLinea(x.f.l,x.f.cat,x.fid); S.capBase=S.capBase||{}; S.capBase[ref]={base:0,suma:0,uLitros:true};
+   marcar(x.f.cat==='org'?'beneficio/actual':('insumos/'+x.fid)); anotar('dato','Dato de actividad puesto en cero para recargar sus facturas · '+x.f.l.et,fmt(x.v,2),'0',''); });
+  marcar('captura/registros'); guardarLocal(); pintar(); msg('Categoría en cero: vuelva a cargar sus facturas');
+ });
+}
 
 /* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
    (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
@@ -25819,6 +25834,8 @@ function limpiarRemo(el){
 var GAL_IDS=['diesel_finca','gasolina_finca','diesel_org','diesel_gen','gasolina_org','montacargas','respaldo'], GAL_L=3.785411784;
 function migrarLitros(){
  try{
+ /* Una vez por sesión, las facturas registradas en este equipo suben a la base del proyecto */
+ if(!CAP.regPush&&PRY&&(S.registros||[]).length){ CAP.regPush=true; marcar('captura/registros'); setTimeout(function(){ try{ sincronizar(true); }catch(e){} },2500); }
  var conv_=function(st,ruta){ if(!st||st.uLitros)return; var hay=false;
   if(st.valores)GAL_IDS.forEach(function(id){ var v=numDe(st.valores[id]); if(isFinite(v)&&v!==0){ st.valores[id]=String(Math.round(v*GAL_L*1e4)/1e4); hay=true; try{ anotar('dato','Combustible de galones a litros · '+nombreLinea(id)+' ('+ruta+')',fmt(v,2)+' galones',st.valores[id]+' litros','conversión única: la plataforma registra los combustibles en litros, como las facturas'); }catch(e){} } });
   st.uLitros=true; if(hay)marcar(ruta); };
