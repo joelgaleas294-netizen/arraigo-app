@@ -1785,6 +1785,14 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-dfila5{grid-template-columns:1.5fr 1.1fr 1.1fr .8fr 90px}
 .calc-sin{color:var(--ink-3,#6b7a76)}
 @media (max-width:720px){.calc-dfila5{grid-template-columns:1fr 90px}.calc-dfila5 span:nth-child(2),.calc-dfila5 span:nth-child(3),.calc-dfila5 span:nth-child(4){display:none}}
+.calc-per{font-size:14px;color:var(--ink-2,#3c4a46);margin:6px 0 10px}
+.calc-mes-caja{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.calc-mes{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+.calc-mes th,.calc-mes td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
+.calc-mes th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3,#6b7a76);background:rgba(0,0,0,.02)}
+.calc-mes .n{text-align:right}.calc-mes td:first-child{white-space:normal;min-width:220px;position:sticky;left:0;background:var(--surface)}
+.calc-mes th:first-child{position:sticky;left:0;background:var(--surface)}
+.calc-mes tr.calc-sin td{color:var(--ink-3,#6b7a76)}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -3670,7 +3678,8 @@ function renglonesDelAlcance(cod){
 }
 function operaBeneficio(){ var v=S.perfil.operaBeneficio; return !(v===false||v==='No'); }
 function hayFincas(){ if(alcance()!=='alc3')return true; var v=S.perfil.conFincas; return v===true||v==='Sí'; }
-function lineasDe(cat){
+function lineasDe(cat){ return lineasDeTodas(cat).filter(function(l){return l.tipo!=='r';}); }
+function lineasDeTodas(cat){
  if(cat==='finca')return FINCA;
  var A=alcance();
  if(A==='alc1')return [];
@@ -6719,7 +6728,6 @@ function revisionPresentaciones(C){
  var kmDef=dest.filter(function(d){return /aproximada/i.test(String(d.origen||''));});
  r('6.3.5','Distancia marítima documentada por ruta',kmDef.length?'aviso':'ok',kmDef.length?('Distancias aproximadas en: '+kmDef.map(function(d){return d.nom;}).join(', ')+'. Usar la del conocimiento de embarque o de la naviera.'):'Distancias con respaldo.');
  r('6.4.6','Regla de asignación declarada',P.asignacion?'ok':'aviso','Regla: '+(P.asignacion||'Por masa (valor por defecto, confirmar)')+'; '+fmt(C.asig,0)+' % al café oro.');
- r('6.4.9','Remociones informadas por separado','ok','Las remociones del ciclo no se restan de la huella de ninguna presentación.');
  r('6.4.9.4','Sin doble conteo del empaque',C.generico>0?'aviso':'ok',C.generico>0?('Los renglones genéricos de sacos de exportación y de sacos de yute ('+fmt(C.generico,2)+' t CO₂e) se reemplazan aquí por la lista de materiales de cada presentación y no se suman dos veces. Los sacos quintaleros de polipropileno del acopio siguen en el tramo común porque no son empaque de exportación.'):'No hay renglón genérico de sacos que pueda duplicarse.');
  r('6.6','Análisis de sensibilidad','ok','Rango con el factor de tejido del yute en cero y al doble, y la distancia marítima ±15 %.');
  if(C.kgTot>0){ var KI=incCfg(), II=C.res.map(function(x){return incertidumbreCaso(x,C);}).filter(Boolean);
@@ -7255,7 +7263,7 @@ function vistaPortada(){
     '<div class="ht"><span class="ht-et">Emisiones del período</span><span class="ht-n">'+fmt(R.emisiones)+'</span><span class="ht-u">t CO₂e</span></div>'+
     (HP?'<div class="ht"><span class="ht-et">Huella por unidad</span><span class="ht-n">'+fmt(HP.porU,2)+'</span><span class="ht-u">kg CO₂e por '+esc(HP.unidad)+'</span></div>'
        :'<div class="ht"><span class="ht-et">Remociones</span><span class="ht-n">'+fmt(R.remociones)+'</span><span class="ht-u">t CO₂e, aparte</span></div>')+
-    '<div class="ht"><span class="ht-et">Existencia declarable</span><span class="ht-n">'+fmt(GI.declarable)+'</span><span class="ht-u">t CO₂e del estrato</span></div>'+
+    '<div class="ht"><span class="ht-et">Datos con respaldo</span><span class="ht-n">'+SU.pct+' %</span><span class="ht-u">'+SU.con+' de '+SU.total+' datos</span></div>'+
    '</div>'+
   '</div>'+
  '</div>';
@@ -7273,7 +7281,7 @@ function vistaPortada(){
   tarjetaCifra('Auditoría',A.R.aplicables?(fmt(A.R.conformidad,0)+' %'):'—',A.R.aplicables?(A.R.t.mayor+' mayores, '+A.R.t.menor+' menores'):'sin norma declarada')+
   tarjetaCifra('Hallazgos abiertos',String(ncA.length),ncV.length?(ncV.length+' fuera de plazo'):'ninguno vencido')+
   tarjetaCifra('Evidencia',SU.pct+' %',SU.con+' de '+SU.total+' datos con respaldo')+
-  tarjetaCifra('Fincas',String(S.fincas.length),fmt(R.superficie,1)+' ha · '+R.individuos+' árboles')+
+  tarjetaCifra('Fincas',String(S.fincas.length),fmt(R.superficie,1)+' ha')+
  '</dl>';
  if(E.falta||ncA.length)h+='<div class="acciones no-imprimir" style="margin:-6px 0 20px">'+
   (E.falta?'<button type="button" class="mini" data-vista="ver">Ver la revisión previa</button>':'')+
@@ -7292,8 +7300,6 @@ function vistaPortada(){
   '</div></div></div>';
  h+='<div class="col"><div class="tarjeta"><h3>Cobertura del inventario</h3><div class="cuerpo">'+
   medidor(SU.pct,'Datos con evidencia recuperable',SU.con+' de '+SU.total+' datos anotados tienen respaldo')+
-  medidor(S.fincas.length?Math.round(S.fincas.filter(function(f){return parcelasDe(f.id).length;}).length*100/S.fincas.length):0,
-   'Fincas con estrato medido',S.fincas.filter(function(f){return parcelasDe(f.id).length;}).length+' de '+S.fincas.length+' con parcela levantada')+
   medidor(perAvance().pct,'Perfil de la organización',perAvance().n+' de '+perAvance().de+' apartados completos')+
   medidor(A.R.aplicables?Math.round(A.R.conformidad):0,'Conformidad con la norma declarada',
    A.R.aplicables?(A.R.t.conforme+' de '+A.R.aplicables+' criterios'):'sin norma declarada')+
@@ -7709,7 +7715,24 @@ async function copiarTexto(t){
   return ok;
  }catch(e){ return false; }
 }
-function cuerpoReporte(tipo,id){ return reglaArraigo(refPublica(refSecciones(cuerpoReporteRaw(tipo,id)))); }
+/* El programa cuantifica solo la huella de carbono de producto: se retiran de los reportes las remociones,
+   las existencias del estrato de sombra y el inventario de árboles. */
+var RE_REMO=/remoci|existencia|árboles|arboles|estrato de sombra|individuos|sumidero|ind\/ha|muestreo del estrato/i;
+function sinRemociones(html){
+ var d=document.createElement('div'); d.innerHTML=html;
+ [].forEach.call(d.querySelectorAll('h2'),function(h){ if(!RE_REMO.test(h.textContent))return; var n=h.nextElementSibling; h.remove();
+  while(n&&n.tagName!=='H2'){ var x=n.nextElementSibling; n.remove(); n=x; } });
+ [].forEach.call(d.querySelectorAll('table'),function(t){
+  var ths=[].slice.call(t.querySelectorAll('thead th')), quitar=[];
+  ths.forEach(function(th,i){ if(i>0&&/^(parcelas|árboles|ind\/ha|t co₂e\/ha|existencia|remociones)/i.test(th.textContent.trim()))quitar.push(i); });
+  [].forEach.call(t.querySelectorAll('tr'),function(tr){ for(var k=quitar.length-1;k>=0;k--){ var c=tr.children[quitar[k]]; if(c)c.remove(); } });
+  [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){ var c0=tr.children[0], c1=tr.children[1]; if((c0&&RE_REMO.test(c0.textContent))||(c1&&RE_REMO.test(c1.textContent)&&tr.children.length<=3))tr.remove(); });
+ });
+ [].forEach.call(d.querySelectorAll('p,li'),function(x){ if(/remoci|existencias de carbono/i.test(x.textContent))x.remove(); });
+ [].forEach.call(d.querySelectorAll('*'),function(x){ if(x.children.length===0&&/existencias de carbono/i.test(x.textContent))x.textContent=x.textContent.replace(/ y existencias de carbono/i,'').replace(/existencias de carbono/i,''); });
+ return d.innerHTML;
+}
+function cuerpoReporte(tipo,id){ return sinRemociones(reglaArraigo(refPublica(refSecciones(cuerpoReporteRaw(tipo,id))))); }
 function cuerpoReporteRaw(tipo,id){
  if(tipo==='mitigacion')return reporteMitigacion();
  if(tipo==='diagnostico')return reporteDiagnostico(id||sel.dia||((S.fincas[0]||{}).id));
@@ -10215,7 +10238,6 @@ function ver_prodcred(){
    '<tr><td>Producción tomada</td><td class="n">'+fmt(HP.prod,2)+'</td><td>'+esc(HP.unidad)+'</td></tr>'+
    '<tr class="total"><td>Huella por unidad</td><td class="n">'+fmt(HP.porU,2)+'</td><td>kg CO₂e por '+esc(HP.unidad)+'</td></tr>'+
    '<tr><td>Equivale a</td><td class="n">'+fmt(HP.porKg,3)+'</td><td>kg CO₂e por kilogramo</td></tr>'+
-   '<tr><td>Remociones del ciclo, se informan aparte</td><td class="n">'+fmt(HP.remo)+'</td><td>t CO₂e</td></tr>'+
    '</tbody></table></div>'+
    '<p class="pista" style="margin-top:10px">Las remociones no se restan de la huella del producto. ISO 14067 obliga a informarlas por separado, y descontarlas exige demostrar permanencia y cumplir los criterios de contabilidad de remociones. Si no hay producción declarada, la huella por unidad no se calcula: se toma la producción anotada finca por finca en el módulo de insumos.</p>'+
    '</div></div>';
@@ -25053,8 +25075,8 @@ function infSecciones(){
   {p:'Los factores de emisión aplicados a cada dato de actividad, con su fuente y año, se presentan en la tabla siguiente.'},
   {tabla:{c:['Fuente de emisión','Factor','Unidad','Fuente','Año'],f:D.FA.slice(0,25).map(function(x){return [x.et,String(x.f),x.uf,x.fue||'—',String(x.anio||'—')];})}}
  ]);
- sec('tie','5.3','Momento de las emisiones y remociones','7.3 i)','cumple',[
-  {p:'Todas las emisiones se contabilizan en el período en que ocurren. No se aplicó ponderación por el momento de la emisión ni se contabilizó almacenamiento temporal de carbono.'}
+ sec('tie','5.3','Momento de las emisiones','7.3 i)','cumple',[
+  {p:'Todas las emisiones se contabilizan en el período en que ocurren. No se aplicó ponderación por el momento de la emisión.'}
  ]);
  /* 6 · resultados */
  var tot=HP.porU;
@@ -25067,14 +25089,14 @@ function infSecciones(){
  sec('etp','6.2','Resultados por etapa del ciclo de vida','7.2 a)',D.etapas.length?'cumple':'falta',[
   {tabla:{c:['Etapa','t CO₂e','kg CO₂e por '+u,'%'],f:D.etapas.map(function(x){return [x.t,fx(x.tco2,3),fx(x.porU,2),fx(x.pct,1)];}).concat([['Total',fx(HP.emis,3),fx(tot,2),'100,0']])}}
  ]);
- sec('fos','6.3','Emisiones y remociones de GEI de origen fósil y por gas','7.2 b)','cumple',[
-  {p:'La huella incluye el CO₂ de origen fósil y el metano y el óxido nitroso de todas las fuentes, sean fósiles o biogénicas. La tabla presenta la distribución por gas. No hubo remociones de origen fósil.'},
+ sec('fos','6.3','Emisiones de GEI de origen fósil y por gas','7.2 b)','cumple',[
+  {p:'La huella incluye el CO₂ de origen fósil y el metano y el óxido nitroso de todas las fuentes, sean fósiles o biogénicas. La tabla presenta la distribución por gas.'},
   {tabla:{c:['Gas','t CO₂e','% del total'],f:[['CO₂',fx(D.G.co2,3),fx(D.G.total?D.G.co2/D.G.total*100:0,1)],['CH₄',fx(D.G.ch4,3),fx(D.G.total?D.G.ch4/D.G.total*100:0,1)],['N₂O',fx(D.G.n2o,3),fx(D.G.total?D.G.n2o/D.G.total*100:0,1)],['Otros (HFC)',fx(D.G.otros,3),fx(D.G.total?D.G.otros/D.G.total*100:0,1)]]}},
   {nota:'El desglose por gas se calcula sobre el inventario completo de la organización y puede diferir del total dentro del límite del sistema.'}
  ]);
- sec('bio','6.4','Emisiones y remociones biogénicas','7.2 c)','cumple',[
+ sec('bio','6.4','Emisiones biogénicas','7.2 c)','cumple',[
   {p:'El CO₂ biogénico de la combustión de biomasa se informa por separado y no se suma a la huella: '+fx(D.B.total,3)+' t CO₂ en el período. El metano y el óxido nitroso de esa combustión sí están incluidos en la huella.'},
-  {p:'Las remociones de carbono en la biomasa del sistema agroforestal se informan por separado y no se restan de la huella: '+fx(HP.remo,3)+' t CO₂e en el período.'}
+  {p:'El estudio no cuantifica absorciones de carbono en la biomasa ni en el suelo, de modo que no se informan valores por este concepto.'}
  ]);
  sec('luc','6.5','Cambio directo de uso del suelo','7.2 d)','cumple',[{p:pv('dluc',HCP_OPC.dluc[0])+'.'+(pv('dluc',HCP_OPC.dluc[0])===HCP_OPC.dluc[0]?' En consecuencia, no se atribuyen al producto emisiones por cambio directo de uso del suelo.':'')}]);
  sec('aer','6.6','Transporte aéreo','7.2 e)','cumple',[{p:pv('aereo',HCP_OPC.aereo[0])+' dentro del límite del sistema.'}]);
@@ -25092,7 +25114,7 @@ function infSecciones(){
   {p:pv('inf_conclusiones',concl+'Las acciones de reducción con mayor efecto son las que actúan sobre los procesos de mayor aporte señalados en el apartado 3.3.')},
   {p:'Limitaciones: '+minus(pv('limitaciones',hcpBase('limitaciones')))}
  ],pv('limitaciones')?[]:['limitaciones']);
- sec('jui','7.3','Juicios de valor','7.3 n)','cumple',[{p:'Las decisiones de valor del estudio son la elección del límite del sistema, la regla de asignación y la serie de potenciales de calentamiento. Cada una se justifica en el apartado correspondiente. Las remociones biogénicas no se descuentan de la huella y no se aplicó compensación de emisiones.'}]);
+ sec('jui','7.3','Juicios de valor','7.3 n)','cumple',[{p:'Las decisiones de valor del estudio son la elección del límite del sistema, la regla de asignación y la serie de potenciales de calentamiento. Cada una se justifica en el apartado correspondiente. No se aplicó compensación de emisiones.'}]);
  sec('seg','8','Seguimiento del desempeño','7.3 t)','cumple',[{p:pv('seguimiento',hcpBase('seguimiento'))}]);
  sec('rev','9','Revisión crítica y verificación','8 y 7.4',ok(pv('rev_tipo')),[
   {p:pv('rev_tipo',HCP_OPC.rev[2])===HCP_OPC.rev[2]?('El estudio se somete a verificación por tercera parte independiente'+(pv('rev_organismo')?(' a cargo de '+pv('rev_organismo')):'')+'. Hasta que concluya, el resultado es la medición propia de la organización.'):(pv('rev_tipo')+'. El resultado es la medición propia de la organización.')},
@@ -25103,10 +25125,10 @@ function infSecciones(){
  return S7;
 }
 var INF_REQ=[
- ['7.2 a)','Emisiones por etapa del ciclo de vida, absolutas y relativas','etp'],['7.2 b)','Emisiones y remociones fósiles','fos'],['7.2 c)','Emisiones y remociones biogénicas','bio'],
+ ['7.2 a)','Emisiones por etapa del ciclo de vida, absolutas y relativas','etp'],['7.2 b)','Emisiones fósiles','fos'],['7.2 c)','Emisiones biogénicas','bio'],
  ['7.2 d)','Cambio directo de uso del suelo','luc'],['7.2 e)','Transporte aéreo','aer'],
  ['7.3 a)','Unidad y flujo de referencia','uni'],['7.3 b)','Límite del sistema','lim'],['7.3 c)','Procesos unitarios importantes','pro'],['7.3 d)','Recolección de datos y fuentes','dat'],
- ['7.3 e)','GEI considerados','gei'],['7.3 f)','Factores de caracterización','fca'],['7.3 g)','Criterios de corte','cor'],['7.3 h)','Asignación','asi'],['7.3 i)','Momento de emisiones y remociones','tie'],
+ ['7.3 e)','GEI considerados','gei'],['7.3 f)','Factores de caracterización','fca'],['7.3 g)','Criterios de corte','cor'],['7.3 h)','Asignación','asi'],['7.3 i)','Momento de las emisiones','tie'],
  ['7.3 j)','Descripción y calidad de los datos','cal'],['7.3 k)','Sensibilidad e incertidumbre','sen'],['7.3 l)','Tratamiento de la electricidad','ele'],['7.3 m)','Interpretación, conclusiones y limitaciones','con'],
  ['7.3 n)','Juicios de valor','jui'],['7.3 o)','Alcance y exclusiones','lim'],['7.3 p)','Etapas del ciclo de vida','eta'],['7.3 q)','Escenarios alternativos de uso y fin de vida','eta'],
  ['7.3 r)','Período representado','per'],['7.3 s)','PCR u otros requisitos','pcr'],['7.3 t)','Seguimiento del desempeño','seg']
@@ -25418,7 +25440,7 @@ function calcEstructura(){
  function meter(k,l,q,t,fac,ev,ut){
   var A=amb[k], c=clCarpetaDeLinea(l), cc=CL_GRUPOS.da.c.filter(function(x){return x[0]===c;})[0]||['10','Otros','📄'];
   var C=A.cats[c]=A.cats[c]||{cod:c,nom:cc[1],ico:cc[2],filas:[],tot:0,con:0};
-  C.filas.push({l:l,q:q,t:t,fac:fac,ev:ev,ut:ut}); C.tot+=t; A.tot+=t; A.n++; if(q>0){C.con++;A.con++;}
+  C.filas.push({l:l,q:q,t:t,fac:fac,ev:ev,ut:ut,cat:(k==='finca'?'finca':'org')}); C.tot+=t; A.tot+=t; A.n++; if(q>0){C.con++;A.con++;}
  }
  lineasDe('finca').forEach(function(l){ if(l.tipo==='r'||esDirecta(l))return; var q=0,t=0,ev=0,fac=null;
   S.fincas.forEach(function(f){ q+=cantidad(l,'finca',f.id); t+=(tco2Linea(l,'finca',f.id)||0)+(tco2Linea2(l,'finca',f.id)||0); ev+=nEvidenciaLinea(l,'finca',f.id); if(fac==null)fac=factor(l,'finca',f.id); });
@@ -25427,6 +25449,19 @@ function calcEstructura(){
   meter(EX[l.id]?'expo':'org',l,cantidad(l,'org',null),(tco2Linea(l,'org',null)||0)+(tco2Linea2(l,'org',null)||0),factor(l,'org',null),nEvidenciaLinea(l,'org',null),l.unTec); });
  Object.keys(amb).forEach(function(k){ if(!amb[k].n)delete amb[k]; });
  return amb;
+}
+var MES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function calcMeses(){
+ var P=S.prod||{}, a=String(P.per_inicio||'').slice(0,7), b=String(P.per_fin||'').slice(0,7);
+ if(!(a&&b)){ var fs=registros().filter(function(r){return r.estado!=='anulado'&&/^\d{4}-\d{2}/.test(r.fecha||'');}).map(function(r){return r.fecha.slice(0,7);}).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
+ var out=[], y=+a.slice(0,4), m=+a.slice(5,7);
+ while(out.length<24){ var k=y+'-'+String(m).padStart(2,'0'); out.push(k); if(k>=b)break; m++; if(m>12){m=1;y++;} }
+ return out;
+}
+function mesNom(k){ return MES_C[+k.slice(5,7)-1]+' '+k.slice(2,4); }
+function calcMensual(l,cat){
+ var m={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat)return; var k=String(r.fecha||'').slice(0,7); m[k]=(m[k]||0)+(nv(r.cantidadLinea)||0); });
+ return m;
 }
 function tarjetaEstructura(){
  var E=calcEstructura(), ks=Object.keys(E); if(!ks.length)return '';
@@ -25440,10 +25475,19 @@ function tarjetaEstructura(){
   h+='<button type="button" class="calc-fila calc-etapa calc-cat" data-calc-c="'+esc(CALC.amb+C.cod)+'" aria-expanded="'+ab+'"><span>'+C.ico+' '+esc(C.nom)+'<small>'+C.con+' de '+C.filas.length+' fuentes con dato</small></span>'+
    '<span>'+fmt(C.tot,3)+'</span><span>t CO₂e</span><span>'+(A.tot>0?fmt(C.tot/A.tot*100,1):'0.0')+' %</span></button>';
   if(ab){
-   h+='<div class="calc-det"><div class="calc-dfila calc-dfila5 calc-dcab"><span>Fuente</span><span>Dato de actividad</span><span>Factor</span><span>Respaldo</span><span>t CO₂e</span></div>'+
-    C.filas.sort(function(a,b){return b.t-a.t||b.q-a.q;}).map(function(f){ return '<div class="calc-dfila calc-dfila5'+(f.q>0?'':' calc-sin')+'"><span>'+esc(f.l.et)+'</span>'+
-     '<span>'+(f.q>0?(fmt(f.q,2)+' '+esc(f.l.un)):'sin dato')+'</span><span>'+(f.fac?(fmt(f.fac,4)+' kg CO₂e/'+esc(f.ut||'')):'—')+'</span>'+
-     '<span>'+(f.q>0?(f.ev?('✓ '+f.ev+' archivo'+(f.ev===1?'':'s')):'<b class="falta">sin archivo</b>'):'')+'</span><span>'+(f.q>0?fmt(f.t,3):'—')+'</span></div>'; }).join('')+
+   var MS=calcMeses();
+   h+='<div class="calc-det"><p class="calc-per">'+(MS.length?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[MS.length-1])+'</b>. Cantidades en la unidad de cada fuente, según la fecha de su factura o registro.'):'Todavía no hay facturas o registros con fecha: las cantidades se muestran como total del período.')+'</p>'+
+    '<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fuente</th><th>Unidad</th>'+MS.map(function(k){return '<th class="n">'+mesNom(k)+'</th>';}).join('')+
+    (MS.length?'<th class="n">Sin factura</th>':'')+'<th class="n">Total</th><th class="n">Factor</th><th class="n">t CO₂e</th><th>Respaldo</th></tr></thead><tbody>'+
+    C.filas.sort(function(a,b){return b.t-a.t||b.q-a.q;}).map(function(f){
+     var M=MS.length?calcMensual(f.l,f.cat):{}, sm=0; MS.forEach(function(k){ sm+=M[k]||0; });
+     var resto=Math.max(0,f.q-sm);
+     return '<tr class="'+(f.q>0?'':'calc-sin')+'"><td>'+esc(f.l.et)+'</td><td>'+esc(f.l.un)+'</td>'+
+      MS.map(function(k){ return '<td class="n">'+(M[k]?fmt(M[k],1):'·')+'</td>'; }).join('')+
+      (MS.length?'<td class="n">'+(resto>0.0001?fmt(resto,1):'·')+'</td>':'')+
+      '<td class="n"><b>'+(f.q>0?fmt(f.q,2):'—')+'</b></td><td class="n">'+(f.fac?fmt(f.fac,4):'—')+'</td><td class="n">'+(f.q>0?fmt(f.t,3):'—')+'</td>'+
+      '<td>'+(f.q>0?(f.ev?('✓ '+f.ev):'<b class="falta">sin archivo</b>'):'')+'</td></tr>'; }).join('')+
+    '</tbody></table></div>'+
     '<div class="acciones" style="margin:8px 0 0"><button type="button" class="mini" data-vista="ing">Ingresar datos</button><button type="button" class="mini" data-vista="'+(CALC.amb==='finca'?'ins':'ben')+'">Ver en el inventario</button></div></div>';
   }
  });
@@ -25511,7 +25555,7 @@ function vistaCalculadora(){
   '<div><span class="calc-et">Asignación al café oro</span><b>'+fmt(D.C.asig,1)+' %</b> · '+esc((S.prod||{}).asignacion||'Por masa')+'</div>'+
   '<div><span class="calc-et">Potenciales de calentamiento</span><b>'+esc(serieDeclarada())+'</b> a 100 años</div>'+
   '<div><span class="calc-et">Límite del sistema</span><b>De la finca al puerto de destino</b></div></div>';
- h+='<p class="calc-nota">El CO₂ biogénico y las remociones de los árboles de sombra se informan por separado y no se restan de la huella. Las presentaciones, sus materiales de empaque y las rutas se editan en «Estudio de huella ISO 14067».</p>';
+ h+='<p class="calc-nota">El CO₂ biogénico de la combustión de biomasa se informa por separado y no se suma a la huella. Las presentaciones, sus materiales de empaque y las rutas se editan en «Estudio de huella ISO 14067».</p>';
  h+='<div class="acciones"><button type="button" data-vista="hcp">Editar presentaciones y rutas</button><button type="button" data-vista="inf">Ver el informe</button></div>';
  return h+'</div>';
 }
@@ -25529,7 +25573,22 @@ document.addEventListener('click',function(ev){
    (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
 var MAX_ARCHIVO=200*1024*1024;
 try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persisted().then(function(p){ if(!p)navigator.storage.persist(); }); }catch(e){}
-function pintar(){
+/* Limpieza final de cada pantalla: el programa no cuantifica remociones ni existencias de carbono */
+function limpiarRemo(el){
+ if(!el)return;
+ [].forEach.call(el.querySelectorAll('.cifra'),function(c){ var t=c.querySelector('dt'); if(t&&/remoci|existencia|balance/i.test(t.textContent))c.remove(); });
+ [].forEach.call(el.querySelectorAll('.heroe,.ht'),function(c){ if(/^\s*(remoci|existencia)/i.test(c.textContent))c.remove(); });
+ [].forEach.call(el.querySelectorAll('.tarjeta'),function(c){ var t=c.querySelector('h3'); if(t&&/remoci|ecuación de|existencias|estrato de sombra/i.test(t.textContent))c.remove(); });
+ [].forEach.call(el.querySelectorAll('.esc-barra,.bh'),function(c){ if(/^\s*remoci/i.test(c.textContent))c.remove(); });
+ var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null), n, cambios=[];
+ while((n=w.nextNode())){ if(/remoci|y sumideros|parcelas, existencias|individuos por ha/i.test(n.nodeValue))cambios.push(n); }
+ cambios.forEach(function(x){ x.nodeValue=x.nodeValue.replace(/Emisiones y remociones directas/g,'Emisiones directas').replace(/ y sumideros/g,'').replace(/ y remociones del período/g,' del período')
+  .replace(/Ficha, parcelas, existencias, insumos, podas y evidencia/g,'Ficha, insumos y evidencia').replace(/ · \d+ individuos por ha/g,'')
+  .replace(/que las remociones no vienen de tumbar bosque para sembrar café/g,'que el café no se siembra en tierras recién deforestadas'); });
+ if(el.id==='v-con')[].forEach.call(el.querySelectorAll('tbody tr'),function(tr){ var c=tr.children[0]; if(c&&/individuos|especie|diámetro|DAP|altura/i.test(c.textContent))tr.remove(); });
+}
+function pintar(){ pintarBase.apply(this,arguments); try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
+function pintarBase(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
     siguiente, de modo que no puede quedar desfasada respecto del estado */
  tocaEstado();
