@@ -2572,7 +2572,7 @@ async function subirLocalACentral(){
  if(PRY&&!S.demo&&!v['p:'+PRY]&&hayDatos()){
   ['org/perfil','beneficio/actual','ods/declaracion','bitacora/registro','nc/registro','gestion/declaraciones',
    'gestion/muestreo','gestion/cargas','gestion/archivo','gestion/nivel3','gestion/cultivo','gestion/cohortes','gestion/control',
-   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo'].forEach(function(r){pendientes[r]=true;});
+   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo','captura/registros'].forEach(function(r){pendientes[r]=true;});
   S.fincas.forEach(function(x){ pendientes['fincas/'+x.id]=true; pendientes['insumos/'+x.id]=true; });
   S.parcelas.forEach(function(x){ pendientes['parcelas/'+x.id]=true; });
   S.podas.forEach(function(x){ pendientes['podas/'+x.id]=true; });
@@ -6075,6 +6075,7 @@ function docDe(ruta){
  if(ruta==='gestion/recalculo')return {recalculo:recalculos()};
  if(ruta==='ods/declaracion')return {ods:S.ods};
  if(ruta==='beneficio/actual')return {beneficio:S.beneficio};
+ if(ruta==='captura/registros')return {registros:S.registros||[],capBase:S.capBase||{},_m:Date.now()};
  return null;
 }
 async function sincronizar(silencio){
@@ -6174,6 +6175,11 @@ async function cargarDeLaBase(){
   if(ins&&ins.docs)ins.docs.forEach(function(d){ if(d.data&&d.data.fincaId)S.insumos[d.data.fincaId]=d.data.insumo||{}; });
   var ben=await db.doc(dbr('beneficio/actual')).get();
   if(ben&&ben.exists&&ben.data&&ben.data.beneficio)S.beneficio=ben.data.beneficio;
+  /* Las facturas registradas y la base de cada renglón viajan con el proyecto (antes se quedaban en el equipo) */
+  try{ var crg=await db.doc(dbr('captura/registros')).get();
+   if(crg&&crg.exists&&crg.data){ var loc={}; (S.registros||[]).forEach(function(r){loc[r.id]=r;});
+    (crg.data.registros||[]).forEach(function(r){ if(!loc[r.id]){ (S.registros=S.registros||[]).push(r); loc[r.id]=r; } else if(r.estado==='anulado'&&loc[r.id].estado!=='anulado'){ loc[r.id].estado='anulado'; loc[r.id].motivoAnula=r.motivoAnula; } });
+    var cb=crg.data.capBase||{}; S.capBase=S.capBase||{}; Object.keys(cb).forEach(function(k){ if(!S.capBase[k])S.capBase[k]=cb[k]; }); } }catch(e){}
   var od=await db.doc(dbr('ods/declaracion')).get();
   if(od&&od.exists&&od.data&&od.data.ods)S.ods=od.data.ods;
   var bi=await db.doc(dbr('bitacora/registro')).get();
@@ -25557,6 +25563,49 @@ function calcMensual(l,cat){
  return m;
 }
 /* Todas las facturas registradas de la categoría, por fecha: para comprobar mes por mes qué entró */
+/* Reparación: el dato de actividad de una fuente pasa a ser exactamente la suma de sus facturas registradas */
+function calcSoloFacturas(filas){
+ var cambios=[];
+ filas.forEach(function(f){
+  var l=f.l, cat=f.cat;
+  var fids=cat==='finca'?S.fincas.map(function(x){return x.id;}):[null];
+  fids.forEach(function(fid){
+   var ref=refLinea(l,cat,fid), suma=capSumaRef(ref), st=(cat==='org')?S.beneficio:(S.insumos[fid]||null); if(!st)return;
+   st.valores=st.valores||{}; var act=numDe(st.valores[l.id]); if(!isFinite(act))act=0;
+   if(!(suma>0))return;   /* fuentes sin ninguna factura registrada no se tocan */
+   if(Math.abs(act-suma)<0.0001)return;
+   cambios.push({l:l,cat:cat,fid:fid,ref:ref,act:act,suma:suma,st:st});
+  });
+ });
+ return cambios;
+}
+function calcAplicarSoloFacturas(C){
+ var ch=calcSoloFacturas(C.filas);
+ if(!ch.length){ msg('Los datos de actividad ya coinciden con la suma de las facturas'); return; }
+ pedir({titulo:'Usar solo las facturas registradas',peligro:true,ok:'Recalcular',
+  texto:['Cada fuente de «'+esc(C.nom)+'» quedará igual a la suma de sus facturas registradas. Se quita lo anotado aparte sin factura.',
+   ch.slice(0,8).map(function(x){ return esc(x.l.et)+': '+fmt(x.act,2)+' → <b>'+fmt(x.suma,2)+'</b> '+esc(x.l.un); }).join('<br>')+(ch.length>8?('<br>y '+(ch.length-8)+' más'):''),
+   'El cambio queda en la bitácora con el valor anterior.']}).then(function(si){
+  if(!si)return;
+  ch.forEach(function(x){ x.st.valores[x.l.id]=String(Math.round(x.suma*1e6)/1e6); S.capBase=S.capBase||{}; S.capBase[x.ref]={base:0,suma:x.suma,uLitros:true};
+   marcar(x.cat==='org'?'beneficio/actual':('insumos/'+x.fid)); anotar('dato','Dato de actividad igualado a sus facturas · '+x.l.et,fmt(x.act,2),fmt(x.suma,2),'se quitó lo anotado aparte sin factura'); });
+  marcar('captura/registros'); guardarLocal(); pintar(); msg(ch.length+' fuente'+(ch.length===1?'':'s')+' recalculada'+(ch.length===1?'':'s')+' con sus facturas');
+ });
+}
+function calcRepetidas(C){
+ var ids={}; C.filas.forEach(function(f){ ids[f.l.id+'|'+f.cat]=1; });
+ var vistos={}, rep=[], norm=function(t){return String(t||'').toLowerCase().replace(/[^a-z0-9]/g,'');};
+ registros().filter(function(r){return r.estado!=='anulado'&&ids[r.linea+'|'+r.cat];}).sort(function(a,b){return String(a.cuando).localeCompare(String(b.cuando));}).forEach(function(r){
+  var k=(norm(r.numero)&&norm(r.proveedor))?('n|'+norm(r.proveedor)+'|'+norm(r.numero)+'|'+r.linea):(r.hash?('h|'+r.hash+'|'+(r.pagina||0)+'|'+r.linea+'|'+r.cantidadLinea):'');
+  if(!k)return; if(vistos[k])rep.push(r); else vistos[k]=1; });
+ return rep;
+}
+function calcQuitarRepetidas(C){
+ var R=calcRepetidas(C); if(!R.length)return;
+ pedir({titulo:'Anular facturas repetidas',peligro:true,ok:'Anular '+R.length,texto:['Se anulan '+R.length+' facturas que repiten el mismo proveedor y número (o el mismo archivo y página). Se conserva la primera de cada una.','Quedan en la tabla como anuladas, con su motivo, y el dato de actividad se recalcula sin ellas.']}).then(function(si){
+  if(!si)return; R.forEach(function(r){ capAnular(r.id,'Factura repetida: mismo proveedor y número que otra ya registrada'); }); msg(R.length+' facturas repetidas anuladas');
+ });
+}
 function calcListaFacturas(C){
  var ids={}; C.filas.forEach(function(f){ ids[f.l.id+'|'+f.cat]=f.l; });
  var R=registros().filter(function(r){ return r.estado!=='anulado'&&ids[r.linea+'|'+r.cat]; }).sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha));});
@@ -25565,13 +25614,16 @@ function calcListaFacturas(C){
  /* Precio por litro: si la cantidad salió igual al monto, o el precio no es de combustible, probablemente se leyó el valor en lempiras */
  var susp=function(r){ var u=r.unidadLinea||'', im=nv(r.importe), q=nv(r.cantidadLinea); if(!(im>0&&q>0))return false; var pu=im/q;
   if(/litro/i.test(u))return pu<10||pu>80; if(/kwh/i.test(u))return pu<1.5||pu>15; return Math.abs(im-q)<0.005; };
- var nS=R.filter(susp).length;
+ var nS=R.filter(susp).length, nRep=calcRepetidas(C).length, nDif=calcSoloFacturas(C.filas).length;
+ CALC.catObj=C; var pre='';
+ if(puedeEditar()&&(nRep||nDif))pre='<div class="aviso" style="margin:8px 0">'+(nRep?('<b>'+nRep+' factura'+(nRep===1?'':'s')+' repetida'+(nRep===1?'':'s')+'</b> (mismo proveedor y número). '):'')+(nDif?('<b>'+nDif+' fuente'+(nDif===1?'':'s')+'</b> con un dato distinto de la suma de sus facturas (hay cantidad anotada aparte). '):'')+
+  (nRep?'<button type="button" class="mini" data-calc-rep="1">Anular las repetidas</button> ':'')+(nDif?'<button type="button" class="mini" data-calc-solo="1">Usar solo las facturas registradas</button>':'')+'</div>';
  if(nS)h+='<div class="aviso" style="margin:8px 0"><b>'+nS+' factura'+(nS===1?'':'s')+' con precio por unidad fuera de rango</b> (combustible fuera de L 10 a L 80 por litro, o electricidad fuera de L 1,50 a L 15 por kWh). Lo más probable es que se haya leído el monto en lempiras como cantidad: revíselas y, si es así, elimínelas y vuelva a subirlas.</div>';
  if(R.length)h+='<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th>Fuente</th><th class="n">Cantidad</th><th>Unidad</th><th class="n">Monto, L</th><th class="n">Precio por unidad</th><th>Archivo</th></tr></thead><tbody>'+
   R.map(function(r){ var im=nv(r.importe), pu=(im>0&&nv(r.cantidadLinea)>0)?im/nv(r.cantidadLinea):NaN, sp=susp(r);
    return '<tr'+(sp?' class="calc-susp"':'')+'><td>'+esc(r.fecha||'sin fecha')+(r.fechaLeida?(' <small class="calc-nf">leída «'+esc(r.fechaLeida)+'»</small>'):'')+'</td><td>'+esc(r.numero||'s/n')+'</td><td>'+esc(r.proveedor||'')+'</td><td>'+esc(r.lineaNom)+'</td><td class="n">'+fmt(r.cantidadLinea,2)+'</td><td>'+esc(r.unidadLinea)+'</td>'+
     '<td class="n">'+(im>0?fmt(im,2):'—')+'</td><td class="n">'+(isFinite(pu)?fmt(pu,2):'—')+(sp?' <b class="falta">revisar</b>':'')+'</td><td>'+esc(r.archivo||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
- return h+'</details>';
+ return pre+h+'</details>';
 }
 function tarjetaEstructura(){
  var E=calcEstructura(), ks=Object.keys(E); if(!ks.length)return '';
@@ -25740,7 +25792,9 @@ async function calcExcel(){
  var ok=await bajar('ARRAIGO-calculadora-'+cdsNomSeguro(perV('razon')||S.perfil.organizacion||'organizacion')+'-'+hoy()+'.xlsx',bytes);
  if(ok)anotar('dato','Calculadora · Excel para el auditor descargado','',(da.length-2)+' fuentes, '+(rg.length-1)+' facturas','');
 }
-document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-calc-xls]'); if(b)calcExcel(); });
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-calc-xls]'); if(b)calcExcel();
+ var r=ev.target.closest&&ev.target.closest('[data-calc-rep]'); if(r&&CALC.catObj)calcQuitarRepetidas(CALC.catObj);
+ var o=ev.target.closest&&ev.target.closest('[data-calc-solo]'); if(o&&CALC.catObj)calcAplicarSoloFacturas(CALC.catObj); });
 
 /* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
    (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
