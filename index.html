@@ -1631,7 +1631,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--mod,var(--acento));
 .cap-tabla tr.cap-anulado td{color:var(--ink-3);text-decoration:line-through}
 .cap-tabla tr.cap-anulado td:last-child{text-decoration:none}
 .falta{color:var(--grave)}
-@media (max-width:720px){.cap-pasos{grid-template-columns:1fr 1fr}.cap-rev-g{grid-template-columns:1fr}.cap-mini{width:100%;height:180px}}
+@media (max-width:720px){.cap-pasos{grid-template-columns:1fr 1fr}.cap-rev-g{grid-template-columns:1fr}.cap-mini{width:100%;height:180px}.cap-ver-b{width:100%}.cap-cola li>button.cap-ver{padding:0 10px}}
 
 /* ====== MOD-CDS · centro de datos de sustentos ====== */
 .cds-grupo summary{grid-template-columns:1fr auto}.cds-res{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.cds-grupo .tabla-caja{margin:0 var(--e-5) var(--e-4)}.cds-tabla .cds-barra{margin-top:4px}
@@ -1740,6 +1740,18 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola button{width:100%;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:12px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font:inherit;cursor:pointer;color:var(--ink)}
 .cap-cola button .cds-est{grid-row:1/span 2;grid-column:2;align-self:center}
 .cap-cola button.sel{border:2px solid #1e6b47;background:#e8f3ec}
+.cap-cola li{display:flex;gap:6px;align-items:stretch}
+.cap-cola li>button[data-cap="cola-sel"]{flex:1;min-width:0}
+.cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
+.cap-ver-b{margin-top:8px;width:120px;font:inherit;font-weight:600;padding:8px;border:1px solid #1e6b47;border-radius:8px;background:#fff;color:#1e6b47;cursor:pointer}
+#cap-visor{position:fixed;inset:0;z-index:9999;background:rgba(10,20,15,.92);display:flex;flex-direction:column}
+#cap-visor .cv-barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:#0f2a1d;color:#fff}
+#cap-visor .cv-barra b{flex:1;min-width:180px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cap-visor .cv-barra button,#cap-visor .cv-barra a{font:inherit;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;cursor:pointer;text-decoration:none}
+#cap-visor .cv-barra button:disabled{opacity:.35;cursor:default}
+#cap-visor .cv-lienzo{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:16px}
+#cap-visor .cv-lienzo img{background:#fff;max-width:none;transform-origin:center center;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+#cap-visor .cv-msj{color:#fff;margin:auto}
 .cap-cola-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cap-ambito{margin-bottom:8px;max-width:520px}.cap-ambito select{width:100%}
 </style>
@@ -23233,6 +23245,69 @@ function capNormalizar(r){
   items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
   confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)}};
 }
+/* Visor de hojas: la página en grande, para comparar con lo leído; se puede girar, acercar y pasar a la hoja siguiente */
+var CV={P:null,pag:1,n:1,giro:0,zoom:1,url:''};
+function cvLista(){ return capCola().filter(function(x){ return x.file&&!capEsHoja(x.file)&&!capEsWord(x.file); }); }
+async function capVerHoja(P){
+ if(!P||!P.file)return;
+ CV.P=P; CV.giro=0; CV.zoom=1;
+ var v=$('cap-visor');
+ if(!v){ v=document.createElement('div'); v.id='cap-visor'; v.setAttribute('role','dialog'); v.setAttribute('aria-label','Ver hoja'); document.body.appendChild(v);
+  v.addEventListener('click',function(e){ var x=e.target.closest('[data-cv]'); if(x)cvAccion(x.dataset.cv); }); }
+ v.innerHTML='<div class="cv-barra"><b></b>'+
+  '<button type="button" data-cv="ant">◀ Anterior</button><button type="button" data-cv="sig">Siguiente ▶</button>'+
+  '<button type="button" data-cv="izq" title="Girar a la izquierda">⟲ Girar</button><button type="button" data-cv="girar" title="Girar a la derecha">Girar ⟳</button><button type="button" data-cv="menos">−</button><button type="button" data-cv="mas">+</button>'+
+  '<button type="button" data-cv="revisar">Revisar esta hoja</button><a data-cv="orig" target="_blank" rel="noopener">Abrir original</a>'+
+  '<button type="button" data-cv="cerrar">✕ Cerrar</button></div><div class="cv-lienzo"><div class="cv-msj">Cargando la hoja…</div></div>';
+ v.style.display='flex';
+ await cvPintar();
+}
+async function cvPintar(){
+ var v=$('cap-visor'), P=CV.P; if(!v||!P)return;
+ var L=cvLista(), i=L.indexOf(P);
+ v.querySelector('.cv-barra b').textContent=P.nombre+(P.datos&&P.datos.numero?(' · factura '+P.datos.numero):'');
+ v.querySelector('[data-cv=ant]').disabled=i<=0; v.querySelector('[data-cv=sig]').disabled=i<0||i>=L.length-1;
+ var lz=v.querySelector('.cv-lienzo');
+ try{
+  var src='';
+  if((P.file.type||'').indexOf('image/')===0){ if(!P.urlOrig)P.urlOrig=URL.createObjectURL(P.file); src=P.urlOrig; }
+  else if(capEsPdf(P.file)){
+   if(!P.urlGrande){ var doc=await capPdf(P.file,P.hash); var pg=await capPaginaPdf(doc,P.pagina||1); P.urlGrande=URL.createObjectURL(pg.img); }
+   src=P.urlGrande;
+  }
+  if(CV.P!==P)return;
+  if(!P.urlOrig)P.urlOrig=URL.createObjectURL(P.file);
+  var o=v.querySelector('[data-cv=orig]'); o.href=P.urlOrig+(P.pagina?('#page='+P.pagina):'');
+  lz.innerHTML=src?'<img alt="Hoja del documento" src="'+src+'">':'<div class="cv-msj">Este tipo de archivo no se puede mostrar aquí.</div>';
+  cvAjustar();
+ }catch(e){ lz.innerHTML='<div class="cv-msj">No se pudo mostrar la hoja.</div>'; }
+}
+function cvAjustar(){
+ var v=$('cap-visor'); if(!v)return; var im=v.querySelector('.cv-lienzo img'); if(!im)return;
+ var lz=v.querySelector('.cv-lienzo'), w=Math.min(lz.clientWidth-32,1400);
+ im.style.width=Math.round(w*CV.zoom)+'px';
+}
+/* Girar de verdad la imagen (no solo su apariencia), para que el desplazamiento y el acercamiento sigan funcionando */
+function cvGirar(izq){
+ var v=$('cap-visor'); if(!v)return; var im=v.querySelector('.cv-lienzo img'); if(!im||!im.naturalWidth)return;
+ var c=document.createElement('canvas'); c.width=im.naturalHeight; c.height=im.naturalWidth;
+ var x=c.getContext('2d'); x.translate(c.width/2,c.height/2); x.rotate(izq?-Math.PI/2:Math.PI/2); x.drawImage(im,-im.naturalWidth/2,-im.naturalHeight/2);
+ c.toBlob(function(bl){ if(!bl)return; if(CV.urlGiro)URL.revokeObjectURL(CV.urlGiro); CV.urlGiro=URL.createObjectURL(bl); im.src=CV.urlGiro; c.width=c.height=0; },'image/jpeg',0.9);
+}
+function cvAccion(a){
+ var L=cvLista(), i=L.indexOf(CV.P);
+ if(a==='cerrar'){ var v=$('cap-visor'); if(v){ v.style.display='none'; v.innerHTML=''; } CV.P=null; }
+ else if(a==='ant'&&i>0){ CV.P=L[i-1]; CV.giro=0; cvPintar(); }
+ else if(a==='sig'&&i<L.length-1){ CV.P=L[i+1]; CV.giro=0; cvPintar(); }
+ else if(a==='girar'||a==='izq'){ cvGirar(a==='izq'); }
+ else if(a==='mas'){ CV.zoom=Math.min(CV.zoom*1.25,4); cvAjustar(); }
+ else if(a==='menos'){ CV.zoom=Math.max(CV.zoom/1.25,0.3); cvAjustar(); }
+ else if(a==='revisar'){ var P=CV.P; cvAccion('cerrar'); capSel(P); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+document.addEventListener('keydown',function(e){
+ var v=$('cap-visor'); if(!v||v.style.display==='none'||!CV.P)return;
+ if(e.key==='Escape')cvAccion('cerrar'); else if(e.key==='ArrowRight')cvAccion('sig'); else if(e.key==='ArrowLeft')cvAccion('ant');
+});
 function capEspera(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 async function capLeerConLector(imgs,texto,tipo){
  var lector=capLector(), instr=capPrompt();
@@ -23496,7 +23571,8 @@ function vistaCaptura(){
     var est=Q.estado==='leyendo'?'<span class="cds-est cds-parcial">Leyendo</span>':pr.length?'<span class="cds-est cds-sin">Revisar</span>':'<span class="cds-est cds-conciliado">Listo</span>';
     var n=Q.datos.items.filter(function(x){return x.incluir&&x.linea;}).length;
     return '<li><button type="button" class="'+(Q===P?'sel':'')+'" data-cap="cola-sel" data-id="'+esc(Q.id)+'"><span class="cap-cola-n">'+esc(Q.nombre)+'</span>'+
-     '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+est+'</button></li>';
+     '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+est+'</button>'+
+     (Q.file&&!capEsHoja(Q.file)&&!capEsWord(Q.file)?'<button type="button" class="cap-ver" data-cap="ver" data-id="'+esc(Q.id)+'" title="Ver la hoja en grande">👁 Ver hoja</button>':'')+'</li>';
    }).join('')+'</ul>'+
    (listos>1?'<div class="acciones"><button type="button" class="primario" data-cap="listos">Registrar los '+listos+' documentos listos</button><span class="muted">cada uno ya fue leído y no tiene avisos; revise antes los que dicen «Revisar»</span></div>':'')+
    '</div></div>';
@@ -23507,8 +23583,10 @@ function vistaCaptura(){
  if(P&&P.estado!=='leyendo'){
   var d=P.datos, ls=capLineas(P.cat), fz=S.fincas.filter(function(x){return x.id===P.fid;})[0];
   h+='<div class="tarjeta cap-rev"><h3>2 · Revisar lo leído y 3 · confirmar</h3><div class="cuerpo">';
-  h+='<div class="cap-rev-g">'+(P.url?'<a href="'+P.url+'" target="_blank" rel="noopener" class="cap-mini"><img src="'+P.url+'" alt="Factura subida"></a>':
-    (P.file?'<div class="cap-mini cap-pdf">PDF<br><small>'+esc(P.nombre)+'</small></div>':'<div class="cap-mini cap-pdf">Sin archivo</div>'))+
+  var verOk=P.file&&!capEsHoja(P.file)&&!capEsWord(P.file);
+  h+='<div class="cap-rev-g"><div>'+(P.url?'<a href="#" data-cap="ver" data-id="'+esc(P.id)+'" class="cap-mini"><img src="'+P.url+'" alt="Hoja del documento"></a>':
+    (P.file?'<div class="cap-mini cap-pdf">'+(capEsPdf(P.file)?'PDF':'Archivo')+'<br><small>'+esc(P.nombre)+'</small></div>':'<div class="cap-mini cap-pdf">Sin archivo</div>'))+
+    (verOk?'<button type="button" class="cap-ver-b" data-cap="ver" data-id="'+esc(P.id)+'">👁 Ver la hoja</button>':'')+'</div>'+
    '<div><div class="campo cap-ambito"><label for="cap-amb">¿A dónde va este documento?</label><select id="cap-amb" data-cap-amb="1">'+
      '<option value="org"'+(P.cat==='org'?' selected':'')+'>A la organización (beneficio, planta, vehículos, oficina)</option>'+
      (P.cat==='finca'&&!P.fid?'<option value="finca:" selected>A una finca: elija cuál</option>':'')+
@@ -23640,6 +23718,7 @@ document.addEventListener('click',function(ev){
  if(a==='manual')capManual();
  else if(a==='descartar'){ var Pd=CAP.pend; if(Pd&&Pd.url)URL.revokeObjectURL(Pd.url); CAP.cola=capCola().filter(function(x){return x!==Pd;}); capSel(capCola()[0]||null); pintar(); }
  else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
+ else if(a==='ver'){ ev.preventDefault(); capVerHoja(capCola().filter(function(x){return x.id===b.dataset.id;})[0]); }
  else if(a==='listos')capConfirmarListos();
  else if(a==='item-mas'&&CAP.pend){ CAP.pend.datos.items.push(capItemVacio()); pintar(); }
  else if(a==='confirmar')capConfirmar().then(function(ok){ if(ok){ var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); } });
