@@ -1744,6 +1744,8 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola li>button[data-cap="cola-sel"]{flex:1;min-width:0}
 .cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
 .cap-cola li>button.cap-quitar{width:auto;display:flex;align-items:center;padding:0 12px;color:#9b2c2c;font-weight:600;white-space:nowrap}
+.cl-sub{margin:12px 0 6px}
+button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .cap-cola-acc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .cap-cola-acc button{font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;border:1px solid #9b2c2c;background:#fff;color:#9b2c2c;cursor:pointer}
 .cap-ver-b{margin-top:8px;width:120px;font:inherit;font-weight:600;padding:8px;border:1px solid #1e6b47;border-radius:8px;background:#fff;color:#1e6b47;cursor:pointer}
@@ -23474,7 +23476,8 @@ async function capConfirmar(P0,silencio){
  if(P.url)URL.revokeObjectURL(P.url);
  CAP.cola=capCola().filter(function(x){return x!==P;});
  if(CAP.pend===P)capSel(capCola().filter(function(x){return x.estado==='revisar';})[0]||capCola()[0]||null);
- if(!silencio){ msg(inc.length===1?'Registrado y sumado a su fuente':(inc.length+' renglones registrados y sumados a sus fuentes')); pintar(); }
+ if(!silencio){ var car=inc.length?CL_GRUPOS.da.c.filter(function(c){return c[0]===clCarpetaDeLinea(capLinea(P.cat,inc[0].linea));})[0]:null;
+  msg((inc.length===1?'Registrado y sumado a su fuente':(inc.length+' renglones registrados y sumados a sus fuentes'))+(car&&P.file?(' · guardado en Datos de actividad › '+car[1]):'')); pintar(); }
  return true;
 }
 async function capConfirmarListos(){
@@ -23695,7 +23698,7 @@ function vistaCaptura(){
     '<td class="n">'+fmt(x.cantidad,2)+' '+esc(x.unidad)+'</td><td class="n">'+fmt(x.cantidadLinea,2)+'<div class="muted">'+esc(x.unidadLinea)+'</div></td>'+
     '<td>'+esc(x.por)+'<div class="muted">'+esc(String(x.cuando).slice(0,10))+' · '+(x.origen==='ia'?'lectura asistida':'manual')+'</div></td>'+
     '<td>'+(x.hash?'<code title="'+esc(x.metHash+' '+x.hash)+'">'+esc(x.hash.slice(0,10))+'</code>':'<span class="falta">sin respaldo</span>')+'</td>'+
-    '<td>'+(x.estado==='anulado'?('<span class="etq">anulado</span><div class="muted">'+esc(x.motivoAnula||'')+'</div>'):(ed?'<button type="button" class="mini" data-cap="anular" data-id="'+esc(x.id)+'">Anular</button>':''))+'</td></tr>';
+    '<td>'+(x.estado==='anulado'?('<span class="etq">anulado</span><div class="muted">'+esc(x.motivoAnula||'')+'</div>'):(ed?'<button type="button" class="mini" data-cap="anular" data-id="'+esc(x.id)+'">Anular</button>'+(x.adjuntoId?' <button type="button" class="mini peligro" data-cl="eliminar" data-id="'+esc(x.adjuntoId)+'">Eliminar documento</button>':''):''))+'</td></tr>';
   }).join(''):'<tr><td colspan="9"><div class="vacio">Todavía no hay facturas registradas.</div></td></tr>')+
   '</tbody></table></div>'+(R.length>60?'<p class="small muted">Se muestran los 60 más recientes; el CSV trae los '+R.length+'.</p>':'')+'</div></div>';
  return h;
@@ -23891,6 +23894,8 @@ function vistaCentroDatos(){
   tarjetaCifra('Sin sustento',String(sin),sin?(fmt(tSin,2)+' t CO₂e de '+fmt(tTot,2)+' sin evidencia'):'todas tienen evidencia')+
   tarjetaCifra('Archivos de sustento',String(L.length),bytes?kb(bytes):'0 KB')+
   tarjetaCifra('Solo en este equipo',String(local),assets?(local?'se suben al sincronizar':'todos en la base central'):'sin base central conectada')+'</dl>';
+ if(CL.grupo!=='da'&&!CDS.clVisto){ CL.grupo='da'; CDS.clVisto=true; }
+ h+=tarjetaCarpetasLibres();
  if(sin)h+='<div class="aviso"><b>'+sin+' fuente'+(sin===1?'':'s')+' con dato y sin evidencia recuperable.</b> Según el protocolo, ese dato no se puede cuantificar hasta tener su sustento.</div>';
  if(alt)h+='<div class="aviso"><b>'+alt+' archivo'+(alt===1?'':'s')+' con un sello distinto al guardado.</b> El archivo cambió después de registrarse; revise antes de entregar.</div>';
  /* conciliación */
@@ -23938,7 +23943,7 @@ function vistaCentroDatos(){
     '<td>'+esc(x.amb)+'<div class="muted">'+esc(x.linea)+'</div></td>'+
     '<td>'+(x.regs.length?x.regs.map(function(r){return fmt(r.cantidadLinea,2)+' '+esc(r.unidadLinea)+(r.estado==='anulado'?' (anulado)':'');}).join('<br>'):'<span class="muted">sin factura registrada</span>')+'</td>'+
     '<td>'+ig+'<div class="muted">'+(x.a.assetId?'en la base central':'<span class="cds-local">solo en este equipo</span>')+'</div></td>'+
-    '<td><button type="button" class="mini" data-cds-ver="'+esc(x.a.id)+'" data-ref="'+esc(x.ref)+'">Ver</button></td></tr>';
+    '<td style="white-space:nowrap"><button type="button" class="mini" data-cds-ver="'+esc(x.a.id)+'" data-ref="'+esc(x.ref)+'">Ver</button>'+(puedeEditar()?' <button type="button" class="mini peligro" data-cl="eliminar" data-id="'+esc(x.a.id)+'">Eliminar</button>':'')+'</td></tr>';
   }).join(''):'<tr><td colspan="6"><div class="vacio">'+(L.length?'Ningún sustento coincide con el filtro.':'Todavía no hay sustentos. Se crean al confirmar una factura o al adjuntar un documento a una fuente.')+'</div></td></tr>')+
   '</tbody></table></div>'+(F.length>30?'<p class="small muted">Se muestran 30 de '+F.length+'; afine la búsqueda o descargue el paquete.</p>':'')+'</div></div>';
  /* integridad y entrega */
@@ -23948,7 +23953,7 @@ function vistaCentroDatos(){
   '<button type="button" data-cds="verificar"'+(CDS.verificando||!L.length?' disabled':'')+'>'+(CDS.verificando?'Verificando…':'Verificar ahora')+'</button></div>'+
   '<div><b>Paquete para el verificador</b><p>Un ZIP con cada sustento en la carpeta de su ámbito y su fuente, el índice de registros, la conciliación y el manifiesto de sellos.</p>'+
   '<button type="button" class="primario" data-cds="paquete"'+(L.length?'':' disabled')+'>Descargar el paquete</button></div>'+
-  '<div><b>Conservación</b><p>Los sustentos se conservan mientras la declaración esté vigente y cinco años más. No se borran: el registro que los usa se anula con su motivo.</p>'+
+  '<div><b>Conservación</b><p>Los sustentos se conservan mientras la declaración esté vigente y cinco años más. Un documento equivocado se elimina con su motivo: sale de las carpetas y del inventario, y la bitácora conserva qué se eliminó, cuánto aportaba, quién y cuándo.</p>'+
   (local&&!assets?'<p class="small falta">Hay archivos que solo existen en este equipo y no hay base central conectada: si se pierde el equipo, se pierde la evidencia.</p>':'')+'</div></div>'+
   '</div></div>';
  return h;
@@ -24289,6 +24294,55 @@ var CL_GRUPOS={
   c:[['01','Electricidad','⚡'],['02','Combustibles','⛽'],['03','Residuos, pulpa y aguas mieles','♻'],['04','Fertilizantes y enmiendas','🌱'],['05','Plaguicidas y otros insumos','🧪'],
      ['06','Empaques','📦'],['07','Transporte terrestre','🚚'],['08','Exportación y transporte marítimo','🚢'],['09','Producción y acopio','☕'],['10','Otros','📄']]}
 };
+/* A qué carpeta de «Datos de actividad» va cada fuente de emisión: así una factura confirmada en
+   «Subir facturas y registros» aparece en su carpeta, unida a su dato de actividad, sin guardarla dos veces */
+function clCarpetaDeLinea(l){
+ var t=((l&&l.id)||'')+' '+((l&&l.et)||''); t=t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+ if(/elec|kwh/.test(t))return '01';
+ if(/marit|export|contened|naviera|puerto/.test(t))return '08';
+ if(/transp|flete|camion|vehiculo.*carga|km recorr/.test(t))return '07';
+ if(/diesel|gasolin|glp|gas lp|propano|bunker|combust|lena|carbon veg/.test(t))return '02';
+ if(/residu|pulpa|agua|miel|vertid|desech/.test(t))return '03';
+ if(/fert|compost|abono|cal agric|enmienda|urea|nitrat|fosf|potas|gallinaza|bocashi/.test(t))return '04';
+ if(/plaguic|herbic|fungic|insectic|insumo/.test(t))return '05';
+ if(/empaq|saco|bolsa|caja|envase/.test(t))return '06';
+ if(/produc|acopio|cosecha|cereza|pergamino|oro/.test(t))return '09';
+ return '10';
+}
+function clCapturados(c){
+ return adjuntosTodos().filter(function(x){ if(x.ref.indexOf('linea:')!==0)return false; var pr=partesRef(x.ref); return pr&&clCarpetaDeLinea(pr.l)===c; })
+  .map(function(x){ var pr=partesRef(x.ref), regs=registros().filter(function(r){return r.adjuntoId===x.a.id&&r.estado!=='anulado';});
+   var r0=regs[0]||{}; return {a:x.a,ref:x.ref,l:pr.l,amb:cdsAmbNom(pr.cat,pr.fid),regs:regs,fecha:r0.fecha||String(x.a.fecha||'').slice(0,10),numero:r0.numero||'',proveedor:r0.proveedor||''}; })
+  .sort(function(a,b){ return String(a.fecha).localeCompare(String(b.fecha)); });
+}
+/* Eliminar un documento de una vez: sale de las carpetas, de las fuentes y del inventario.
+   La bitácora conserva qué se eliminó, cuánto aportaba, quién y por qué. */
+function docEliminar(idAdj){
+ var todos=adjuntosTodos(), x0=todos.filter(function(x){return x.a.id===idAdj;})[0]; if(!x0)return;
+ var sello=x0.a.sello||'';
+ var ads=todos.filter(function(x){ return x.a.id===idAdj||(sello&&x.a.sello===sello); });
+ var ids=ads.map(function(x){return x.a.id;});
+ var regs=registros().filter(function(r){ return ids.indexOf(r.adjuntoId)>=0||(sello&&r.hash===sello); });
+ var vig=regs.filter(function(r){return r.estado!=='anulado';});
+ var aporta={}; vig.forEach(function(r){ var k=r.lineaNom+' ('+r.unidadLinea+')'; aporta[k]=(aporta[k]||0)+r.cantidadLinea; });
+ var txt=Object.keys(aporta).map(function(k){return fmt(aporta[k],2)+' · '+k;}).join('; ');
+ pedir({titulo:'Eliminar el documento',peligro:true,ok:'Eliminar',motivo:'Motivo (por ejemplo: la factura no trae la unidad de medida)',
+  texto:['Se elimina «'+esc(x0.a.nombre)+'»'+(ads.length>1?(' de las '+ads.length+' fuentes donde estaba'):'')+'.',
+   vig.length?('Se quitan del inventario '+vig.length+' renglón'+(vig.length===1?'':'es')+': '+esc(txt)+'. El dato de actividad se recalcula sin ellos.'):'No tiene renglones registrados en el inventario.',
+   'No se puede deshacer. Si lo necesita después, súbalo de nuevo.']}).then(function(m){
+  if(!m)return;
+  var refs={};
+  ads.forEach(function(x){ var c=contenedor(x.ref); if(c){ c.obj.adjuntos=(c.obj.adjuntos||[]).filter(function(a){return ids.indexOf(a.id)<0;}); marcar(c.ruta); } if(x.ref.indexOf('linea:')===0)refs[x.ref]=1; });
+  regs.forEach(function(r){ var l=capLinea(r.cat,r.linea); if(l)refs[refLinea(l,r.cat,r.fid||null)]=1; });
+  S.registros=registros().filter(function(r){return regs.indexOf(r)<0;});
+  ids.forEach(function(id){ try{ archivoBorrar(id); }catch(e){} });
+  if(sello)CAP.cola=capCola().filter(function(q){return q.hash!==sello;});
+  Object.keys(refs).forEach(capRecalcular);
+  anotar('dato','Documento eliminado · '+x0.a.nombre,txt||'sin renglones','0','motivo: '+m+(sello?(' · sello '+sello.slice(0,16)):''));
+  marcar('captura/registros'); guardarLocal(); pintar();
+  msg('Documento eliminado'+(vig.length?(' y '+vig.length+' renglón'+(vig.length===1?'':'es')+' quitado'+(vig.length===1?'':'s')+' del inventario'):''));
+ });
+}
 function clLibres(){ S.archivo=S.archivo||{}; S.archivo.libres=S.archivo.libres||[]; return S.archivo.libres; }
 function clReg(id,crear){ var L=clLibres(); for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i];
  if(!crear)return null; var p=id.split('-'), r={id:id,grupo:p[0],carpeta:p[1],adjuntos:[]}; L.push(r); return r; }
@@ -24336,29 +24390,41 @@ async function clDescargar(soloCarpeta){
 }
 function tarjetaCarpetasLibres(){
  var G=CL_GRUPOS[CL.grupo], ed=puedeEditar();
- var tot=function(g){ return CL_GRUPOS[g].c.reduce(function(s,c){return s+clArchivos(g,c[0]).length;},0); };
+ var nCar=function(g,c){ return clArchivos(g,c).length+(g==='da'?clCapturados(c).length:0); };
+ var tot=function(g){ return CL_GRUPOS[g].c.reduce(function(s,c){return s+nCar(g,c[0]);},0); };
  var h='<div class="tarjeta cfe"><h3>Carpetas de documentos</h3><div class="cuerpo">'+
-  (tot('da')?'<div class="cl-tabs">'+['fe','da'].map(function(g){ return '<button type="button" data-cl="grupo" data-g="'+g+'" aria-pressed="'+(CL.grupo===g)+'">'+esc(CL_GRUPOS[g].t)+' <small>'+tot(g)+'</small></button>'; }).join('')+'</div>':'')+
+  ('<div class="cl-tabs">'+['fe','da'].map(function(g){ return '<button type="button" data-cl="grupo" data-g="'+g+'" aria-pressed="'+(CL.grupo===g)+'">'+esc(CL_GRUPOS[g].t)+' <small>'+tot(g)+'</small></button>'; }).join('')+'</div>')+
   '<p>'+esc(G.d)+' Abra una carpeta y suba los archivos (PDF, Excel, Word o fotos, hasta 200 MB cada uno).'+(CL.grupo==='fe'?' Las facturas y registros de actividad no van aquí: se suben en «Subir facturas y registros», que los lee y los suma a su fuente.':'')+'</p>'+
   '<div class="cfe-rejilla">';
  G.c.forEach(function(c){
-  var n=clArchivos(CL.grupo,c[0]).length, ab=CL.abierta===c[0];
+  var n=nCar(CL.grupo,c[0]), ab=CL.abierta===c[0];
   h+='<button type="button" class="cfe-car'+(ab?' abierta':'')+'" data-cl="abrir" data-c="'+c[0]+'"><span class="cfe-ic" aria-hidden="true">'+c[2]+'</span>'+
    '<span class="cfe-tx"><b>'+esc(c[1])+'</b><small>'+(n?(n+' documento'+(n===1?'':'s')):'vacía')+'</small></span></button>';
  });
  h+='</div>';
  if(tot(CL.grupo))h+='<div class="acciones" style="margin-top:12px"><button type="button" data-cl="todo">Descargar todas las carpetas (ZIP)</button></div>';
  if(CL.abierta){
-  var c=G.c.filter(function(x){return x[0]===CL.abierta;})[0], L=clArchivos(CL.grupo,CL.abierta);
+  var c=G.c.filter(function(x){return x[0]===CL.abierta;})[0], L=clArchivos(CL.grupo,CL.abierta), K=CL.grupo==='da'?clCapturados(CL.abierta):[];
   if(c){
    h+='<div class="cfe-det"><div class="cfe-det-cab"><b>'+c[2]+' '+esc(c[1])+' · '+esc(G.t)+'</b><span>'+
     (ed?'<label class="adj-boton primario"><input type="file" multiple data-cl-subir="1" hidden>Subir documentos</label> ':'')+
     (L.length?'<button type="button" data-cl="bajar" data-c="'+c[0]+'">Descargar esta carpeta</button>':'')+'</span></div>';
+   if(K.length){
+    var sumas={}; K.forEach(function(x){ x.regs.forEach(function(r){ var k=r.lineaNom+'|'+r.unidadLinea+'|'+x.amb; sumas[k]=(sumas[k]||0)+r.cantidadLinea; }); });
+    h+='<p class="cl-sub"><b>Facturas y registros confirmados</b> · vinculados a su dato de actividad: '+Object.keys(sumas).map(function(k){ var p=k.split('|'); return '<b>'+fmt(sumas[k],2)+' '+esc(p[1])+'</b> en '+esc(p[0])+' ('+esc(p[2])+')'; }).join('; ')+'</p>'+
+     '<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Fecha</th><th>Documento</th><th>Dato de actividad</th><th>Sello</th><th></th></tr></thead><tbody>'+
+     K.map(function(x){ return '<tr><td>'+esc(x.fecha)+'</td><td>'+(x.numero?('Factura '+esc(x.numero)):esc(x.a.nombre))+'<div class="muted">'+esc(x.proveedor||x.a.nombre)+'</div></td>'+
+      '<td>'+(x.regs.length?x.regs.map(function(r){return fmt(r.cantidadLinea,2)+' '+esc(r.unidadLinea)+(r.pagina?(' · pág. '+r.pagina):'');}).join('<br>'):'<span class="muted">sin renglón vigente</span>')+'<div class="muted">'+esc(x.l.et)+' · '+esc(x.amb)+'</div></td>'+
+      '<td>'+(x.a.sello?'<code title="'+esc(x.a.selloMet+' '+x.a.sello)+'">'+esc(x.a.sello.slice(0,10))+'</code>':'—')+'</td>'+
+      '<td style="white-space:nowrap"><button type="button" class="mini" data-cl="verc" data-id="'+esc(x.a.id)+'">Ver</button>'+(ed?' <button type="button" class="mini peligro" data-cl="eliminar" data-id="'+esc(x.a.id)+'">Eliminar</button>':'')+'</td></tr>'; }).join('')+
+     '</tbody></table></div>';
+    if(L.length)h+='<p class="cl-sub"><b>Otros documentos de la carpeta</b></p>';
+   }
    h+=L.length?('<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Documento</th><th>Cargado</th><th>Sello</th><th></th></tr></thead><tbody>'+
      L.slice().reverse().map(function(a){ return '<tr><td>'+esc(a.nombre)+'<div class="muted">'+kb(a.bytes||0)+'</div></td><td>'+esc(String(a.fecha||'').slice(0,10))+'<div class="muted">'+esc(a.tecnico||'')+'</div></td>'+
       '<td>'+(a.sello?'<code title="'+esc(a.selloMet+' '+a.sello)+'">'+esc(a.sello.slice(0,10))+'</code>':'—')+'</td>'+
       '<td style="white-space:nowrap"><button type="button" class="mini" data-cl="ver" data-id="'+esc(a.id)+'">Ver</button>'+(ed?' <button type="button" class="mini" data-cl="quitar" data-id="'+esc(a.id)+'">Quitar</button>':'')+'</td></tr>'; }).join('')+
-     '</tbody></table></div>'):'<div class="vacio">Carpeta vacía. Suba aquí los documentos.</div>';
+     '</tbody></table></div>'):(K.length?'':'<div class="vacio">Carpeta vacía. Las facturas que confirme en «Subir facturas y registros» aparecen aquí solas; también puede subir documentos directamente.</div>');
    h+='</div>';
   }
  }
@@ -24372,6 +24438,9 @@ document.addEventListener('click',function(ev){
  else if(a==='todo')clDescargar('');
  else if(a==='bajar')clDescargar(b.dataset.c);
  else if(a==='quitar')clQuitar(b.dataset.id);
+ else if(a==='eliminar')docEliminar(b.dataset.id);
+ else if(a==='verc'){ var mc=adjuntosTodos().filter(function(x){return x.a.id===b.dataset.id;})[0];
+  if(mc)fuenteAdjunto(mc.a).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); }); }
  else if(a==='ver'){ var m=clArchivos(CL.grupo,CL.abierta).filter(function(x){return x.id===b.dataset.id;})[0];
   if(m)fuenteAdjunto(m).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); }); }
 });
