@@ -1745,6 +1745,20 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
 .cap-cola li>button.cap-quitar{width:auto;display:flex;align-items:center;padding:0 12px;color:#9b2c2c;font-weight:600;white-space:nowrap}
 .cl-sub{margin:12px 0 6px}
+.hcp-pry{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:0 0 14px}
+.hcp-indice{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.hcp-indice span{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2,#566)}
+.hcp-indice span.ok{border-color:#9cc8b0;background:#e8f3ec;color:#1e6b47}
+.tarjeta h3 small.cl,.inf-cl{font:500 12px/1.2 inherit;color:var(--ink-3,#6b7a76);margin-left:8px;letter-spacing:0;text-transform:none}
+button.enlace{background:none;border:none;padding:0;color:#1e6b47;text-decoration:underline;font:inherit;cursor:pointer}
+.inf-grupo{font-size:20px;margin:26px 0 10px;color:#15513a}
+.inf-sec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:0 0 12px}
+.inf-cab{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:8px}
+.inf-cab h3{margin:0;font-size:17px;flex:1 1 280px}
+.inf-cuerpo p{margin:0 0 10px;line-height:1.6;text-align:justify;max-width:none}
+.inf-nota{font-size:13px;color:var(--ink-3,#6b7a76)}
+.inf-editor{margin-top:10px}.inf-editor label{display:block;font-size:13px;color:var(--ink-3,#6b7a76);margin-bottom:6px}
+.inf-editor textarea{width:100%;min-height:180px;font:inherit;line-height:1.5}
 button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .cap-cola-acc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .cap-cola-acc button{font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;border:1px solid #9b2c2c;background:#fff;color:#9b2c2c;cursor:pointer}
@@ -1827,6 +1841,9 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
    <section id="v-rep" hidden></section>
    <section id="v-apr" hidden></section>
    <section id="v-org" hidden></section>
+   <section id="v-per" hidden></section>
+   <section id="v-hcp" hidden></section>
+   <section id="v-inf" hidden></section>
    <section id="v-pry" hidden></section>
    <section id="v-pai" hidden></section>
    <section id="v-cfg" hidden></section>
@@ -5177,6 +5194,7 @@ function contenedor(ref){
  if(p[0]==='contrato'){var ct=contratoDe(p[1]); return ct?{obj:ct,ruta:'gestion/declaraciones'}:null;}
  if(p[0]==='arcdoc'){var ad=arcDe(p[1]); return ad?{obj:ad,ruta:'gestion/archivo'}:null;}
  if(p[0]==='cdoc'){var cd=clReg(p[1],true); return {obj:cd,ruta:'gestion/archivo'};}
+ if(p[0]==='perdoc'){ return {obj:perDocs(),ruta:'org/perfil'}; }
  if(p[0]==='arbol'){var q2=S.parcelas.find(function(x){return x.id===p[1];}); if(!q2)return null;
   var ind=(q2.individuos||[])[parseInt(p[2],10)]; return ind?{obj:ind,ruta:'parcelas/'+q2.id}:null;}
  return null;
@@ -5214,6 +5232,7 @@ function adjuntosTodos(){
  S.fincas.forEach(function(f){ porLinea(S.insumos[f.id],'finca',f.id,(f.codigo||'Finca')); });
  porLinea(S.beneficio,'org',null,'Beneficio');
  ((S.archivo&&S.archivo.libres)||[]).forEach(function(r){ (r.adjuntos||[]).forEach(function(a){ t.push({a:a,ref:'cdoc:'+r.id,donde:'Carpeta de documentos · '+((CL_GRUPOS[r.grupo]&&CL_GRUPOS[r.grupo].t)||'')+' '+r.carpeta}); }); });
+ ((S.perfil&&S.perfil.docsPres&&S.perfil.docsPres.adjuntos)||[]).forEach(function(a){ t.push({a:a,ref:'perdoc:pres',donde:'Perfil de la organización · documentos de presentación'}); });
  return t;
 }
 
@@ -5382,6 +5401,9 @@ function odsDeclarables(){
 
 /* ====== módulos ====== */
 var ICO={
+ per:'<path d="M4 20V6l8-3 8 3v14"/><path d="M9 20v-5h6v5"/><path d="M8 9h2M14 9h2M8 12h2M14 12h2"/>',
+ hcp:'<circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/><circle cx="12" cy="12" r="3"/>',
+ inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 15h7M9 18h4"/>',
  con:'<path d="M9 11l2 2 4-4"/><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 17h8"/>',
  cds:'<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/>',
  cap:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M12.5 17v-6"/><path d="M10 13.5l2.5-2.5 2.5 2.5"/>',
@@ -5423,6 +5445,10 @@ var ICO={
 };
 function svgIco(k){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICO[k]||'')+'</svg>';}
 var MODULOS=[
+ {id:'per',scol:'sE',codigo:'MOD-PER',nom:'Perfil de la organización',col:'mE',etapa:'preparar',paso:1,
+  des:'Identificación, descripción, contexto y alcance organizacional, con sus documentos de presentación.'},
+ {id:'hcp',scol:'s3',codigo:'MOD-HCP',nom:'Estudio de huella ISO 14067',col:'m3',etapa:'preparar',paso:2,
+  des:'Objetivo y alcance del estudio: unidad, límite del sistema, período, corte, asignación y calidad de datos.'},
  {id:'apr',scol:'s7',codigo:'MOD-APR',nom:'Aprender a usarla',col:'m7',etapa:'preparar',paso:0,
   des:'Siete recorridos autoguiados, paso a paso, con la pantalla real.'},
  {id:'org',scol:'sE',codigo:'MOD-ORG',nom:'Organizaciones',col:'mE',etapa:'preparar',paso:1,
@@ -5453,7 +5479,7 @@ var MODULOS=[
   des:'Se anota lo que consume la organización fuera de la finca: beneficio, secado, energía, empaque y compras. La aplicación lo convierte a emisiones con el factor de cada renglón.'},
  {id:'car',scol:'s1',codigo:'MOD-CAR',nom:'Carga masiva de datos',col:'m1',etapa:'campo',paso:10,
   des:'Traer de una hoja de cálculo o de un paquete de facturas lo que ya está contado.'},
- {id:'con',scol:'s4',codigo:'MOD-CON',nom:'Control de la medición',col:'m4',etapa:'revisar',paso:11,
+ {id:'con',scol:'s4',codigo:'MOD-CON',nom:'Control de la medición',col:'m4',etapa:'cerrar',paso:11,
   des:'Instrumentos comprobados, medidores autorizados y la remedición de control del ciclo.'},
  {id:'arc',scol:'s8',codigo:'MOD-ARC',nom:'Archivo del proyecto',col:'m8',etapa:'revisar',paso:11,
   des:'El depósito documental del ciclo, en catorce carpetas. Cada documento entra con su origen y su destino declarados, y queda donde un verificador lo pueda encontrar sin preguntar.'},
@@ -5467,6 +5493,8 @@ var MODULOS=[
   des:'Lo que el mismo dato dice de la finca: sombra, especies, reemplazo, nitrógeno y eficiencia.'},
  {id:'res',scol:'s8',codigo:'MOD-RES',nom:'Resultado del ciclo',col:'m8',etapa:'cerrar',paso:15,
   des:'El resumen del ciclo, la descarga, el respaldo y el cierre.'},
+ {id:'inf',scol:'s8',codigo:'MOD-INF',nom:'Informe del estudio ISO 14067',col:'m8',etapa:'cerrar',paso:16,
+  des:'El informe del estudio según los apartados 7.2 y 7.3 de ISO 14067, armado con los datos y exportable a Word y PDF.'},
  {id:'mit',scol:'s6',codigo:'MOD-MIT',nom:'Plan de mitigación',col:'m6',etapa:'cerrar',paso:17,
   des:'Qué hacer con el resultado: medidas ordenadas por toneladas, con responsable y plazo.'},
  {id:'ver',scol:'sE',codigo:'MOD-VER',nom:'Verificación externa',col:'mE',etapa:'cerrar',paso:19,
@@ -5477,10 +5505,10 @@ var MODULOS=[
   des:'El documento que se firma: programa, auditor, hallazgos con su cláusula y seguimiento de cada uno.'},
 ];
 var ETAPAS=[
- ['preparar','Preparar el ciclo','Qué empresa se trabaja, con qué reglas se calcula y qué fuentes hay que buscar'],
- ['campo','Medir y registrar','Lo que se mide en la finca y lo que se consume en el beneficio, dato por dato'],
+ ['preparar','Organización y estudio','Quién es la organización y cómo se define el estudio: producto, unidad, límites, período y reglas de cálculo.'],
+ ['campo','Datos de actividad','Facturas, registros y consumos de las fincas y del beneficio, cada dato con su respaldo.'],
  ['revisar','Comprobar','Que cada dato tenga respaldo, que el cálculo cierre y qué se puede declarar'],
- ['cerrar','Declarar y cerrar','El resultado del ciclo, lo que se entrega al comprador y el cierre'],
+ ['cerrar','Resultados e informe','El control de los datos, el resultado por unidad de producto, el informe ISO 14067 y la verificación.'],
 ];
 var HERRAM=[
  ['cal_atajo',null],
@@ -5509,6 +5537,9 @@ function modulo(id){for(var i=0;i<MODULOS.length;i++)if(MODULOS[i].id===id)retur
 function nomMod(m){return (m&&m.id==='pry'&&proyectoBloqueado())?'La empresa':(m?m.nom:'');}
 function datoModulo(m){
  var R=resumenGlobal();
+ if(m.id==='per'){ var Ap=perAvance(); return [Ap.pct+' %','del perfil completo',Ap.pct===100]; }
+ if(m.id==='hcp'){ var Sh=hcpSecciones(), a=0,b=0; Sh.forEach(function(x){a+=x.ok;b+=x.de;}); return [Math.round(a*100/Math.max(1,b))+' %','del estudio definido',a===b]; }
+ if(m.id==='inf'){ return ['','',false]; }
  if(m.id==='pry'){var vv=proyectosVisibles(), f=pryActual();
   if(proyectoBloqueado())return [String((f&&f.codigo)||''),'proyecto de esta sesión', true];
   return [String(vv.length),(vv.length===1?'proyecto':'proyectos')+(f?' · abierto '+(f.codigo||''):''), !!f];}
@@ -5621,7 +5652,7 @@ function compEfectivo(){
 /* Pantallas retiradas del menú para trabajar simple (08/11/2026): su función quedó en otra pantalla.
    Biblioteca de factores y documental → Factores de emisión; Inventario de fuentes, Carga masiva y Hoja de cálculo → Subir facturas y registros;
    Archivo y Evidencia → Centro de datos de sustentos; poda de sombra, ODS, diagnóstico, mitigación y auditorías → fuera del alcance de la huella de producto. */
-var MOD_OCULTOS=['lfe','bib','tal','pod','car','arc','evi','cal','ods','dia','mit','aui','iai'];
+var MOD_OCULTOS=['apr','org','pry','lfe','bib','tal','pod','car','arc','evi','cal','ods','dia','mit','aui','iai'];
 function moduloVisible(id){ return MOD_OCULTOS.indexOf(id)<0&&moduloEnAlcance(id)&&(!COMP_MOD[id]||COMP_MOD[id]===compEfectivo()); }
 function selectorComponente(){
  if(!compDisponible('H')||!compDisponible('R'))return '';
@@ -5772,7 +5803,7 @@ function pintarNav(){
   h+='</div>';
  });
  h+='<div class="nv-bloque"><span class="nv-grupo">Herramientas</span>';
- [['rep','Reportes'],['map','Mapa'],['asi','Asistente'],['pre','Presentación'],['aju','Ajustes y ayuda']].forEach(function(t){
+ [['rep','Otros reportes'],['aju','Ajustes']].forEach(function(t){
   h+='<button type="button" data-vista="'+t[0]+'" style="--mod:var(--lat-marca)"'+(vista===t[0]?' aria-current="page"':'')+'>'+
    '<span class="nv-ico">'+svgIco(t[0])+'</span><span class="nv-txt">'+esc(t[1])+'</span></button>';
  });
@@ -5855,6 +5886,7 @@ function guardarLocal(){
 function completarEstado(o){
  S.insumos=S.insumos||{}; S.beneficio=S.beneficio||{}; S.ods=S.ods||{};
  S.bitacora=S.bitacora||[]; S.nc=S.nc||[]; S.prod=S.prod||{}; S.cred=S.cred||{};
+ S.esq=S.esq||{}; S.esq.i14067=true; S.esq.i14064=false;
  S.excl=S.excl||[]; S.mit=S.mit||{}; S.comp=S.comp||{}; S.verif=S.verif||{}; S.unidades=S.unidades||[];
  S.unidadesOp=S.unidadesOp||[]; S.apart=S.apart||[]; S.pron=S.pron||{}; S.publicaciones=S.publicaciones||[]; S.aui=S.aui||{}; S.taller=S.taller||{};
  S.esq=S.esq||{i14064:true,i14067:false,credito:false,i9001:true};
@@ -6934,7 +6966,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 function ir(v){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
  if(VISTAS.indexOf(v)<0)v='portada';
@@ -7103,7 +7135,7 @@ function vistaPrimerPaso(){
   '<span class="hb-n" style="font-size:28px;color:var(--ink-2)">Sin proyectos</span>'+
   '<span class="hb-nota">Un proyecto es una empresa. Créelo primero y dentro se captura todo lo demás.</span></div></div></div>'+
   '<div class="rejilla3">'+
-  ETAPAS.map(function(e,i){return '<div class="tarjeta"><h3>'+(i+1)+' · '+esc(e[1])+'</h3><div class="cuerpo"><p>'+esc(e[2])+'</p>'+
+  ETAPAS.filter(function(e){return MODULOS.some(function(m){return m.etapa===e[0]&&moduloVisible(m.id);});}).map(function(e,i){return '<div class="tarjeta"><h3>'+(i+1)+' · '+esc(e[1])+'</h3><div class="cuerpo"><p>'+esc(e[2])+'</p>'+
    '<p class="pista">'+MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);}).map(function(m){return esc(nomMod(m));}).join(' · ')+'</p></div></div>';}).join('')+
   '</div>';
 }
@@ -7139,8 +7171,8 @@ function vistaPortada(){
     (fpo&&fpo.hipotetico?'<span class="chip-hero alerta">caso hipotético</span>':'')+
    '</div>'+
    '<div class="hero-acc"><button type="button" class="mini" data-vista="pry">'+(PRY_FIJO?'Ficha de la empresa':'Cambiar de empresa')+'</button>'+
-    '<button type="button" class="mini" data-accion="rep-modal" data-tipo="ciclo">Reporte del ciclo</button>'+
-    '<button type="button" class="mini" data-vista="aui">Auditoría</button></div>'+
+    '<button type="button" class="mini" data-vista="hcp">Estudio de huella</button>'+
+    '<button type="button" class="mini" data-vista="inf">Informe ISO 14067</button></div>'+
   '</div>'+
   '<div class="hero-der">'+
    '<div class="hero-tres">'+
@@ -7186,12 +7218,11 @@ function vistaPortada(){
   medidor(SU.pct,'Datos con evidencia recuperable',SU.con+' de '+SU.total+' datos anotados tienen respaldo')+
   medidor(S.fincas.length?Math.round(S.fincas.filter(function(f){return parcelasDe(f.id).length;}).length*100/S.fincas.length):0,
    'Fincas con estrato medido',S.fincas.filter(function(f){return parcelasDe(f.id).length;}).length+' de '+S.fincas.length+' con parcela levantada')+
-  medidor(Math.round(odsDeclarables().n*10),'Objetivos con indicador medido',odsDeclarables().n+' de 10 objetivos del programa')+
+  medidor(perAvance().pct,'Perfil de la organización',perAvance().n+' de '+perAvance().de+' apartados completos')+
   medidor(A.R.aplicables?Math.round(A.R.conformidad):0,'Conformidad con la norma declarada',
    A.R.aplicables?(A.R.t.conforme+' de '+A.R.aplicables+' criterios'):'sin norma declarada')+
-  '<div class="acciones"><button type="button" class="mini" data-vista="cal">Hoja de cálculo</button>'+
-  '<button type="button" class="mini" data-vista="evi">Evidencia</button>'+
-  '<button type="button" class="mini" data-vista="aui">Auditoría</button></div>'+
+  '<div class="acciones"><button type="button" class="mini" data-vista="cds">Centro de datos</button>'+
+  '<button type="button" class="mini" data-vista="inf">Informe ISO 14067</button></div>'+
   '</div></div></div>';
  h+='</div>';
 
@@ -7211,13 +7242,15 @@ function vistaPortada(){
  }
 
  /* ---- mapa de ruta por etapas ---- */
- h+='<h2 class="tit-seccion">El ciclo, en cuatro etapas</h2>';
+ h+='<h2 class="tit-seccion">La ruta del estudio</h2>';
  h+='<div class="etapas">';
+ var numEt=0;
  ETAPAS.forEach(function(e,ie){
   var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);});
+  if(!ms.length)return;
   var listos=ms.filter(function(m){return datoModulo(m)[2];}).length;
   var pct=ms.length?Math.round(listos*100/ms.length):0;
-  h+='<section class="etapa"><header class="et-cab"><span class="et-n">'+(ie+1)+'</span>'+
+  h+='<section class="etapa"><header class="et-cab"><span class="et-n">'+(++numEt)+'</span>'+
    '<span class="et-txt"><span class="et-nom">'+esc(e[1])+'</span>'+
    '<span class="et-barra"><span class="et-relleno" style="width:'+pct+'%"></span></span></span>'+
    '<span class="et-cont">'+listos+'/'+ms.length+'</span></header><div class="et-mods">';
@@ -7226,7 +7259,7 @@ function vistaPortada(){
    h+='<button type="button" class="mod mod-corto" data-vista="'+m.id+'" style="--mod:var(--'+m.col+')" title="'+esc(m.des)+'">'+
     '<span class="mod-rail"></span>'+
     '<span class="mod-int"><span class="mod-ico">'+svgIco(m.id)+'</span>'+
-    '<span class="mod-txt"><span class="mod-cod">Paso '+m.paso+' · '+m.codigo+'</span>'+
+    '<span class="mod-txt"><span class="mod-cod">'+m.codigo+'</span>'+
     '<span class="mod-nom">'+esc(nomMod(m))+'</span></span></span>'+
     '<span class="mod-pie"><span class="mod-dato">'+esc(d[0])+'<small>'+esc(d[1])+'</small></span>'+
     '<span class="mod-estado'+(d[2]?' con':'')+'">'+etiquetaModulo(m.id,d[2])+'</span></span>'+
@@ -7236,11 +7269,6 @@ function vistaPortada(){
  });
  h+='</div>';
 
- h+='<div class="tarjeta"><h3>Dos cosas prácticas</h3><div class="cuerpo">'+
-  '<p><b>Trabajar estos datos con Claude.</b> Todo lo capturado queda en la base del proyecto abierto. Abra una conversación, pase el enlace de esta aplicación y pida lo que necesite: el resumen por finca, el inventario del ciclo o el informe para la organización.</p>'+
-  '<p><b>Tenerla siempre a mano.</b> En la computadora, abra el enlace en Chrome, menú, Guardar y compartir, Instalar página como aplicación: queda un icono propio en el escritorio y se abre en su ventana. En Android e iPhone, Añadir a la pantalla de inicio.</p>'+
-  '<div class="acciones"><button type="button" class="mini" data-vista="apr">Ver los recorridos guiados</button></div>'+
-  '</div></div>';
  return h;
 }
 
@@ -10104,15 +10132,7 @@ function ver_prodcred(){
   var HP=huellaProducto(), P=S.prod||{};
   h+='<div class="tarjeta"><h3>Huella de carbono de producto · ISO 14067</h3><div class="cuerpo">'+
    '<p>La norma exige declarar la unidad funcional, los límites del ciclo de vida y cómo se reparte la carga entre el producto principal y sus coproductos. Sin eso, una cifra por quintal no significa nada.</p>'+
-   '<div class="campos">'+
-   campo('Unidad declarada','prod.unidad','text',P.unidad||'quintal de café oro','ancho')+
-   campo('Kilogramos por unidad','prod.kg','number',(P.kg==null?45.36:P.kg))+
-   campo('Producción del ciclo, en unidades','prod.produccion','number',(P.produccion==null?'':P.produccion))+
-   campoSel('Límites del ciclo de vida','prod.limites',LIMITES_PROD.map(function(x){return x[0];}),P.limites||'De la cuna a la puerta del beneficio')+
-   (String(P.limites||'')==='Parcial declarado'?campoArea('Qué queda fuera del límite parcial y por qué','prod.limitesParcial',P.limitesParcial,'ancho'):'')+
-   campoSel('Regla de asignación','prod.asignacion',['Por masa','Económica','Sin asignación, todo al producto principal'],P.asignacion||'Por masa')+
-   campo('Porcentaje asignado al producto principal','prod.pct','number',(P.pct==null?100:P.pct))+
-   '</div>'+
+   '<p>Unidad: <b>'+esc(HP.unidad)+'</b> · límite: <b>'+esc(HP.limite)+'</b> · asignación: <b>'+esc(P.asignacion||'Por masa')+' ('+fmt(HP.asig,1)+' %)</b>. <button type="button" class="enlace" data-vista="hcp">Modificar en «Estudio de huella ISO 14067»</button></p>'+
    '<div class="tabla-caja" style="margin-top:14px"><table><thead><tr><th>Concepto</th><th>Valor</th><th>Unidad</th></tr></thead><tbody>'+
    '<tr><td>Emisiones del ciclo</td><td class="n">'+fmt(HP.emis)+'</td><td>t CO₂e</td></tr>'+
    '<tr><td>Asignado al producto declarado</td><td class="n">'+fmt(HP.emisAsig)+'</td><td>t CO₂e</td></tr>'+
@@ -24446,6 +24466,532 @@ document.addEventListener('click',function(ev){
 });
 document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.clSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)clSubir(fs); } });
 
+/* ==========================================================================
+   MOD-PER · Perfil de la organización
+   Quién es la organización, en qué contexto opera y qué parte de ella entra
+   en el estudio. Es la primera sección del informe ISO 14067.
+   ========================================================================== */
+function perOrg(){ var f=pryActual(); return f&&f.orgId?orgDe(f.orgId):null; }
+function perV(k){
+ var v=S.perfil['emp_'+k];
+ if(v!=null&&String(v).trim()!=='')return v;
+ var o=perOrg()||{};
+ var map={razon:o.nombre||S.perfil.organizacion,registro:o.registro,pais:o.pais||S.perfil.pais,representante:o.representante,
+  responsable:o.responsable,contacto:o.contacto,direccion:o.direccion};
+ return map[k]||'';
+}
+var PER_CLAVE=['razon','registro','tipo','pais','direccion','responsable','descripcion','actividad','productos','cadena','instalaciones','limiteorg'];
+function perAvance(){ var n=PER_CLAVE.filter(function(k){ return String(perV(k)||'').trim()!==''; }).length; return {n:n,de:PER_CLAVE.length,pct:Math.round(n*100/PER_CLAVE.length)}; }
+function perDocs(){ S.perfil.docsPres=S.perfil.docsPres||{adjuntos:[]}; return S.perfil.docsPres; }
+function perCampo(et,k,ancho,ayuda){
+ return '<div class="campo'+(ancho?' ancho':'')+'"><label for="c-perfil.emp_'+k+'">'+esc(et)+'</label>'+
+  '<input id="c-perfil.emp_'+k+'" type="text" data-ruta="perfil.emp_'+k+'" value="'+esc(perV(k))+'" spellcheck="true" lang="es"'+bloq('perfil.emp_'+k)+'>'+
+  (ayuda?'<span class="pista">'+esc(ayuda)+'</span>':'')+'</div>';
+}
+function perArea(et,k,ayuda,filas){
+ return '<div class="campo ancho"><label for="c-perfil.emp_'+k+'">'+esc(et)+'</label>'+
+  (ayuda?'<span class="pista">'+esc(ayuda)+'</span>':'')+
+  '<textarea id="c-perfil.emp_'+k+'" data-ruta="perfil.emp_'+k+'" rows="'+(filas||4)+'" spellcheck="true" lang="es"'+bloq('perfil.emp_'+k)+'>'+esc(perV(k))+'</textarea></div>';
+}
+function perSel(et,k,ops){
+ var v=perV(k);
+ return '<div class="campo"><label for="c-perfil.emp_'+k+'">'+esc(et)+'</label><select id="c-perfil.emp_'+k+'" data-ruta="perfil.emp_'+k+'"'+bloq('perfil.emp_'+k)+'>'+
+  '<option value="">Elegir</option>'+ops.map(function(x){return '<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select></div>';
+}
+function vistaPerfil(){
+ var A=perAvance(), ed=puedeEditar(), D=perDocs().adjuntos||[];
+ var h=cabModulo('per','<p class="vista-sub">La presentación de la organización que realiza el estudio: su identificación, su actividad, el contexto en que opera y la parte de la organización que el estudio abarca. Este contenido forma el capítulo 1 del informe ISO 14067.</p>');
+ h+='<dl class="cifras">'+
+  tarjetaCifra('Perfil completo',A.pct+' %',A.n+' de '+A.de+' apartados')+
+  tarjetaCifra('Documentos de presentación',String(D.length),D.length?'cargados':'ninguno todavía')+
+  tarjetaCifra('País',esc(perV('pais')||'sin declarar'),'de operación')+
+  tarjetaCifra('Productores o proveedores',esc(perV('nprod')||'—'),'declarados')+'</dl>';
+ h+='<div class="tarjeta"><h3>1. Identificación</h3><div class="cuerpo"><div class="campos">'+
+  perCampo('Razón social','razon',true)+perCampo('Nombre comercial','comercial')+perCampo('Registro tributario','registro')+
+  perSel('Naturaleza jurídica','tipo',['Sociedad anónima','Sociedad de responsabilidad limitada','Cooperativa','Asociación de productores','Empresa individual','Otra'])+
+  perCampo('Año de constitución','fundacion')+
+  perSel('País','pais',PAISES.map(function(x){return x[1];}))+perCampo('Departamento y municipio','depto')+
+  perCampo('Dirección de la sede','direccion',true)+perCampo('Sitio web','web')+
+  perCampo('Representante legal','representante')+perCampo('Responsable del estudio de huella','responsable')+perCampo('Correo o teléfono de contacto','contacto')+
+  '</div></div></div>';
+ h+='<div class="tarjeta"><h3>2. Descripción de la organización</h3><div class="cuerpo"><div class="campos">'+
+  perArea('Presentación','descripcion','Quién es la organización, cuándo y para qué se constituyó, a quién agrupa y qué hace. Se transcribe tal cual en el informe; puede pegar el texto de su presentación institucional.',8)+
+  '</div></div></div>';
+ h+='<div class="tarjeta"><h3>3. Actividad y contexto</h3><div class="cuerpo"><div class="campos">'+
+  perArea('Actividad principal','actividad','Por ejemplo: acopio, beneficiado y exportación de café verde de productores asociados.',3)+
+  perArea('Productos y presentaciones','productos','Productos que comercializa, calidades y presentaciones de venta.',3)+
+  perArea('Cadena de valor','cadena','Recorrido del producto desde la finca hasta la entrega al cliente, indicando quién realiza cada etapa.',4)+
+  perArea('Instalaciones y sitios','instalaciones','Beneficio, bodegas, oficinas, centros de acopio y su ubicación.',3)+
+  perArea('Mercados de destino','mercados','',2)+
+  perArea('Certificaciones vigentes','certificaciones','',2)+
+  perCampo('Productores asociados o proveedores','nprod')+perCampo('Personas empleadas','nempl')+
+  perCampo('Superficie en producción, ha','area')+perCampo('Volumen comercializado por ciclo','volumen')+
+  '</div></div></div>';
+ h+='<div class="tarjeta"><h3>4. Alcance organizacional del estudio</h3><div class="cuerpo"><div class="campos">'+
+  perArea('Parte de la organización que abarca el estudio','limiteorg','Fincas, instalaciones y operaciones cuyos datos entran en el estudio del producto.',4)+
+  perArea('Operaciones que quedan fuera y razón','fueraorg','Por ejemplo: otras líneas de negocio que no intervienen en el producto estudiado.',3)+
+  '</div><p class="pista">El alcance del producto (unidad, límites del sistema y período) se define en «Estudio de huella ISO 14067».</p></div></div>';
+ h+='<div class="tarjeta"><h3>5. Documentos de presentación</h3><div class="cuerpo">'+
+  '<p>Presentación institucional, escritura de constitución, organigrama u otros documentos que describen la organización. Se admiten PDF, PowerPoint, Word e imágenes de hasta 200 MB.</p>'+
+  (ed?'<label class="adj-boton primario"><input type="file" multiple data-per-subir="1" accept=".pdf,.ppt,.pptx,.doc,.docx,image/*" hidden>Subir documentos</label>':'')+
+  (D.length?('<div class="tabla-caja" style="margin-top:12px"><table class="hoja cds-tabla"><thead><tr><th>Documento</th><th>Cargado</th><th>Sello</th><th></th></tr></thead><tbody>'+
+   D.slice().reverse().map(function(a){ return '<tr><td>'+esc(a.nombre)+'<div class="muted">'+kb(a.bytes||0)+'</div></td><td>'+esc(String(a.fecha||'').slice(0,10))+'</td>'+
+    '<td>'+(a.sello?'<code>'+esc(a.sello.slice(0,10))+'</code>':'—')+'</td>'+
+    '<td style="white-space:nowrap"><button type="button" class="mini" data-per="ver" data-id="'+esc(a.id)+'">Ver</button>'+(ed?' <button type="button" class="mini peligro" data-per="quitar" data-id="'+esc(a.id)+'">Quitar</button>':'')+'</td></tr>'; }).join('')+
+   '</tbody></table></div>'):'<div class="vacio" style="margin-top:12px">Sin documentos cargados.</div>')+
+  '</div></div>';
+ h+='<p class="pista">El directorio de organizaciones atendidas y sus usuarios se administra en <button type="button" class="enlace" data-vista="org">Directorio de organizaciones</button>.</p>';
+ return h;
+}
+async function perSubir(files){
+ if(!puedeEditar())return;
+ perDocs(); var ok=0;
+ for(var i=0;i<files.length;i++){
+  var f=files[i]; if(f.size>MAX_ARCHIVO){ msg(f.name+' pesa más de 200 MB'); continue; }
+  var s=await selloDeBytes(new Uint8Array(await f.arrayBuffer()));
+  if(await capGuardarOriginal('perdoc:pres',f,s.val,s.met))ok++;
+ }
+ if(ok)anotar('dato','Perfil de la organización · documentos','',ok+' archivo'+(ok===1?'':'s'),'presentación de la organización');
+ marcar('org/perfil'); guardarLocal(); pintar(); msg(ok+' documento'+(ok===1?'':'s')+' cargado'+(ok===1?'':'s'));
+}
+document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.perSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)perSubir(fs); } });
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-per]'); if(!b)return;
+ var a=(perDocs().adjuntos||[]).filter(function(x){return x.id===b.dataset.id;})[0]; if(!a)return;
+ if(b.dataset.per==='ver')fuenteAdjunto(a).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); });
+ if(b.dataset.per==='quitar')pedir({titulo:'Quitar el documento',peligro:true,ok:'Quitar',texto:['Se quita «'+esc(a.nombre)+'» de los documentos de presentación.']}).then(function(si){
+  if(!si)return; perDocs().adjuntos=perDocs().adjuntos.filter(function(x){return x.id!==a.id;}); try{archivoBorrar(a.id);}catch(e){}
+  anotar('dato','Perfil de la organización · documento quitado',a.nombre,'',''); marcar('org/perfil'); guardarLocal(); pintar(); });
+});
+
+/* ==========================================================================
+   MOD-HCP · Estudio de huella ISO 14067
+   Objetivo y alcance del estudio (ISO 14067:2018, apartado 6.3). Lo que se
+   define aquí gobierna el cálculo y alimenta el informe.
+   ========================================================================== */
+var HCP_OPC={
+ publico:['Uso interno de la organización','Clientes y compradores (comunicación entre empresas)','Público en general'],
+ comunica:['No se comunicará fuera de la organización','Se entregará el informe del estudio a clientes','Comunicación pública conforme a ISO 14026'],
+ tipoUnidad:['Unidad declarada (huella parcial)','Unidad funcional (huella completa)'],
+ elec:['Factor de emisión de la red eléctrica nacional','Factor del proveedor de electricidad','Instrumento contractual (certificado de energía renovable)','No se consume electricidad de la red'],
+ dluc:['No hubo cambio de uso del suelo en los últimos 20 años','Hubo cambio de uso del suelo y se cuantificó','Sin evaluar'],
+ aereo:['No se usó transporte aéreo','Hubo transporte aéreo y se cuantificó'],
+ pcr:['No se adoptó una regla de categoría de producto','Se adoptó una regla de categoría de producto'],
+ rev:['Sin revisión crítica','Revisión interna','Verificación por tercera parte independiente']
+};
+function pv(k,def){ var P=S.prod||{}; var v=P[k]; return (v==null||String(v).trim()==='')?(def||''):v; }
+function hcpArea(et,k,ayuda,filas,sug){
+ var v=pv(k);
+ return '<div class="campo ancho"><label for="c-prod.'+k+'">'+esc(et)+'</label>'+(ayuda?'<span class="pista">'+esc(ayuda)+'</span>':'')+
+  '<textarea id="c-prod.'+k+'" data-ruta="prod.'+k+'" rows="'+(filas||3)+'" spellcheck="true" lang="es"'+bloq('prod.'+k)+'>'+esc(v)+'</textarea>'+
+  (sug&&puedeEditar()&&!String(v).trim()?'<button type="button" class="mini" data-hcp-sug="'+esc(k)+'">Usar el texto base</button>':'')+'</div>';
+}
+function hcpSel(et,k,ops,def){
+ var v=pv(k,def);
+ return '<div class="campo"><label for="c-prod.'+k+'">'+esc(et)+'</label><select id="c-prod.'+k+'" data-ruta="prod.'+k+'"'+bloq('prod.'+k)+'>'+
+  ops.map(function(x){return '<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select></div>';
+}
+function hcpTx(k,def){ return '<div class="campo"><label for="c-prod.'+k+'">'+esc(def[0])+'</label><input id="c-prod.'+k+'" type="'+(def[2]==='date'?'date':'text')+'" data-ruta="prod.'+k+'" value="'+esc(pv(k,def[1]))+'"'+(def[2]==='num'?' inputmode="decimal" data-num="1"':'')+bloq('prod.'+k)+'></div>'; }
+/* Textos base: redacción técnica neutra a partir de los datos ya cargados. Se ofrecen solo si el campo está vacío y la persona decide usarlos. */
+function hcpBase(k){
+ var P=S.prod||{}, org=perV('razon')||S.perfil.organizacion||'la organización', prod=pv('producto','café verde'), u=pv('unidad','quintal de café oro');
+ var lim=pv('limites','De la cuna a la puerta del beneficio').toLowerCase();
+ var T={
+  obj_aplicacion:'Cuantificar la huella de carbono de '+prod+' producido y comercializado por '+org+', expresada por '+u+', para conocer la contribución de cada etapa al resultado e identificar dónde reducir emisiones.',
+  obj_razones:'Responder a la solicitud de información de los compradores sobre el desempeño climático del producto, disponer de una línea base para el seguimiento de las reducciones y sustentar la información que la organización comunica sobre su producto.',
+  flujo:'La producción del período, expresada en '+u+', con la que se reparten las emisiones del sistema.',
+  lim_geografico:'Las fincas de los productores que entregan el producto y las instalaciones de '+org+' en '+(perV('pais')||'el país de operación')+'.',
+  lim_excluidos:'Quedan fuera los bienes de capital (construcción de instalaciones, maquinaria y vehículos), el desplazamiento del personal entre su vivienda y el trabajo, y las actividades administrativas que no intervienen en la transformación del producto. Su contribución se estima inferior al criterio de corte declarado.',
+  per_justif:'El período coincide con el ciclo de cosecha y comercialización, que es la unidad de tiempo en que la organización registra la producción, los insumos y los consumos.',
+  corte_desc:'Se excluyen las entradas cuya contribución estimada sea inferior al '+fmt(umbralMaterialidad(),0)+' % del total, siempre que la suma de las exclusiones no supere ese mismo porcentaje. Cada exclusión se documenta con su estimación y su justificación.',
+  asig_coproductos:'Pulpa, mucílago y cascarilla, que se aprovechan dentro del sistema o se entregan a terceros.',
+  asig_justif:'Se asigna por masa porque el producto principal y los coproductos se obtienen en proporciones físicas conocidas y la relación económica entre ellos varía de un ciclo a otro.',
+  dat_primarios:'Se usan datos primarios en los procesos bajo control de la organización: producción, insumos aplicados en las fincas, consumo de combustibles y de electricidad del beneficio y transporte propio. Cada dato primario se respalda con su factura o registro.',
+  dat_calidad:'Los datos deben corresponder al período del estudio, al país de operación y a la tecnología empleada. Los factores de emisión se toman, en este orden, de fuentes nacionales oficiales vigentes, de fuentes regionales publicadas y de los valores por defecto del IPCC.',
+  limitaciones:'El resultado corresponde a las condiciones del período estudiado y no es directamente comparable con estudios que usen otros límites del sistema, otra unidad o reglas de asignación distintas. Los factores por defecto del IPCC aumentan la incertidumbre en las fuentes donde no hay factor nacional.',
+  seguimiento:'El presente estudio constituye la línea base. Los estudios de los ciclos siguientes aplicarán los mismos límites, la misma unidad y la misma regla de asignación para que los resultados sean comparables.'
+ };
+ return T[k]||'';
+}
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-hcp-sug]'); if(!b)return;
+ var k=b.dataset.hcpSug; S.prod=S.prod||{}; S.prod[k]=hcpBase(k); marcar('gestion/declaraciones'); guardarLocal(); pintar();
+});
+function hcpSecciones(){
+ var P=S.prod||{};
+ var f=function(k){ return String(pv(k)).trim()!==''; };
+ return [
+  ['Objetivo del estudio','6.3.1',[f('obj_aplicacion'),f('obj_razones'),f('obj_publico'),f('obj_comunica')]],
+  ['Producto y unidad','6.3.3',[f('producto'),f('unidad')||true,nv(P.produccion)>0||produccionTotal()>0,f('flujo')]],
+  ['Límite del sistema','6.3.4',[f('limites')||true,f('lim_geografico'),f('lim_excluidos')]],
+  ['Período','6.3.6',[f('per_inicio'),f('per_fin')]],
+  ['Criterios de corte','6.3.4.3',[f('corte_desc')]],
+  ['Asignación','6.4.6',[f('asig_justif')]],
+  ['Datos y su calidad','6.3.5',[f('dat_primarios'),f('dat_calidad'),f('dat_elec')]],
+  ['Revisión y limitaciones','6.3.2',[f('rev_tipo'),f('limitaciones')]]
+ ].map(function(x){ var ok=x[2].filter(Boolean).length; return {t:x[0],cl:x[1],ok:ok,de:x[2].length}; });
+}
+function vistaEstudio(){
+ var P=S.prod||{}, f=pryActual(), HP=huellaProducto(), SEC=hcpSecciones();
+ var tot=SEC.reduce(function(a,x){return a+x.de;},0), ok=SEC.reduce(function(a,x){return a+x.ok;},0);
+ var h=cabModulo('hcp','<p class="vista-sub">Objetivo y alcance del estudio de la huella de carbono del producto, conforme al apartado 6.3 de ISO 14067:2018. Estas definiciones gobiernan el cálculo y se trasladan al informe.</p>');
+ h+='<div class="hcp-pry"><span>Proyecto abierto: <b>'+esc((f&&f.codigo)||'ninguno')+'</b> · ciclo '+esc(S.perfil.ciclo||'sin declarar')+'</span>'+
+  '<button type="button" class="mini" data-vista="pry">Cambiar de proyecto o de ciclo</button></div>';
+ h+='<dl class="cifras">'+
+  tarjetaCifra('Definición del estudio',Math.round(ok*100/Math.max(1,tot))+' %',ok+' de '+tot+' elementos')+
+  tarjetaCifra('Huella por unidad',fmt(HP.porU,2),'kg CO₂e por '+esc(HP.unidad))+
+  tarjetaCifra('Producción del período',fmt(HP.prod,2),esc(HP.unidad))+
+  tarjetaCifra('Límite del sistema',esc(String(HP.limite).replace('De la cuna a la ','Cuna a ')),'')+'</dl>';
+ h+='<div class="hcp-indice">'+SEC.map(function(x,i){ return '<span class="'+(x.ok===x.de?'ok':'')+'">'+(i+1)+'. '+esc(x.t)+' <small>'+x.ok+'/'+x.de+'</small></span>'; }).join('')+'</div>';
+ h+='<div class="tarjeta"><h3>1. Objetivo del estudio <small class="cl">ISO 14067, 6.3.1</small></h3><div class="cuerpo"><div class="campos">'+
+  hcpArea('Aplicación prevista','obj_aplicacion','Para qué se usará el resultado.',3,1)+
+  hcpArea('Razones para realizar el estudio','obj_razones','',3,1)+
+  hcpSel('Público destinatario','obj_publico',HCP_OPC.publico,HCP_OPC.publico[1])+
+  hcpSel('Comunicación prevista','obj_comunica',HCP_OPC.comunica,HCP_OPC.comunica[1])+
+  '</div></div></div>';
+ h+='<div class="tarjeta"><h3>2. Producto, unidad y flujo de referencia <small class="cl">6.3.3</small></h3><div class="cuerpo"><div class="campos">'+
+  hcpTx('producto',['Producto estudiado','Café verde (oro) exportable'])+
+  hcpSel('Tipo de unidad','tipoUnidad',HCP_OPC.tipoUnidad,HCP_OPC.tipoUnidad[0])+
+  hcpTx('unidad',['Unidad declarada o funcional','quintal de café oro'])+
+  hcpTx('kg',['Kilogramos por unidad','45.36','num'])+
+  hcpTx('produccion',['Producción del período, en unidades','', 'num'])+
+  hcpArea('Descripción técnica del producto','descripcion','Especie y variedades, proceso (lavado, natural, honey), humedad, calidad y presentación.',3)+
+  hcpArea('Flujo de referencia','flujo','',2,1)+
+  '</div><p class="pista">Un estudio de la cuna a la puerta no incluye el uso ni el fin de vida del producto; por eso se expresa por unidad declarada y es una huella parcial (ISO 14067, 3.1.1.2 y 6.1).</p></div></div>';
+ var G=reglaLimite(P.limites), etap=[];
+ if(G.finca)etap.push('Producción agrícola en las fincas'); if(G.org)etap.push('Beneficiado y procesamiento');
+ if(G.expo)etap.push('Preparación para la exportación'); if(G.flete)etap.push('Transporte internacional');
+ h+='<div class="tarjeta"><h3>3. Límite del sistema <small class="cl">6.3.4</small></h3><div class="cuerpo"><div class="campos">'+
+  campoSel('Límite del ciclo de vida','prod.limites',LIMITES_PROD.map(function(x){return x[0];}),P.limites||'De la cuna a la puerta del beneficio')+
+  (String(P.limites||'')==='Parcial declarado'?hcpArea('Qué queda fuera del límite parcial y por qué','limitesParcial','',3):'')+
+  hcpArea('Ámbito geográfico','lim_geografico','',2,1)+
+  hcpArea('Procesos excluidos y justificación','lim_excluidos','',4,1)+
+  '</div><p><b>Etapas incluidas según el límite elegido:</b> '+esc(etap.join('; '))+'.</p>'+
+  '<p class="pista">Las exclusiones de fuentes concretas con su estimación se registran en «Configuración del cálculo» y se trasladan al informe ('+exclusiones().length+' registradas).</p></div></div>';
+ h+='<div class="tarjeta"><h3>4. Período del estudio <small class="cl">6.3.6</small></h3><div class="cuerpo"><div class="campos">'+
+  hcpTx('per_inicio',['Inicio del período','', 'date'])+hcpTx('per_fin',['Fin del período','', 'date'])+
+  hcpArea('Justificación del período','per_justif','',2,1)+'</div></div></div>';
+ h+='<div class="tarjeta"><h3>5. Criterios de corte <small class="cl">6.3.4.3</small></h3><div class="cuerpo"><div class="campos">'+
+  campo('Umbral de corte, % del total','perfil.materialidad','number',S.perfil.materialidad==null?5:S.perfil.materialidad)+
+  hcpArea('Descripción del criterio','corte_desc','',3,1)+'</div></div></div>';
+ h+='<div class="tarjeta"><h3>6. Asignación <small class="cl">6.4.6</small></h3><div class="cuerpo"><div class="campos">'+
+  campoSel('Regla de asignación','prod.asignacion',['Por masa','Económica','Sin asignación, todo al producto principal'],P.asignacion||'Por masa')+
+  campo('Porcentaje asignado al producto principal','prod.pct','number',(P.pct==null?100:P.pct))+
+  hcpArea('Coproductos del sistema','asig_coproductos','',2,1)+
+  hcpArea('Justificación de la regla','asig_justif','',3,1)+'</div></div></div>';
+ h+='<div class="tarjeta"><h3>7. Gases y factores de caracterización <small class="cl">6.4.2 y 6.4.4</small></h3><div class="cuerpo"><div class="campos">'+
+  campoSel('Potenciales de calentamiento global a 100 años','perfil.gwp',SERIES_PCG,serieDeclarada())+
+  '</div><p>Gases considerados: dióxido de carbono (CO₂), metano (CH₄), óxido nitroso (N₂O) y, cuando hay equipos de refrigeración, hidrofluorocarbonos (HFC).</p></div></div>';
+ h+='<div class="tarjeta"><h3>8. Datos y su calidad <small class="cl">6.3.5 y 6.4.9</small></h3><div class="cuerpo"><div class="campos">'+
+  hcpArea('Uso de datos primarios','dat_primarios','',3,1)+hcpArea('Requisitos de calidad de los datos','dat_calidad','',3,1)+
+  hcpSel('Tratamiento de la electricidad','dat_elec',HCP_OPC.elec,HCP_OPC.elec[0])+
+  hcpSel('Cambio directo de uso del suelo','dluc',HCP_OPC.dluc,HCP_OPC.dluc[0])+
+  hcpSel('Transporte aéreo','aereo',HCP_OPC.aereo,HCP_OPC.aereo[0])+
+  hcpSel('Regla de categoría de producto (PCR)','pcr',HCP_OPC.pcr,HCP_OPC.pcr[0])+
+  (pv('pcr')===HCP_OPC.pcr[1]?hcpTx('pcr_nombre',['Nombre y versión de la PCR','']):'')+
+  '</div></div></div>';
+ h+='<div class="tarjeta"><h3>9. Revisión, limitaciones y seguimiento <small class="cl">6.3.2 y 8</small></h3><div class="cuerpo"><div class="campos">'+
+  hcpSel('Tipo de revisión','rev_tipo',HCP_OPC.rev,HCP_OPC.rev[2])+hcpTx('rev_organismo',['Organismo verificador',''])+
+  hcpArea('Limitaciones del estudio','limitaciones','',3,1)+hcpArea('Seguimiento del desempeño','seguimiento','Año base y comparación con ciclos siguientes.',3,1)+
+  '</div></div></div>';
+ h+='<div class="acciones"><button type="button" class="primario" data-vista="inf">Ver el informe del estudio</button></div>';
+ return h;
+}
+
+/* ==========================================================================
+   MOD-INF · Informe del estudio ISO 14067
+   Se arma solo con el perfil, la definición del estudio, los datos de
+   actividad y el cálculo. Cada apartado indica el requisito de ISO 14067:2018
+   que atiende (7.2 y 7.3). La redacción automática puede reemplazarse por una
+   propia, apartado por apartado.
+   ========================================================================== */
+function infEtapa(id){
+ if(id==='poda'||id==='cultivo')return 'Producción agrícola en las fincas';
+ if((typeof FLETE_INTL!=='undefined')&&FLETE_INTL[id])return 'Transporte internacional';
+ if(idsEXPO()[id])return 'Preparación para la exportación';
+ if(FINCA.some(function(l){return l.id===id;}))return 'Producción agrícola en las fincas';
+ return 'Beneficiado y procesamiento';
+}
+function infDatos(){
+ var P=S.prod||{}, HP=huellaProducto(), LIM=emisionesEnLimite(P.limites), F=HP.prod>0?(HP.asig/100*1000/HP.prod):0;
+ var et={}, orden=['Producción agrícola en las fincas','Beneficiado y procesamiento','Preparación para la exportación','Transporte internacional'];
+ LIM.partes.forEach(function(x){ var k=infEtapa(x.id); et[k]=(et[k]||0)+x.t; });
+ var etapas=orden.filter(function(k){return et[k]>0;}).map(function(k){ return {t:k,tco2:et[k],porU:et[k]*F,pct:LIM.total>0?et[k]/LIM.total*100:0}; });
+ var procesos=LIM.partes.slice().sort(function(a,b){return b.t-a.t;}).map(function(x){ return {et:x.et,etapa:infEtapa(x.id),t:x.t,porU:x.t*F,pct:LIM.total>0?x.t/LIM.total*100:0,niv:x.niv}; });
+ var regs=registros().filter(function(r){return r.estado!=='anulado';});
+ var filas=filasHojaTodo();
+ return {P:P,HP:HP,LIM:LIM,F:F,etapas:etapas,procesos:procesos,G:desgloseGases(),B:co2Biogenico(),FA:factoresAplicados(),EX:exclusiones(),
+  C:cdsConciliacion(),SU:sustento(),regs:regs,filas:filas,org:perV('razon')||S.perfil.organizacion||'la organización'};
+}
+function filasHojaTodo(){ var g={hojaFinca:sel.hojaFinca,hojaCat:sel.hojaCat,hojaSolo:sel.hojaSolo}; sel.hojaFinca='';sel.hojaCat='';sel.hojaSolo='';
+ try{ return filasHoja().filter(function(x){return x.q;}); } finally { sel.hojaFinca=g.hojaFinca; sel.hojaCat=g.hojaCat; sel.hojaSolo=g.hojaSolo; } }
+function minus(t){ t=String(t||'').trim(); return /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(t)?t.charAt(0).toLowerCase()+t.slice(1):t; }
+function infCodDef(){ return 'INF-HCP-'+String(S.perfil.ciclo||'').replace(/\D/g,'').slice(0,4); }
+var INF_GRUPOS={'3':'Alcance del estudio','4':'Datos del inventario','5':'Método de cuantificación','6':'Resultados','7':'Interpretación'};
+function fx(n,d){ return fmt(n,d==null?2:d); }
+function fechaLarga(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m)return ''; var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return (+m[3])+' de '+M[+m[2]-1]+' de '+m[1]; }
+/* Bloques: {h:'título'} {p:'texto'} {tabla:{c:[...],f:[[...]]}} {nota:'texto'} */
+function infSecciones(){
+ var D=infDatos(), P=D.P, HP=D.HP, u=HP.unidad, org=D.org, S7=[];
+ var ok=function(c){return c?'cumple':'falta';};
+ function sec(id,num,t,cl,est,bloques,faltan){ S7.push({id:id,num:num,t:t,cl:cl,est:est,b:bloques,faltan:faltan||[]}); }
+ var lim=String(HP.limite||'');
+ /* 1 · organización */
+ var desc=String(perV('descripcion')||'').trim();
+ sec('org','1','Información de la organización','7.1',desc&&perV('actividad')?'cumple':'falta',[
+  {p:org+(perV('registro')?(', registro tributario '+perV('registro')):'')+(perV('tipo')?(', '+String(perV('tipo')).toLowerCase()):'')+(perV('pais')?(', con sede en '+[perV('depto'),perV('pais')].filter(Boolean).join(', ')):'')+'.'},
+  desc?{p:desc}:{p:'[Presentación de la organización pendiente en «Perfil de la organización».]'},
+  perV('actividad')?{p:'Actividad principal: '+minus(perV('actividad'))}:null,
+  perV('productos')?{p:'Productos: '+minus(perV('productos'))}:null,
+  perV('cadena')?{p:'Cadena de valor: '+minus(perV('cadena'))}:null,
+  perV('instalaciones')?{p:'Instalaciones: '+minus(perV('instalaciones'))}:null,
+  perV('limiteorg')?{p:'Parte de la organización que abarca el estudio: '+minus(perV('limiteorg'))+(perV('fueraorg')?(' Quedan fuera: '+minus(perV('fueraorg'))):'')}:null,
+  {tabla:{c:['Dato','Valor'],f:[['Productores asociados o proveedores',perV('nprod')||'—'],['Personas empleadas',perV('nempl')||'—'],['Superficie en producción, ha',perV('area')||'—'],['Volumen comercializado por ciclo',perV('volumen')||'—'],['Certificaciones',perV('certificaciones')||'—'],['Responsable del estudio',perV('responsable')||'—']]}}
+ ],desc?[]:['presentación de la organización']);
+ /* 2 · objetivo */
+ sec('obj','2','Objetivo del estudio','6.3.1',ok(pv('obj_aplicacion')&&pv('obj_razones')),[
+  {p:pv('obj_aplicacion','[Aplicación prevista pendiente.]')},{p:pv('obj_razones','[Razones del estudio pendientes.]')},
+  {p:'El informe se dirige a: '+pv('obj_publico',HCP_OPC.publico[1]).toLowerCase()+'. '+pv('obj_comunica',HCP_OPC.comunica[1])+'.'}
+ ],(!pv('obj_aplicacion')?['aplicación prevista']:[]).concat(!pv('obj_razones')?['razones']:[]));
+ /* 3 · alcance */
+ var parcial=lim.indexOf('tumba')<0;
+ sec('uni','3.1','Producto, unidad y flujo de referencia','7.3 a)',ok(nv(HP.prod)>0&&pv('producto')),[
+  {p:'El producto estudiado es '+pv('producto','café verde (oro) exportable').toLowerCase()+'. '+pv('descripcion','')},
+  {p:'El resultado se expresa por '+u+' ('+fx(HP.kgU,2)+' kg). '+(parcial?'Por tratarse de un estudio que no llega al uso ni al fin de vida del producto, se trata de una huella de carbono parcial expresada por unidad declarada.':'Se expresa por unidad funcional.')},
+  {p:'Flujo de referencia: '+minus(pv('flujo',hcpBase('flujo')))+' Producción del período: '+fx(HP.prod,2)+' '+u+'.'}
+ ],(nv(HP.prod)>0?[]:['producción del período']).concat(pv('producto')?[]:['producto estudiado']));
+ var G=reglaLimite(P.limites), etap=[]; if(G.finca)etap.push('producción agrícola en las fincas'); if(G.org)etap.push('beneficiado y procesamiento'); if(G.expo)etap.push('preparación para la exportación'); if(G.flete)etap.push('transporte internacional');
+ sec('lim','3.2','Límite del sistema','7.3 b) y o)',ok(pv('lim_excluidos')),[
+  {p:'El límite del sistema es '+lim.toLowerCase()+' e incluye: '+etap.join(', ')+'. '+(P.limites==='Parcial declarado'&&pv('limitesParcial')?pv('limitesParcial'):'')},
+  {p:'Ámbito geográfico: '+minus(pv('lim_geografico',hcpBase('lim_geografico')))},
+  {p:'Procesos excluidos: '+minus(pv('lim_excluidos','[pendiente]'))},
+  {p:'Las entradas del sistema son insumos agrícolas, combustibles, electricidad, materiales de empaque y servicios de transporte; las salidas consideradas son las emisiones de gases de efecto invernadero a la atmósfera, el producto y sus coproductos.'}
+ ],pv('lim_excluidos')?[]:['procesos excluidos']);
+ sec('pro','3.3','Procesos unitarios importantes','7.3 c)',D.procesos.length?'cumple':'falta',[
+  {p:'La tabla presenta los procesos que contribuyen al resultado, ordenados por su aporte.'},
+  {tabla:{c:['Proceso','Etapa','kg CO₂e por '+u,'% del total'],f:D.procesos.slice(0,20).map(function(x){return [x.et,x.etapa,fx(x.porU,2),fx(x.pct,1)];})}}
+ ]);
+ sec('eta','3.4','Etapas del ciclo de vida y escenarios','7.3 p) y q)','cumple',[
+  {p:'Etapas consideradas: '+etap.join(', ')+'.'},
+  {p:parcial?'El estudio no incluye las etapas de uso y de fin de vida del producto, de modo que no se definieron perfiles de uso ni escenarios de fin de vida, ni se evaluaron alternativas a ellos.':'Los perfiles de uso y escenarios de fin de vida se describen en el anexo.'}
+ ]);
+ sec('per','3.5','Período de tiempo','7.3 r)',ok(pv('per_inicio')&&pv('per_fin')),[
+  {p:'El resultado representa el período '+(pv('per_inicio')?('del '+fechaLarga(pv('per_inicio'))+' al '+fechaLarga(pv('per_fin'))):'del ciclo '+(S.perfil.ciclo||''))+'. '+pv('per_justif',hcpBase('per_justif'))}
+ ],pv('per_inicio')?[]:['fechas del período']);
+ sec('pcr','3.6','Reglas de categoría de producto','7.3 s)','cumple',[
+  {p:pv('pcr')===HCP_OPC.pcr[1]?('Se aplicó la regla de categoría de producto '+pv('pcr_nombre','[nombre pendiente]')+'.'):'No se adoptó una regla de categoría de producto (PCR) ni otros requisitos complementarios; el estudio sigue directamente los requisitos de ISO 14067:2018.'}
+ ]);
+ /* 4 · datos */
+ var conF=D.regs.length, conc=D.C.filter(function(c){return c.est==='conciliado';}).length;
+ sec('dat','4.1','Recolección de datos y fuentes','7.3 d)',D.filas.length?'cumple':'falta',[
+  {p:pv('dat_primarios',hcpBase('dat_primarios'))},
+  {p:(conF?('Para el período se registraron '+conF+' renglones de facturas y registros, cada uno con su archivo de respaldo y su sello SHA-256. '):'Los datos de actividad del período se anotaron directamente en el inventario, sin facturas registradas por la captura. ')+'De las '+D.C.length+' fuentes de emisión con dato, '+conc+' están conciliadas con sus facturas. El '+D.SU.pct+' % de los datos de actividad tiene evidencia recuperable.'},
+  {p:'El inventario completo de datos de actividad se presenta en el anexo B.'}
+ ]);
+ var niv={nacional:0,regional:0,defecto:0,catalogo:0}; D.FA.forEach(function(x){ var k=/N1|nacional/.test(x.niv)?'nacional':/N2|regional/.test(x.niv)?'regional':/N3|defecto/.test(x.niv)?'defecto':'catalogo'; niv[k]+=x.t; });
+ var totF=niv.nacional+niv.regional+niv.defecto+niv.catalogo;
+ sec('cal','4.2','Descripción y calidad de los datos','7.3 j)',ok(pv('dat_calidad')),[
+  {p:pv('dat_calidad',hcpBase('dat_calidad'))},
+  {tabla:{c:['Origen del factor de emisión','Aporte al resultado, %'],f:[['Nacional oficial',fx(totF?niv.nacional/totF*100:0,1)],['Regional publicado',fx(totF?niv.regional/totF*100:0,1)],['Valor por defecto internacional (IPCC u otro)',fx(totF?niv.defecto/totF*100:0,1)],['Datos secundarios de fabricación de insumos',fx(totF?niv.catalogo/totF*100:0,1)]]}}
+ ],pv('dat_calidad')?[]:['requisitos de calidad']);
+ var el=D.filas.filter(function(x){return /^elec/.test(x.l.id);});
+ sec('ele','4.3','Tratamiento de la electricidad','7.3 l)','cumple',[
+  {p:el.length?('Tratamiento aplicado: '+minus(pv('dat_elec',HCP_OPC.elec[0]))+'. '+el.map(function(x){return x.l.et+' ('+x.amb+'): '+fx(x.q,0)+' '+x.l.un+', factor '+fx(factor(x.l,x.cat,x.fid),4)+' según '+fuenteDe(x.l);}).join('; ')+'. No se aplicaron instrumentos contractuales ni se descontó electricidad renovable adquirida.'):'En el período no se registró consumo de electricidad de la red dentro del límite del sistema.'}
+ ]);
+ sec('cor','4.4','Criterios de corte y exclusiones','7.3 g)',ok(pv('corte_desc')),[
+  {p:pv('corte_desc',hcpBase('corte_desc'))},
+  D.EX.length?{tabla:{c:['Fuente excluida','Ámbito','Estimación, % del total','Justificación'],f:D.EX.map(function(x){return [x.fuente,x.ambito,x.peso||'—',x.razon||'—'];})}}:{p:'No se registraron exclusiones de fuentes dentro del límite del sistema.'}
+ ]);
+ sec('asi','4.5','Asignación','7.3 h)',ok(pv('asig_justif')),[
+  {p:'Regla aplicada: '+String(P.asignacion||'Por masa').toLowerCase()+'. Se asigna al producto principal el '+fx(HP.asig,1)+' % de las emisiones del sistema. Coproductos: '+minus(pv('asig_coproductos',hcpBase('asig_coproductos')))},
+  {p:pv('asig_justif',hcpBase('asig_justif'))}
+ ]);
+ /* 5 · método */
+ var sD=serieDeclarada();
+ sec('gei','5.1','Gases de efecto invernadero considerados','7.3 e)','cumple',[
+  {p:'Se consideraron el dióxido de carbono (CO₂), el metano (CH₄)'+(D.G.fluor>0?', el óxido nitroso (N₂O) y los hidrofluorocarbonos (HFC) de los equipos de refrigeración':' y el óxido nitroso (N₂O)')+'. Los demás gases del Protocolo de Kioto no tienen fuentes dentro del límite del sistema.'}
+ ]);
+ sec('fca','5.2','Factores de caracterización','7.3 f)','cumple',[
+  {p:'Los gases se expresan en CO₂ equivalente con los potenciales de calentamiento global a 100 años de la serie '+sD+'.'},
+  {tabla:{c:['Gas','PCG a 100 años'],f:[['Dióxido de carbono, CO₂',fx(pcgDe(sD,'co2'),0)],['Metano de origen biogénico, CH₄',fx(pcgDe(sD,'ch4'),1)],['Metano de origen fósil, CH₄',fx(pcgDe(sD,'ch4f'),1)],['Óxido nitroso, N₂O',fx(pcgDe(sD,'n2o'),1)]]}},
+  {p:'Los factores de emisión aplicados a cada dato de actividad, con su fuente y año, se presentan en la tabla siguiente.'},
+  {tabla:{c:['Fuente de emisión','Factor','Unidad','Fuente','Año'],f:D.FA.slice(0,25).map(function(x){return [x.et,String(x.f),x.uf,x.fue||'—',String(x.anio||'—')];})}}
+ ]);
+ sec('tie','5.3','Momento de las emisiones y remociones','7.3 i)','cumple',[
+  {p:'Todas las emisiones se contabilizan en el período en que ocurren. No se aplicó ponderación por el momento de la emisión ni se contabilizó almacenamiento temporal de carbono.'}
+ ]);
+ /* 6 · resultados */
+ var tot=HP.porU;
+ sec('res','6.1','Huella de carbono del producto','7.2',HP.prod>0?'cumple':'falta',[
+  {p:'La huella de carbono '+(parcial?'parcial ':'')+'de '+pv('producto','café verde').toLowerCase()+' es de '+fx(tot,2)+' kg CO₂e por '+u+', equivalente a '+fx(HP.porKg,3)+' kg CO₂e por kilogramo, para el período y el límite del sistema declarados.'},
+  {tabla:{c:['Concepto','Valor','Unidad'],f:[['Emisiones del sistema dentro del límite',fx(HP.emis,3),'t CO₂e'],['Asignado al producto principal',fx(HP.emisAsig,3),'t CO₂e'],['Producción del período',fx(HP.prod,2),u],['Huella por unidad',fx(tot,2),'kg CO₂e por '+u],['Huella por kilogramo',fx(HP.porKg,3),'kg CO₂e por kg']]}}
+ ],HP.prod>0?[]:['producción']);
+ sec('etp','6.2','Resultados por etapa del ciclo de vida','7.2 a)',D.etapas.length?'cumple':'falta',[
+  {tabla:{c:['Etapa','t CO₂e','kg CO₂e por '+u,'%'],f:D.etapas.map(function(x){return [x.t,fx(x.tco2,3),fx(x.porU,2),fx(x.pct,1)];}).concat([['Total',fx(HP.emis,3),fx(tot,2),'100,0']])}}
+ ]);
+ sec('fos','6.3','Emisiones y remociones de GEI de origen fósil y por gas','7.2 b)','cumple',[
+  {p:'La huella incluye el CO₂ de origen fósil y el metano y el óxido nitroso de todas las fuentes, sean fósiles o biogénicas. La tabla presenta la distribución por gas. No hubo remociones de origen fósil.'},
+  {tabla:{c:['Gas','t CO₂e','% del total'],f:[['CO₂',fx(D.G.co2,3),fx(D.G.total?D.G.co2/D.G.total*100:0,1)],['CH₄',fx(D.G.ch4,3),fx(D.G.total?D.G.ch4/D.G.total*100:0,1)],['N₂O',fx(D.G.n2o,3),fx(D.G.total?D.G.n2o/D.G.total*100:0,1)],['Otros (HFC)',fx(D.G.otros,3),fx(D.G.total?D.G.otros/D.G.total*100:0,1)]]}},
+  {nota:'El desglose por gas se calcula sobre el inventario completo de la organización y puede diferir del total dentro del límite del sistema.'}
+ ]);
+ sec('bio','6.4','Emisiones y remociones biogénicas','7.2 c)','cumple',[
+  {p:'El CO₂ biogénico de la combustión de biomasa se informa por separado y no se suma a la huella: '+fx(D.B.total,3)+' t CO₂ en el período. El metano y el óxido nitroso de esa combustión sí están incluidos en la huella.'},
+  {p:'Las remociones de carbono en la biomasa del sistema agroforestal se informan por separado y no se restan de la huella: '+fx(HP.remo,3)+' t CO₂e en el período.'}
+ ]);
+ sec('luc','6.5','Cambio directo de uso del suelo','7.2 d)','cumple',[{p:pv('dluc',HCP_OPC.dluc[0])+'.'+(pv('dluc',HCP_OPC.dluc[0])===HCP_OPC.dluc[0]?' En consecuencia, no se atribuyen al producto emisiones por cambio directo de uso del suelo.':'')}]);
+ sec('aer','6.6','Transporte aéreo','7.2 e)','cumple',[{p:pv('aereo',HCP_OPC.aereo[0])+' dentro del límite del sistema.'}]);
+ /* 7 · interpretación */
+ var sens=[];
+ if(D.G.total>0&&!D.G.mismaSerie)sens.push('Con los potenciales de la serie '+D.G.serieOrigen+' en lugar de '+D.G.serieDecl+', el resultado cambiaría en '+fx(D.G.pctDif,1)+' %.');
+ if(D.procesos.length)sens.push('El proceso de mayor aporte es '+D.procesos[0].et.toLowerCase()+', con el '+fx(D.procesos[0].pct,1)+' % del total; una variación del 10 % en su dato de actividad o en su factor cambia la huella en '+fx(D.procesos[0].pct/10,1)+' %.');
+ if(niv.defecto>0&&totF>0)sens.push('El '+fx(niv.defecto/totF*100,1)+' % del resultado se calculó con factores por defecto internacionales, que son la principal fuente de incertidumbre.');
+ sec('sen','7.1','Análisis de sensibilidad e incertidumbre','7.3 k)',sens.length?'cumple':'falta',[{p:sens.join(' ')||'[Sin resultados de sensibilidad: falta el cálculo.]'}]);
+ var concl=D.etapas.length?('La etapa de '+D.etapas.slice().sort(function(a,b){return b.tco2-a.tco2;})[0].t.toLowerCase()+' concentra la mayor parte de las emisiones. '):'';
+ sec('con','7.2','Conclusiones y limitaciones','7.3 m)',ok(pv('limitaciones')),[
+  {p:pv('inf_conclusiones',concl+'Las acciones de reducción con mayor efecto son las que actúan sobre los procesos de mayor aporte señalados en el apartado 3.3.')},
+  {p:'Limitaciones: '+minus(pv('limitaciones',hcpBase('limitaciones')))}
+ ],pv('limitaciones')?[]:['limitaciones']);
+ sec('jui','7.3','Juicios de valor','7.3 n)','cumple',[{p:'Las decisiones de valor del estudio son la elección del límite del sistema, la regla de asignación y la serie de potenciales de calentamiento. Cada una se justifica en el apartado correspondiente. Las remociones biogénicas no se descuentan de la huella y no se aplicó compensación de emisiones.'}]);
+ sec('seg','8','Seguimiento del desempeño','7.3 t)','cumple',[{p:pv('seguimiento',hcpBase('seguimiento'))}]);
+ sec('rev','9','Revisión crítica y verificación','8 y 7.4',ok(pv('rev_tipo')),[
+  {p:pv('rev_tipo',HCP_OPC.rev[2])===HCP_OPC.rev[2]?('El estudio se somete a verificación por tercera parte independiente'+(pv('rev_organismo')?(' a cargo de '+pv('rev_organismo')):'')+'. Hasta que concluya, el resultado es la medición propia de la organización.'):(pv('rev_tipo')+'. El resultado es la medición propia de la organización.')},
+  {p:'El estudio se elaboró siguiendo los requisitos de ISO 14067:2018 aplicables a una huella de carbono '+(parcial?'parcial ':'')+'de producto. El anexo A presenta, requisito por requisito, el apartado del informe que lo atiende.'}
+ ]);
+ /* redacción propia por apartado */
+ S7.forEach(function(s){ var t=String(pv('inf_'+s.id)||'').trim(); if(t){ var tablas=s.b.filter(function(x){return x&&(x.tabla||x.nota);}); s.b=t.split(/\n{2,}/).map(function(p){return {p:p.trim()};}).concat(tablas); s.propia=true; } s.b=s.b.filter(Boolean); });
+ return S7;
+}
+var INF_REQ=[
+ ['7.2 a)','Emisiones por etapa del ciclo de vida, absolutas y relativas','etp'],['7.2 b)','Emisiones y remociones fósiles','fos'],['7.2 c)','Emisiones y remociones biogénicas','bio'],
+ ['7.2 d)','Cambio directo de uso del suelo','luc'],['7.2 e)','Transporte aéreo','aer'],
+ ['7.3 a)','Unidad y flujo de referencia','uni'],['7.3 b)','Límite del sistema','lim'],['7.3 c)','Procesos unitarios importantes','pro'],['7.3 d)','Recolección de datos y fuentes','dat'],
+ ['7.3 e)','GEI considerados','gei'],['7.3 f)','Factores de caracterización','fca'],['7.3 g)','Criterios de corte','cor'],['7.3 h)','Asignación','asi'],['7.3 i)','Momento de emisiones y remociones','tie'],
+ ['7.3 j)','Descripción y calidad de los datos','cal'],['7.3 k)','Sensibilidad e incertidumbre','sen'],['7.3 l)','Tratamiento de la electricidad','ele'],['7.3 m)','Interpretación, conclusiones y limitaciones','con'],
+ ['7.3 n)','Juicios de valor','jui'],['7.3 o)','Alcance y exclusiones','lim'],['7.3 p)','Etapas del ciclo de vida','eta'],['7.3 q)','Escenarios alternativos de uso y fin de vida','eta'],
+ ['7.3 r)','Período representado','per'],['7.3 s)','PCR u otros requisitos','pcr'],['7.3 t)','Seguimiento del desempeño','seg']
+];
+function infAnexos(S7){
+ var D=infDatos(), est={}; S7.forEach(function(s){est[s.id]=s;});
+ return [
+  {id:'anA',num:'Anexo A',t:'Lista de verificación de los requisitos de información de ISO 14067:2018',cl:'7.2 y 7.3',est:'cumple',
+   b:[{tabla:{c:['Requisito','Contenido','Apartado','Estado'],f:INF_REQ.map(function(r){ var s=est[r[2]]; return [r[0],r[1],s?s.num:'—',s&&s.est==='cumple'?'Atendido':'Por completar']; })}}]},
+  {id:'anB',num:'Anexo B',t:'Inventario de datos de actividad',cl:'7.3 d) y j)',est:'cumple',
+   b:[{tabla:{c:['Fuente','Ámbito','Cantidad','Unidad','Factor','t CO₂e','Archivos de respaldo'],f:D.filas.map(function(x){ return [x.l.et,x.amb,fx(x.q,2),x.l.un,fx(factor(x.l,x.cat,x.fid),4),fx(x.t+(x.t2||0),3),String(nEvidenciaLinea(x.l,x.cat,x.fid))]; })}}]}
+ ];
+}
+function infHtmlBloques(b){
+ return b.map(function(x){
+  if(x.p!=null)return '<p>'+esc(x.p)+'</p>';
+  if(x.nota)return '<p class="inf-nota">'+esc(x.nota)+'</p>';
+  if(x.tabla)return x.tabla.f.length?('<div class="tabla-caja"><table class="hoja inf-tabla"><thead><tr>'+x.tabla.c.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+   x.tabla.f.map(function(f){return '<tr>'+f.map(function(v,i){return '<td'+(i>0&&/^[-\d.,]+$/.test(String(v))?' class="n"':'')+'>'+esc(v)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>'):'<p class="inf-nota">Sin datos para esta tabla.</p>';
+  return '';
+ }).join('');
+}
+var INF={abierto:''};
+function vistaInforme(){
+ var S7=infSecciones(), AN=infAnexos(S7), ed=puedeEditar();
+ var falt=S7.filter(function(s){return s.est!=='cumple';});
+ var req=INF_REQ.filter(function(r){ var s=S7.filter(function(x){return x.id===r[2];})[0]; return s&&s.est==='cumple'; }).length;
+ var h=cabModulo('inf','<p class="vista-sub">El informe del estudio de la huella de carbono del producto, ordenado según los requisitos de información de ISO 14067:2018 (apartados 7.2 y 7.3). Se arma solo con el perfil de la organización, la definición del estudio, los datos de actividad y el cálculo. Cada apartado admite una redacción propia.</p>');
+ h+='<dl class="cifras">'+tarjetaCifra('Requisitos atendidos',req+' de '+INF_REQ.length,'apartados 7.2 y 7.3')+
+  tarjetaCifra('Apartados por completar',String(falt.length),falt.length?'ver la lista':'ninguno')+
+  tarjetaCifra('Huella del producto',fx(huellaProducto().porU,2),'kg CO₂e por '+esc(huellaProducto().unidad))+
+  tarjetaCifra('Versión',esc(pv('inf_version','1.0')),esc(pv('inf_fecha')?fechaLarga(pv('inf_fecha')):'sin fecha'))+'</dl>';
+ if(falt.length)h+='<div class="aviso"><b>Por completar:</b> '+falt.map(function(s){return s.num+' '+esc(s.t)+(s.faltan.length?(' ('+esc(s.faltan.join(', '))+')'):'');}).join('; ')+'.</div>';
+ h+='<div class="tarjeta"><h3>Control del documento</h3><div class="cuerpo"><div class="campos">'+
+  hcpTx('inf_codigo',['Código del documento',infCodDef()])+hcpTx('inf_version',['Versión','1.0'])+hcpTx('inf_fecha',['Fecha de emisión','', 'date'])+
+  hcpTx('inf_elabora',['Elaborado por',perV('responsable')])+hcpTx('inf_revisa',['Revisado por',''])+hcpTx('inf_aprueba',['Aprobado por',perV('representante')])+
+  '</div><div class="acciones"><button type="button" class="primario" data-inf="docx">Descargar en Word</button><button type="button" data-inf="pdf">Imprimir o guardar en PDF</button></div></div></div>';
+ var grpV={};
+ S7.concat(AN).forEach(function(s){
+  var ab=INF.abierto===s.id, an=s.id.indexOf('an')===0, g=String(s.num).split('.')[0];
+  if(s.num.indexOf('.')>0&&INF_GRUPOS[g]&&!grpV[g]){ grpV[g]=1; h+='<h2 class="inf-grupo">'+g+'. '+esc(INF_GRUPOS[g])+'</h2>'; }
+  h+='<section class="inf-sec" id="inf-'+s.id+'"><div class="inf-cab"><h3>'+esc(s.num)+'. '+esc(s.t)+'</h3><span class="inf-cl">ISO 14067 · '+esc(s.cl)+'</span>'+
+   '<span class="cds-est '+(s.est==='cumple'?'cds-conciliado':'cds-sin')+'">'+(s.est==='cumple'?'Atendido':'Por completar')+'</span>'+(s.propia?'<span class="etq">redacción propia</span>':'')+
+   (ed&&!an?'<button type="button" class="mini" data-inf="editar" data-id="'+s.id+'">'+(ab?'Cerrar':'Redactar')+'</button>':'')+'</div>'+
+   '<div class="inf-cuerpo">'+infHtmlBloques(s.b)+'</div>'+
+   (ab?('<div class="inf-editor"><label for="c-prod.inf_'+s.id+'">Redacción propia del apartado. Separe los párrafos con una línea en blanco. Las tablas se conservan. Si la deja vacía, vuelve la redacción automática.</label>'+
+    '<textarea id="c-prod.inf_'+s.id+'" data-ruta="prod.inf_'+s.id+'" rows="8" spellcheck="true" lang="es">'+esc(pv('inf_'+s.id)||s.b.filter(function(x){return x.p!=null;}).map(function(x){return x.p;}).join('\n\n'))+'</textarea></div>'):'')+
+   '</section>';
+ });
+ return h;
+}
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-inf]'); if(!b)return;
+ var a=b.dataset.inf;
+ if(a==='editar'){ INF.abierto=(INF.abierto===b.dataset.id)?'':b.dataset.id; pintar(); var e=$('inf-'+b.dataset.id); if(e)e.scrollIntoView({block:'start'}); }
+ else if(a==='docx')infWord();
+ else if(a==='pdf')infPdf();
+});
+function infTitulo(){ return {t:'Informe del estudio de la huella de carbono del producto',p:pv('producto','Café verde (oro) exportable'),o:perV('razon')||S.perfil.organizacion||'',
+ per:pv('per_inicio')?('Período del '+fechaLarga(pv('per_inicio'))+' al '+fechaLarga(pv('per_fin'))):('Ciclo '+(S.perfil.ciclo||'')),
+ cod:pv('inf_codigo',infCodDef()),ver:pv('inf_version','1.0'),fec:pv('inf_fecha')?fechaLarga(pv('inf_fecha')):''}; }
+function infPdf(){
+ var S7=infSecciones(), AN=infAnexos(S7), T=infTitulo();
+ var css='body{font-family:Georgia,"Times New Roman",serif;color:#1c2421;font-size:11pt;line-height:1.5;margin:0}main{max-width:780px;margin:0 auto;padding:32px}'+
+  'h1{font-size:20pt;margin:0 0 6px}h2{font-size:14pt;margin:24px 0 8px;border-bottom:1px solid #9aa;padding-bottom:3px;page-break-after:avoid;color:#15513a}h3{font-size:11.5pt;margin:16px 0 6px;page-break-after:avoid}.cl{font:9pt Arial,sans-serif;color:#566}'+
+  'table{border-collapse:collapse;width:100%;margin:8px 0;font:9.5pt Arial,sans-serif}th,td{border:1px solid #9aa;padding:4px 6px;text-align:left;vertical-align:top}th{background:#e8eeec}td.n{text-align:right}'+
+  '.portada{min-height:85vh;display:flex;flex-direction:column;justify-content:center;page-break-after:always}.ctl td{border:none;padding:2px 8px 2px 0}.inf-nota{font-size:9pt;color:#566}@page{margin:22mm 18mm}';
+ var h='<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(T.cod+' '+T.t)+'</title><style>'+css+'</style></head><body><main>'+
+  '<div class="portada"><p class="cl">ISO 14067:2018</p><h1>'+esc(T.t)+'</h1><p style="font-size:14pt">'+esc(T.p)+'</p><p>'+esc(T.o)+'<br>'+esc(T.per)+'</p>'+
+  '<table class="ctl"><tr><td>Código</td><td>'+esc(T.cod)+'</td></tr><tr><td>Versión</td><td>'+esc(T.ver)+'</td></tr><tr><td>Fecha</td><td>'+esc(T.fec)+'</td></tr>'+
+  '<tr><td>Elaborado por</td><td>'+esc(pv('inf_elabora',perV('responsable')))+'</td></tr><tr><td>Revisado por</td><td>'+esc(pv('inf_revisa'))+'</td></tr><tr><td>Aprobado por</td><td>'+esc(pv('inf_aprueba',perV('representante')))+'</td></tr></table></div>'+
+  (function(){ var gp={}; return S7.concat(AN).map(function(s){ var g=String(s.num).split('.')[0], pre='';
+   if(s.num.indexOf('.')>0&&INF_GRUPOS[g]&&!gp[g]){ gp[g]=1; pre='<h2 class="grupo">'+g+'. '+esc(INF_GRUPOS[g])+'</h2>'; }
+   return pre+'<h'+(s.num.indexOf('.')>0?'3':'2')+'>'+esc(s.num)+'. '+esc(s.t)+' <span class="cl">· ISO 14067, '+esc(s.cl)+'</span></h'+(s.num.indexOf('.')>0?'3':'2')+'>'+infHtmlBloques(s.b); }).join(''); })()+
+  '</main><script>setTimeout(function(){print()},400)<\/script></body></html>';
+ var w=window.open(URL.createObjectURL(new Blob([h],{type:'text/html'})),'_blank'); if(!w)msg('Permita las ventanas emergentes para imprimir el informe');
+}
+/* Word (.docx) armado aquí mismo: OOXML mínimo con estilos de título, párrafo y tabla */
+function infWord(){
+ var S7=infSecciones(), AN=infAnexos(S7), T=infTitulo();
+ var x=function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+ var par=function(t,est,extra){ return '<w:p><w:pPr>'+(est?'<w:pStyle w:val="'+est+'"/>':'')+(extra||'')+'</w:pPr><w:r><w:t xml:space="preserve">'+x(t)+'</w:t></w:r></w:p>'; };
+ var tab=function(T_){ var w=Math.floor(9000/T_.c.length);
+  var fila=function(cs,cab){ return '<w:tr>'+cs.map(function(c){ return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(cab?'<w:shd w:val="clear" w:color="auto" w:fill="E8EEEC"/>':'')+'</w:tcPr><w:p><w:pPr><w:pStyle w:val="Tabla"/></w:pPr><w:r>'+(cab?'<w:rPr><w:b/></w:rPr>':'')+'<w:t xml:space="preserve">'+x(c)+'</w:t></w:r></w:p></w:tc>'; }).join('')+'</w:tr>'; };
+  return '<w:tbl><w:tblPr><w:tblStyle w:val="TablaInforme"/><w:tblW w:w="5000" w:type="pct"/></w:tblPr>'+fila(T_.c,true)+T_.f.map(function(f){return fila(f,false);}).join('')+'</w:tbl>'+par('',null); };
+ var cuerpo=par('ISO 14067:2018','Subtitulo')+par(T.t,'Title')+par(T.p,'Subtitulo')+par(T.o,null)+par(T.per,null)+
+  tab({c:['Control del documento',''],f:[['Código',T.cod],['Versión',T.ver],['Fecha',T.fec],['Elaborado por',pv('inf_elabora',perV('responsable'))],['Revisado por',pv('inf_revisa')],['Aprobado por',pv('inf_aprueba',perV('representante'))]]})+
+  '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+ var gw={};
+ S7.concat(AN).forEach(function(s){
+  var g=String(s.num).split('.')[0];
+  if(s.num.indexOf('.')>0&&INF_GRUPOS[g]&&!gw[g]){ gw[g]=1; cuerpo+=par(g+'. '+INF_GRUPOS[g],'Heading1'); }
+  cuerpo+=par(s.num+'. '+s.t,s.id.indexOf('an')===0||/^\d+$/.test(s.num)?'Heading1':'Heading2')+par('Requisito de ISO 14067:2018: '+(/ y /.test(s.cl)?'apartados ':'apartado ')+s.cl+'.','Nota');
+  s.b.forEach(function(b){ if(b.p!=null)cuerpo+=par(b.p,null); else if(b.nota)cuerpo+=par(b.nota,'Nota'); else if(b.tabla&&b.tabla.f.length)cuerpo+=tab(b.tabla); });
+ });
+ var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+cuerpo+
+  '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1418" w:right="1276" w:bottom="1418" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>';
+ var est='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
+  '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:lang w:val="es-HN"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/></w:pPr></w:pPrDefault></w:docDefaults>'+
+  '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:pPr><w:spacing w:before="2400" w:after="240"/><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:color w:val="15513A"/><w:sz w:val="40"/></w:rPr></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Subtitulo"><w:name w:val="Subtítulo"/><w:pPr><w:jc w:val="left"/></w:pPr><w:rPr><w:color w:val="566663"/><w:sz w:val="26"/></w:rPr></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:jc w:val="left"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="15513A"/><w:sz w:val="28"/></w:rPr></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="80"/><w:jc w:val="left"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:sz w:val="24"/></w:rPr></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Nota"><w:name w:val="Nota"/><w:rPr><w:i/><w:color w:val="566663"/><w:sz w:val="18"/></w:rPr></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Tabla"><w:name w:val="Texto de tabla"/><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr><w:rPr><w:sz w:val="18"/></w:rPr></w:style>'+
+  '<w:style w:type="table" w:styleId="TablaInforme"><w:name w:val="Tabla del informe"/><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:color="9AAAA6"/><w:left w:val="single" w:sz="4" w:color="9AAAA6"/><w:bottom w:val="single" w:sz="4" w:color="9AAAA6"/><w:right w:val="single" w:sz="4" w:color="9AAAA6"/><w:insideH w:val="single" w:sz="4" w:color="9AAAA6"/><w:insideV w:val="single" w:sz="4" w:color="9AAAA6"/></w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>'+
+  '</w:styles>';
+ var te=new TextEncoder();
+ var zip=armarZip([
+  {nombre:'[Content_Types].xml',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>')},
+  {nombre:'_rels/.rels',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')},
+  {nombre:'word/_rels/document.xml.rels',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>')},
+  {nombre:'word/document.xml',datos:te.encode(doc)},
+  {nombre:'word/styles.xml',datos:te.encode(est)}
+ ]);
+ var blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+ var nom=cdsNomSeguro(T.cod+'-v'+T.ver+'-informe-huella-ISO14067')+'.docx';
+ (async function(){
+  try{ var dl=await usarCap('downloads'); if(dl){ await dl.save({filename:nom,data:blob}); msg('Informe descargado'); return; } }catch(e){ if(e&&e.code==='declined')return; }
+  var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=nom; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(u);a.remove();},4000); msg('Informe descargado');
+ })();
+ anotar('dato','Informe ISO 14067 · descarga en Word','',T.cod+' v'+T.ver,'');
+}
+
+
 /* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
    (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
 var MAX_ARCHIVO=200*1024*1024;
@@ -24476,6 +25022,9 @@ function pintar(){
  else if(vista==='ben')$('v-ben').innerHTML=vistaLineas('org');
  else if(vista==='apr')$('v-apr').innerHTML=vistaAprender();
  else if(vista==='org')$('v-org').innerHTML=vistaOrganizaciones();
+ else if(vista==='per')$('v-per').innerHTML=vistaPerfil();
+ else if(vista==='hcp')$('v-hcp').innerHTML=vistaEstudio();
+ else if(vista==='inf')$('v-inf').innerHTML=vistaInforme();
  else if(vista==='pai')$('v-pai').innerHTML=vistaPaises();
  else if(vista==='cal')$('v-cal').innerHTML=vistaHoja();
  else if(vista==='ods')$('v-ods').innerHTML=vistaODS();
