@@ -23288,11 +23288,11 @@ async function capPdf(file,hash){
 /* Una página del PDF: imagen de unos 2000 px (alcanza para letra a mano) y la capa de texto, si la tiene */
 async function capPaginaPdf(doc,i){
  var pg=await doc.getPage(i);
- var v1=pg.getViewport({scale:1}), k=Math.min(2000/Math.max(v1.width,v1.height),3), vp=pg.getViewport({scale:k});
+ var v1=pg.getViewport({scale:1}), k=Math.min(1700/Math.max(v1.width,v1.height),3), vp=pg.getViewport({scale:k});
  var c=document.createElement('canvas'); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
  var cx=c.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,c.width,c.height);
  await pg.render({canvasContext:cx,viewport:vp}).promise;
- var img=await new Promise(function(r){ c.toBlob(r,'image/jpeg',0.85); });
+ var img=await new Promise(function(r){ c.toBlob(r,'image/jpeg',0.8); });
  c.width=c.height=0;
  var tx='';
  try{ var tc=await pg.getTextContent(); tx=tc.items.map(function(x){return x.str+(x.hasEOL?'\n':' ');}).join('').replace(/[ \t]+/g,' ').trim(); }catch(e){}
@@ -23317,7 +23317,7 @@ async function capMaterial(Q){
  var f=Q.file;
  if(capEsHoja(f))return {imgs:null,texto:await capTextoHoja(f),tipo:'hoja'};
  if(capEsWord(f))return {imgs:null,texto:await capTextoWord(f),tipo:'word'};
- if((f.type||'').indexOf('image/')===0){ var r=await comprimir(f,2000,0.85); return {imgs:[r.blob],texto:''}; }
+ if((f.type||'').indexOf('image/')===0){ var r=await comprimir(f,1700,0.8); return {imgs:[r.blob],texto:''}; }
  if(capEsPdf(f)){
   var doc=await capPdf(f,Q.hash);
   if(Q.pagina){ var pg=await capPaginaPdf(doc,Q.pagina); return {imgs:[pg.img],texto:pg.texto}; }
@@ -23433,7 +23433,7 @@ document.addEventListener('keydown',function(e){
  if(e.key==='Escape')cvAccion('cerrar'); else if(e.key==='ArrowRight')cvAccion('sig'); else if(e.key==='ArrowLeft')cvAccion('ant');
 });
 function capEspera(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-async function capLeerConLector(imgs,texto,tipo){
+async function capLeerConLector(imgs,texto,tipo,calidad){
  var lector=capLector(), instr=capPrompt();
  var cab=tipo==='hoja'?'Contenido del documento (hoja de cálculo, columnas separadas por tabulador):':
   'Texto extraído del documento (puede venir incompleto; manda lo que se ve en la imagen):';
@@ -23443,7 +23443,7 @@ async function capLeerConLector(imgs,texto,tipo){
  }
  if(lector==='api'){
   var urls=[]; for(var i=0;imgs&&i<imgs.length;i++)urls.push(await capDataURL(imgs[i]));
-  var cuerpo=JSON.stringify({imagenes:urls,texto:texto?(cab+'\n'+texto):'',instruccion:instr}), resp, o;
+  var cuerpo=JSON.stringify({imagenes:urls,texto:texto?(cab+'\n'+texto):'',instruccion:instr,calidad:calidad||'rapida'}), resp, o;
   /* Si Origen pide pausa (muchas páginas seguidas), se espera y se reintenta, sin perder el documento */
   for(var intento=0;intento<5;intento++){
    resp=await fetch(ARR_BASE+'/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:cuerpo});
@@ -23451,8 +23451,13 @@ async function capLeerConLector(imgs,texto,tipo){
    if(resp.status!==429)break;
    await capEspera(15000*(intento+1));
   }
-  if(!resp.ok||!o||!o.ok){ var er=new Error((o&&o.text)||('el servicio respondió '+resp.status)); er.code=o&&o.code; throw er; }
-  return capNormalizar(o.datos);
+  if(!resp.ok||!o||!o.ok){
+   if(!calidad&&o&&o.code==='invalid_json')return capLeerConLector(imgs,texto,tipo,'alta');
+   var er=new Error((o&&o.text)||('el servicio respondió '+resp.status)); er.code=o&&o.code; throw er; }
+  var N_=capNormalizar(o.datos);
+  /* Lectura rápida primero; si no encontró ninguna cantidad, se repite con el modelo completo */
+  if(!calidad&&!(N_.datos.items||[]).some(function(it){return nv(it.cant)>0;}))return capLeerConLector(imgs,texto,tipo,'alta');
+  return N_;
  }
  return null;
 }
@@ -23513,9 +23518,10 @@ async function capSubirVarios(files){
  if(!nuevos.length)return;
  if(!CAP.pend)capSel(nuevos[0]);
  pintar();
- for(var k=0;k<nuevos.length;k++){
-  var Q=nuevos[k];
-  if(Q.quitado)continue;
+ await capAsegurarLector();
+ /* Lectura en paralelo: varias facturas a la vez (antes, una por una) */
+ async function leerUno(Q){
+  if(Q.quitado)return;
   if(capLector()){
    try{
     var M=await capMaterial(Q), r=await capLeerConLector(M.imgs,M.texto,M.tipo);
@@ -23531,7 +23537,11 @@ async function capSubirVarios(files){
   if(!Q.datos.items.length)Q.datos.items.push(capItemVacio());
   Q.estado='revisar';
   if(vista==='cap')pintar();
- }
+  }
+ var cola_=nuevos.slice(), PAR=4;
+ async function trabajador(){ while(cola_.length){ var Q=cola_.shift(); try{ await leerUno(Q); }catch(e){} } }
+ var hilos=[]; for(var w=0;w<Math.min(PAR,nuevos.length);w++)hilos.push(trabajador());
+ await Promise.all(hilos);
  nuevos=nuevos.filter(function(Q){return !Q.quitado;}); if(!nuevos.length)return;
  msg(nuevos.length===1?'Documento leído: revíselo y confírmelo':(nuevos.length+' documentos leídos: revíselos y confírmelos'));
 }

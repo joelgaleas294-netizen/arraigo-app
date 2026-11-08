@@ -11,6 +11,8 @@ const MAX_CUERPO = 4_400_000;   // el límite de Vercel es 4,5 MB por solicitud
 const MAX_IMG = 6;
 
 const MODELO_ANT = process.env.IA_MODELO || 'claude-sonnet-5-5';
+const MODELO_ANT_RAPIDO = process.env.IA_MODELO_RAPIDO || 'claude-haiku-5-5';
+const MODELO_GW_RAPIDO = process.env.IA_MODELO_GW_RAPIDO || 'anthropic/claude-haiku-5.5';
 const MODELO_GW = process.env.IA_MODELO_GW || 'anthropic/claude-sonnet-5.5';
 const SISTEMA = 'Eres el lector de documentos del Programa ARRAIGO (huella de carbono de producto, café y cacao). Transcribes lo que se ve en el documento y respondes únicamente con JSON válido. Nunca inventas ni estimas cantidades: lo que no se lee queda vacío.';
 const gwToken = (req) => process.env.AI_GATEWAY_API_KEY || req.headers.get('x-vercel-oidc-token') || process.env.VERCEL_OIDC_TOKEN || '';
@@ -51,7 +53,8 @@ async function aOrigen(req, metodo, cuerpo) {
   }
 }
 
-async function directo(req, { imagenes, texto, instruccion }) {
+async function directo(req, { imagenes, texto, instruccion, calidad }) {
+  const rapida = calidad !== 'alta';
   const imgs = imagenes.map((u) => /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(u)).filter(Boolean);
   const txt = instruccion + (texto ? '\n\n' + texto : '');
   let r, salida = '';
@@ -60,7 +63,7 @@ async function directo(req, { imagenes, texto, instruccion }) {
       r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', signal: req.signal,
         headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: MODELO_ANT, max_tokens: 6000, system: SISTEMA, messages: [{ role: 'user', content: [
+        body: JSON.stringify({ model: rapida ? MODELO_ANT_RAPIDO : MODELO_ANT, max_tokens: 6000, system: SISTEMA, messages: [{ role: 'user', content: [
           ...imgs.map((m) => ({ type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } })), { type: 'text', text: txt }] }] }),
       });
       if (r.ok) { const o = await r.json(); salida = (o.content || []).filter((b) => b.type === 'text').map((b) => b.text).join(''); }
@@ -68,7 +71,7 @@ async function directo(req, { imagenes, texto, instruccion }) {
       r = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
         method: 'POST', signal: req.signal,
         headers: { 'content-type': 'application/json', authorization: 'Bearer ' + gwToken(req) },
-        body: JSON.stringify({ model: MODELO_GW, max_tokens: 6000, messages: [{ role: 'system', content: SISTEMA }, { role: 'user', content: [
+        body: JSON.stringify({ model: rapida ? MODELO_GW_RAPIDO : MODELO_GW, max_tokens: 6000, messages: [{ role: 'system', content: SISTEMA }, { role: 'user', content: [
           ...imgs.map((m) => ({ type: 'image_url', image_url: { url: m[0] } })), { type: 'text', text: txt }] }] }),
       });
       if (r.ok) { const o = await r.json(); salida = o.choices?.[0]?.message?.content || ''; }
@@ -96,7 +99,8 @@ export async function POST(req) {
   const instruccion = String(c.instruccion || '').slice(0, 20000);
   const texto = String(c.texto || '').slice(0, 80000);
   if (!instruccion || (!imagenes.length && texto.length < 20)) return json({ ok: false, code: 'bad_request', text: 'Faltan el documento o la instrucción.' }, 400);
-  const datos = { imagenes, texto, instruccion };
+  const calidad = c.calidad === 'alta' ? 'alta' : 'rapida';
+  const datos = { imagenes, texto, instruccion, calidad };
   const r = await aOrigen(req, 'POST', JSON.stringify(datos));
   if (r.status === 200 && r.o && r.o.ok) return json({ ...r.o, motor: 'origen' });
   // Origen sin IA activa, sin sesión o caído: se lee con la clave de este despliegue, si la hay
