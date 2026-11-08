@@ -25,8 +25,20 @@
   ],
   "rewrites": [
     {
+      "source": "/arraigo-app/api/entrar",
+      "destination": "/api/sesion"
+    },
+    {
       "source": "/api/entrar",
       "destination": "/api/sesion"
+    },
+    {
+      "source": "/arraigo-app",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/arraigo-app/:path*",
+      "destination": "/:path*"
     }
   ]
 }

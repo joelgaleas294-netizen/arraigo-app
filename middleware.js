@@ -2,7 +2,8 @@
 // La sesión se valida contra la plataforma de gestión (SGD); ARRAIGO no guarda contraseñas.
 // Sin sesión: la página pide usuario y contraseña (/login.html) y no se descarga nada del programa.
 export const config = {
-  matcher: ['/', '/index.html', '/api/asistente', '/api/leer-factura'],
+  matcher: ['/', '/index.html', '/api/asistente', '/api/leer-factura',
+    '/arraigo-app', '/arraigo-app/', '/arraigo-app/index.html', '/arraigo-app/api/asistente', '/arraigo-app/api/leer-factura'],
 };
 
 const SGD = (process.env.SGD_URL || 'https://sgd.jjglobalsa.com').replace(/\/$/, '');
@@ -35,10 +36,12 @@ export default async function middleware(req) {
   if (await sesionValida(leerCookie(req, COOKIE))) {
     return new Response(null, { headers: { 'x-middleware-next': '1' } });
   }
-  if (url.pathname.startsWith('/api/')) {
+  // Servida dentro de Origen (sgd.jjglobalsa.com/arraigo-app): las direcciones llevan ese prefijo y no el dominio de Vercel
+  const B = url.pathname === '/arraigo-app' || url.pathname.startsWith('/arraigo-app/') ? '/arraigo-app' : '';
+  if (url.pathname.startsWith(B + '/api/')) {
     return new Response(JSON.stringify({ code: 'unauthorized', text: 'Inicie sesión de nuevo.' }), { status: 401, headers: { 'content-type': 'application/json' } });
   }
-  const destino = new URL('/login.html', url);
-  if (url.search) destino.searchParams.set('r', url.pathname + url.search);
-  return new Response(null, { status: 307, headers: { location: destino.toString(), 'cache-control': 'no-store' } });
+  const q = url.search ? '?r=' + encodeURIComponent(url.pathname + url.search) : '';
+  // Dirección sin dominio: si se entró por Origen, el navegador se queda en sgd.jjglobalsa.com
+  return new Response(null, { status: 307, headers: { location: B + '/login.html' + q, 'cache-control': 'no-store' } });
 }

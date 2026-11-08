@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>var ARR_BASE=(location.pathname==='/arraigo-app'||location.pathname.indexOf('/arraigo-app/')===0)?'/arraigo-app':'';
+/* Dentro de Origen (sgd.jjglobalsa.com/arraigo-app) los archivos propios llevan ese prefijo */
+document.write('<link rel="manifest" href="'+ARR_BASE+'/manifest.webmanifest"><link rel="icon" href="'+ARR_BASE+'/icons/icono.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="'+ARR_BASE+'/icons/icono-180.png">');</script>
 <meta name="theme-color" content="#0E3A5F">
 <meta name="robots" content="noindex, nofollow">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icons/icono.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icons/icono-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script>if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});</script>
+<script>if(!ARR_BASE&&'serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});</script>
 <script>
 /* ─── Copia dedicada a una empresa ───────────────────────────────────────────
    Deje la comilla vacía para la aplicación matriz de JJ Global, con varias
@@ -1743,6 +1743,9 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola li{display:flex;gap:6px;align-items:stretch}
 .cap-cola li>button[data-cap="cola-sel"]{flex:1;min-width:0}
 .cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
+.cap-cola li>button.cap-quitar{width:auto;display:flex;align-items:center;padding:0 12px;color:#9b2c2c;font-weight:600;white-space:nowrap}
+.cap-cola-acc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.cap-cola-acc button{font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;border:1px solid #9b2c2c;background:#fff;color:#9b2c2c;cursor:pointer}
 .cap-ver-b{margin-top:8px;width:120px;font:inherit;font-weight:600;padding:8px;border:1px solid #1e6b47;border-radius:8px;background:#fff;color:#1e6b47;cursor:pointer}
 #cap-visor{position:fixed;inset:0;z-index:9999;background:rgba(10,20,15,.92);display:flex;flex-direction:column}
 #cap-visor .cv-barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:#0f2a1d;color:#fff}
@@ -2239,7 +2242,7 @@ function licPide(ruta,cuerpo){
     return j; }); });
 }
 function licActivar(codigo){
- return licPide('/api/activar',{codigo:String(codigo||'').toUpperCase(),equipo:equipoId(),
+ return licPide(ARR_BASE+'/api/activar',{codigo:String(codigo||'').toUpperCase(),equipo:equipoId(),
    app:VER_APP}).then(function(j){
   return licVerificar(j.licencia,licCfg().clave).then(function(r){
    if(!r.ok)throw new Error('el servidor devolvió una licencia que no verifica: '+r.motivo);
@@ -2255,7 +2258,7 @@ function licActivar(codigo){
 function licRevisar(silencio){
  var E=licEstado();
  if(!E.L)return Promise.resolve(null);
- return licPide('/api/revisar',{lic:E.L.lic,equipo:equipoId()}).then(function(j){
+ return licPide(ARR_BASE+'/api/revisar',{lic:E.L.lic,equipo:equipoId()}).then(function(j){
   if(j.estado!=='vigente'){
    licGuardar({estado:j.estado,revisado:hoy()});
    if(!silencio)msg('El programa informa que la licencia está '+j.estado);
@@ -2431,7 +2434,7 @@ var CENTRAL=null; /* {empresas:[{id,nombre,siglas}], superadmin, empresaId} */
 function errDb(code,t){ var e=new Error(t||code); e.code=code; return e; }
 async function llamarDb(cuerpo){
  var r;
- try{ r=await fetch('/api/db',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpo),credentials:'same-origin',cache:'no-store'}); }
+ try{ r=await fetch(ARR_BASE+'/api/db',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpo),credentials:'same-origin',cache:'no-store'}); }
  catch(e){ throw errDb('unavailable','Sin conexión con la base central'); }
  var d={}; try{ d=await r.json(); }catch(e){}
  if(r.status===403||d.code==='invalid_argument')throw errDb('invalid_argument',d.error);
@@ -5265,7 +5268,7 @@ async function subirPendientes(silencio){
  pintar();
 }
 function fuenteAdjunto(meta){
- if(meta.assetId)return Promise.resolve('/_blob/'+meta.assetId);
+ if(meta.assetId)return Promise.resolve(ARR_BASE+'/_blob/'+meta.assetId);
  if(urlsCache[meta.id])return Promise.resolve(urlsCache[meta.id]);
  return archivoLeer(meta.id).then(function(reg){
   if(!reg||!reg.blob)return '';
@@ -8970,7 +8973,7 @@ function salir(porInactividad){
  pintarPortal('entrar',porInactividad?'La sesión se cerró sola por inactividad. Vuelva a entrar.':'');
  /* Cierre voluntario: también se cierra la sesión del servidor y se vuelve a la pantalla de acceso */
  if(!porInactividad&&/^https?:$/.test(location.protocol)&&window.fetch){
-  fetch('/api/sesion',{method:'DELETE',credentials:'same-origin'}).catch(function(){}).then(function(){ location.replace('/login.html'); });
+  fetch(ARR_BASE+'/api/sesion',{method:'DELETE',credentials:'same-origin'}).catch(function(){}).then(function(){ location.replace(ARR_BASE+'/login.html'); });
  }
 }
 function reiniciarInactividad(){
@@ -18580,11 +18583,11 @@ var muestreo=null;
    del mismo despliegue. Solo viajan códigos: ver contextoAsistente(). */
 function asistenteServidor(){
  if(!/^https?:$/.test(location.protocol)||!window.fetch)return Promise.resolve(null);
- return fetch('/api/asistente',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
+ return fetch(ARR_BASE+'/api/asistente',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
   if(!o||!o.disponible)return null;
   return async function(turnos,op){
    op=op||{};
-   var r=await fetch('/api/asistente',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({turnos:turnos}),signal:op.signal});
+   var r=await fetch(ARR_BASE+'/api/asistente',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({turnos:turnos}),signal:op.signal});
    if(!r.ok){var e={code:'error',text:'No se pudo completar la consulta.'}; try{e=await r.json();}catch(x){} throw e;}
    var lec=r.body.getReader(), dec=new TextDecoder(), txt='';
    for(;;){var c=await lec.read(); if(c.done)break; txt+=dec.decode(c.value,{stream:true}); if(op.onText)op.onText({text:txt});}
@@ -23132,7 +23135,7 @@ function capComprobarApi(){
  if(CAP.api!==null)return;
  CAP.api=false;
  try{
-  fetch('/api/leer-factura',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+  fetch(ARR_BASE+'/api/leer-factura',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
    .then(function(o){ CAP.api=!!(o&&o.disponible); if(vista==='cap')pintar(); }).catch(function(){});
  }catch(e){}
 }
@@ -23322,7 +23325,7 @@ async function capLeerConLector(imgs,texto,tipo){
   var cuerpo=JSON.stringify({imagenes:urls,texto:texto?(cab+'\n'+texto):'',instruccion:instr}), resp, o;
   /* Si Origen pide pausa (muchas páginas seguidas), se espera y se reintenta, sin perder el documento */
   for(var intento=0;intento<5;intento++){
-   resp=await fetch('/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:cuerpo});
+   resp=await fetch(ARR_BASE+'/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:cuerpo});
    o=await resp.json().catch(function(){return null;});
    if(resp.status!==429)break;
    await capEspera(15000*(intento+1));
@@ -23343,6 +23346,17 @@ function capDuplicado(hash,proveedor,numero,pagina){
 }
 /* 1 · subir: cada archivo entra a la cola, se sella, se lee y queda «por revisar» */
 function capCola(){ return CAP.cola||(CAP.cola=[]); }
+/* Quitar de la lista de pendientes: no registra nada, libera las vistas previas y detiene la lectura de lo que faltaba */
+function capQuitarDeCola(lista){
+ lista.forEach(function(Q){ Q.quitado=true; ['url','urlGrande','urlOrig'].forEach(function(k){ if(Q[k])try{URL.revokeObjectURL(Q[k]);}catch(e){} }); });
+ CAP.cola=capCola().filter(function(x){ return lista.indexOf(x)<0; });
+ var hs={}; lista.forEach(function(Q){ if(Q.hash)hs[Q.hash]=1; });
+ Object.keys(hs).forEach(function(h){ if(!capCola().some(function(x){return x.hash===h;})){ try{ CAP_PDF[h]&&CAP_PDF[h].destroy&&CAP_PDF[h].destroy(); }catch(e){} delete CAP_PDF[h]; } });
+ if(CV.P&&lista.indexOf(CV.P)>=0)cvAccion('cerrar');
+ if(lista.indexOf(CAP.pend)>=0)capSel(capCola().filter(function(x){return x.estado==='revisar';})[0]||capCola()[0]||null);
+ msg(lista.length===1?'Documento quitado de la lista':(lista.length+' documentos quitados de la lista'));
+ pintar();
+}
 function capSel(P){ CAP.pend=P||null; }
 async function capSubirVarios(files){
  if(!puedeEditar()){ msg('Su perfil no puede capturar'); return; }
@@ -23379,6 +23393,7 @@ async function capSubirVarios(files){
  pintar();
  for(var k=0;k<nuevos.length;k++){
   var Q=nuevos[k];
+  if(Q.quitado)continue;
   if(capLector()){
    try{
     var M=await capMaterial(Q), r=await capLeerConLector(M.imgs,M.texto,M.tipo);
@@ -23395,6 +23410,7 @@ async function capSubirVarios(files){
   Q.estado='revisar';
   if(vista==='cap')pintar();
  }
+ nuevos=nuevos.filter(function(Q){return !Q.quitado;}); if(!nuevos.length)return;
  msg(nuevos.length===1?'Documento leído: revíselo y confírmelo':(nuevos.length+' documentos leídos: revíselos y confírmelos'));
 }
 async function capSubir(file){ return capSubirVarios([file]); }
@@ -23564,7 +23580,11 @@ function vistaCaptura(){
  var COLA=capCola();
  if(COLA.length){
   var listos=COLA.filter(function(Q){return Q.estado==='revisar'&&!capProblemas(Q).length;}).length;
-  h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo"><ul class="cap-cola">'+
+  var archivos={}; COLA.forEach(function(Q){ if(Q.hash){ var A=archivos[Q.hash]=archivos[Q.hash]||{n:0,nombre:(Q.file&&Q.file.name)||Q.nombre}; A.n++; } });
+  var acc=ed?('<div class="cap-cola-acc">'+Object.keys(archivos).filter(function(k){return archivos[k].n>1;}).map(function(k){
+    return '<button type="button" data-cap="quitar-archivo" data-hash="'+esc(k)+'">🗑 Quitar «'+esc(archivos[k].nombre)+'» completo ('+archivos[k].n+' páginas)</button>'; }).join('')+
+    '<button type="button" data-cap="vaciar">🗑 Vaciar la lista</button></div>'):'';
+  h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo">'+acc+'<ul class="cap-cola">'+
    COLA.map(function(Q){
     var pr=Q.estado==='revisar'?capProblemas(Q):[], fz=S.fincas.filter(function(x){return x.id===Q.fid;})[0];
     var dest=Q.estado==='leyendo'?'leyendo…':(Q.cat==='org'?'Organización':(fz?('Finca '+(fz.codigo||'')):'Finca sin elegir'));
@@ -23572,7 +23592,8 @@ function vistaCaptura(){
     var n=Q.datos.items.filter(function(x){return x.incluir&&x.linea;}).length;
     return '<li><button type="button" class="'+(Q===P?'sel':'')+'" data-cap="cola-sel" data-id="'+esc(Q.id)+'"><span class="cap-cola-n">'+esc(Q.nombre)+'</span>'+
      '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+est+'</button>'+
-     (Q.file&&!capEsHoja(Q.file)&&!capEsWord(Q.file)?'<button type="button" class="cap-ver" data-cap="ver" data-id="'+esc(Q.id)+'" title="Ver la hoja en grande">👁 Ver hoja</button>':'')+'</li>';
+     (Q.file&&!capEsHoja(Q.file)&&!capEsWord(Q.file)?'<button type="button" class="cap-ver" data-cap="ver" data-id="'+esc(Q.id)+'" title="Ver la hoja en grande">👁 Ver hoja</button>':'')+
+     (ed?'<button type="button" class="cap-quitar" data-cap="quitar" data-id="'+esc(Q.id)+'" title="Quitar de la lista sin registrar">🗑 Quitar</button>':'')+'</li>';
    }).join('')+'</ul>'+
    (listos>1?'<div class="acciones"><button type="button" class="primario" data-cap="listos">Registrar los '+listos+' documentos listos</button><span class="muted">cada uno ya fue leído y no tiene avisos; revise antes los que dicen «Revisar»</span></div>':'')+
    '</div></div>';
@@ -23716,9 +23737,18 @@ document.addEventListener('click',function(ev){
  var b=ev.target.closest&&ev.target.closest('[data-cap]'); if(!b)return;
  var a=b.dataset.cap;
  if(a==='manual')capManual();
- else if(a==='descartar'){ var Pd=CAP.pend; if(Pd&&Pd.url)URL.revokeObjectURL(Pd.url); CAP.cola=capCola().filter(function(x){return x!==Pd;}); capSel(capCola()[0]||null); pintar(); }
+ else if(a==='descartar'){ if(CAP.pend)capQuitarDeCola([CAP.pend]); }
  else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
  else if(a==='ver'){ ev.preventDefault(); capVerHoja(capCola().filter(function(x){return x.id===b.dataset.id;})[0]); }
+ else if(a==='quitar'||a==='quitar-archivo'||a==='vaciar'){
+  var sel=capCola().filter(function(x){ return a==='vaciar'||(a==='quitar'?x.id===b.dataset.id:x.hash===b.dataset.hash); });
+  if(!sel.length)return;
+  var hecho=function(){ capQuitarDeCola(sel); };
+  if(sel.length===1)hecho();
+  else pedir({titulo:a==='vaciar'?'Vaciar la lista':'Quitar el archivo completo',peligro:true,ok:'Quitar '+sel.length,
+   texto:['Se quitan '+sel.length+' documentos de la lista de pendientes. No se registra nada de ellos y la lectura de los que faltaban se detiene.',
+    'Lo que ya confirmó antes no cambia: eso se anula en la tabla de registros, con su motivo.']}).then(function(ok){ if(ok)hecho(); });
+ }
  else if(a==='listos')capConfirmarListos();
  else if(a==='item-mas'&&CAP.pend){ CAP.pend.datos.items.push(capItemVacio()); pintar(); }
  else if(a==='confirmar')capConfirmar().then(function(ok){ if(ok){ var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); } });
@@ -23786,7 +23816,7 @@ function cdsSustentos(){
 }
 async function cdsBlob(a){
  try{ var reg=await archivoLeer(a.id); if(reg&&reg.blob)return reg.blob; }catch(e){}
- if(a.assetId){ try{ var r=await fetch('/_blob/'+a.assetId); if(r.ok)return await r.blob(); }catch(e){} }
+ if(a.assetId){ try{ var r=await fetch(ARR_BASE+'/_blob/'+a.assetId); if(r.ok)return await r.blob(); }catch(e){} }
  return null;
 }
 /* Verificación de integridad: se recalcula el sello de cada archivo guardado.
@@ -23951,7 +23981,7 @@ document.addEventListener('click',function(ev){
 var VER={actual:null,nueva:null};
 function verComprobar(){
  if(!navigator.onLine)return;
- try{ fetch('/api/version',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
+ try{ fetch(ARR_BASE+'/api/version',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(o){
   if(!o||!o.v)return;
   if(!VER.actual){ VER.actual=o.v; return; }
   if(o.v!==VER.actual&&VER.nueva!==o.v){ VER.nueva=o.v; verAviso(); }

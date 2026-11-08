@@ -20,7 +20,8 @@ const disponible = (req) => !!(process.env.ANTHROPIC_API_KEY || token(req));
 function origenPermitido(req) {
   const o = req.headers.get('origin');
   if (!o) return true;                       // misma página (algunos navegadores no envían Origin)
-  try { return new URL(o).host === req.headers.get('host'); } catch { return false; }
+  // También se acepta Origen: ARRAIGO se sirve dentro de sgd.jjglobalsa.com/arraigo-app (mismo sitio de JJ Global)
+  try { const h = new URL(o).host; return h === req.headers.get('host') || h === req.headers.get('x-forwarded-host') || h === new URL(process.env.SGD_URL || 'https://sgd.jjglobalsa.com').host; } catch { return false; }
 }
 function limitar(req) {
   const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'x';

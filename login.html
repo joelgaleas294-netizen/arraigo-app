@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>var ARR_BASE=(location.pathname==='/arraigo-app'||location.pathname.indexOf('/arraigo-app/')===0)?'/arraigo-app':'';
+/* Dentro de Origen (sgd.jjglobalsa.com/arraigo-app) los archivos propios llevan ese prefijo */
+document.write('<link rel="manifest" href="'+ARR_BASE+'/manifest.webmanifest"><link rel="icon" href="'+ARR_BASE+'/icons/icono.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="'+ARR_BASE+'/icons/icono-180.png">');</script>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0E3A5F">
 <title>ARRAIGO · Acceso</title>
-<link rel="icon" href="/icons/icono.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icons/icono-180.png">
-<link rel="manifest" href="/manifest.webmanifest">
 <style>
  :root{--fondo:#0E3A5F;--tarjeta:#ffffff;--tinta:#13241d;--tinta2:#4b5b54;--acento:#1C6B43;--linea:#d5ddd8;--error:#a3261d}
  @media (prefers-color-scheme:dark){:root{--tarjeta:#13201b;--tinta:#e8efe9;--tinta2:#a9b8b0;--acento:#5FE3A8;--linea:#2c3b34;--error:#ff8a80}}
@@ -36,7 +36,7 @@
 <body>
 <main>
  <form class="caja" id="f" autocomplete="on">
-  <div class="marca"><img src="/icons/icono-192.png" alt=""><div><b>ARRAIGO</b><span>JJ Global S.A.</span></div></div>
+  <div class="marca"><img src="icons/icono-192.png" alt=""><div><b>ARRAIGO</b><span>JJ Global S.A.</span></div></div>
   <h1>Acceso restringido</h1>
   <p>Ingrese con su cuenta de la plataforma de gestión de JJ Global.</p>
   <label for="email">Correo electrónico</label>
@@ -53,12 +53,12 @@
 (function(){
  var f=document.getElementById('f'), b=document.getElementById('b'), m=document.getElementById('m');
  function destino(){
-  var r=new URLSearchParams(location.search).get('r')||'/';
-  return (r.charAt(0)==='/'&&r.charAt(1)!=='/'&&r.indexOf('\\')<0)?r:'/';
+  var r=new URLSearchParams(location.search).get('r')||(ARR_BASE+'/');
+  return (r.charAt(0)==='/'&&r.charAt(1)!=='/'&&r.indexOf('\\')<0)?r:(ARR_BASE+'/');
  }
  f.addEventListener('submit',function(ev){
   ev.preventDefault(); m.textContent=''; b.disabled=true; b.textContent='Comprobando…';
-  fetch('/api/sesion',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',
+  fetch(ARR_BASE+'/api/sesion',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',
    body:JSON.stringify({email:f.email.value,clave:f.clave.value})})
   .then(function(r){return r.json().catch(function(){return {};}).then(function(d){return {r:r,d:d};});})
   .then(function(x){

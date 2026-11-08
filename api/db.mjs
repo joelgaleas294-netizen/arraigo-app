@@ -13,7 +13,8 @@ function leerCookie(req, nombre) {
 function mismoOrigen(req) {
   const o = req.headers.get('origin');
   if (!o) return true;
-  try { return new URL(o).host === req.headers.get('host'); } catch { return false; }
+  // También se acepta Origen: ARRAIGO se sirve dentro de sgd.jjglobalsa.com/arraigo-app (mismo sitio de JJ Global)
+  try { const h = new URL(o).host; return h === req.headers.get('host') || h === req.headers.get('x-forwarded-host') || h === new URL(process.env.SGD_URL || 'https://sgd.jjglobalsa.com').host; } catch { return false; }
 }
 
 export async function POST(req) {

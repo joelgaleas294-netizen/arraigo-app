@@ -8,7 +8,8 @@ const json = (o, status = 200, extra = {}) =>
 function mismoOrigen(req) {
   const o = req.headers.get('origin');
   if (!o) return true;
-  try { return new URL(o).host === req.headers.get('host'); } catch { return false; }
+  // También se acepta Origen: ARRAIGO se sirve dentro de sgd.jjglobalsa.com/arraigo-app (mismo sitio de JJ Global)
+  try { const h = new URL(o).host; return h === req.headers.get('host') || h === req.headers.get('x-forwarded-host') || h === new URL(process.env.SGD_URL || 'https://sgd.jjglobalsa.com').host; } catch { return false; }
 }
 
 // Entrada desde Origen: formulario (POST) con un pase firmado de un solo uso que se canjea con el SGD.
@@ -27,13 +28,15 @@ async function entradaOrigen(req) {
   if (!origenSgd(req)) return ir('/login.html?e=origen');
   let pase = '', r = '/';
   try { const d = new URLSearchParams(await req.text()); pase = String(d.get('pase') || ''); r = destinoSeguro(d.get('r')); } catch { return ir('/login.html?e=entrada'); }
-  if (!pase || pase.length > 2000) return ir('/login.html?e=entrada');
+  // Dentro de Origen (sgd.jjglobalsa.com/arraigo-app) las direcciones llevan ese prefijo
+  const B = r === '/arraigo-app' || r.startsWith('/arraigo-app/') || r.startsWith('/arraigo-app?') ? '/arraigo-app' : '';
+  if (!pase || pase.length > 2000) return ir(B + '/login.html?e=entrada');
   let x, d = {};
   try {
     x = await globalThis.fetch(SGD + '/api/arraigo/sesion', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ entrada: pase }) });
     d = await x.json().catch(() => ({}));
-  } catch { return ir('/login.html?e=red'); }
-  if (!x.ok || !d.ok || !d.token) return ir('/login.html?e=entrada');
+  } catch { return ir(B + '/login.html?e=red'); }
+  if (!x.ok || !d.ok || !d.token) return ir(B + '/login.html?e=entrada');
   return ir(r, { 'set-cookie': `${COOKIE}=${encodeURIComponent(d.token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${12 * 3600}` });
 }
 
