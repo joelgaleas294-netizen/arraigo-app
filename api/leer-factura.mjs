@@ -49,8 +49,8 @@ export async function POST(req) {
   const imgs = (Array.isArray(c.imagenes) ? c.imagenes : []).slice(0, MAX_IMG)
     .map((u) => /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(u || '')))
     .filter(Boolean);
-  const instr = String(c.instruccion || '').slice(0, 12000);
-  if (!imgs.length || !instr) return json({ ok: false, code: 'bad_request', text: 'Faltan la imagen o la instrucción.' }, 400);
+  const instr = String(c.instruccion || '').slice(0, 80000);
+  if (!instr || (!imgs.length && instr.length < 200)) return json({ ok: false, code: 'bad_request', text: 'Faltan el documento o la instrucción.' }, 400);
 
   let r, texto = '';
   try {
@@ -58,7 +58,7 @@ export async function POST(req) {
       r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', signal: req.signal,
         headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: MODELO_ANT, max_tokens: 2000, system: SISTEMA, messages: [{ role: 'user', content: [
+        body: JSON.stringify({ model: MODELO_ANT, max_tokens: 4000, system: SISTEMA, messages: [{ role: 'user', content: [
           ...imgs.map((m) => ({ type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } })),
           { type: 'text', text: instr }] }] }),
       });
@@ -67,7 +67,7 @@ export async function POST(req) {
       r = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
         method: 'POST', signal: req.signal,
         headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token(req) },
-        body: JSON.stringify({ model: MODELO_GW, max_tokens: 2000, messages: [{ role: 'system', content: SISTEMA }, { role: 'user', content: [
+        body: JSON.stringify({ model: MODELO_GW, max_tokens: 4000, messages: [{ role: 'system', content: SISTEMA }, { role: 'user', content: [
           ...imgs.map((m) => ({ type: 'image_url', image_url: { url: m[0] } })),
           { type: 'text', text: instr }] }] }),
       });

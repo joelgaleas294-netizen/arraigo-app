@@ -1735,6 +1735,13 @@ html body .cfe-rejilla .cfe-car.abierta{border:2px solid #1e6b47!important;backg
 .cl-tabs button small{background:var(--surface-3);border-radius:999px;padding:0 7px;margin-left:4px}
 html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;border-color:#15513a!important;color:#fff!important}
 .cl-tabs button[aria-pressed="true"] small{background:rgba(255,255,255,.2)}
+
+.cap-cola{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cap-cola button{width:100%;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:12px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font:inherit;cursor:pointer;color:var(--ink)}
+.cap-cola button .cds-est{grid-row:1/span 2;grid-column:2;align-self:center}
+.cap-cola button.sel{border:2px solid #1e6b47;background:#e8f3ec}
+.cap-cola-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cap-ambito{margin-bottom:8px;max-width:520px}.cap-ambito select{width:100%}
 </style>
 </head>
 <body>
@@ -5415,7 +5422,7 @@ var MODULOS=[
   des:'Quién captura, qué ciclo es y con qué parámetros y factores se calcula.'},
  {id:'tal',scol:'s4',codigo:'MOD-TAL',nom:'Inventario de fuentes',col:'m4',etapa:'preparar',paso:4,
   des:'Las veintitrés fuentes de emisión que el protocolo obliga a buscar. De cada una hay que decir si ocurre y se cuantifica, si no existe en esta operación, o si se excluye y por qué. Una fuente sin pronunciamiento es un olvido, y el verificador no puede distinguirla de un cero medido.'},
- {id:'cap',scol:'s3',codigo:'MOD-CAP',nom:'Subir facturas y calcular',col:'m3',etapa:'campo',paso:5,
+ {id:'cap',scol:'s3',codigo:'MOD-CAP',nom:'Subir facturas y registros',col:'m3',etapa:'campo',paso:5,
   des:'El camino corto: se sube la factura, la aplicación la lee, se confirma y se ve el cálculo paso a paso, con su respaldo y su sello.'},
  {id:'cds',scol:'s3',codigo:'MOD-CDS',nom:'Centro de datos de sustentos',col:'m3',etapa:'campo',paso:5,
   des:'Facturas, registros y archivos que sostienen cada emisión: conciliados con lo declarado, con sello de integridad y listos para el verificador.'},
@@ -5594,7 +5601,11 @@ function compEfectivo(){
  var o=c==='H'?'R':'H';
  return (!compDisponible(c)&&compDisponible(o))?o:c;
 }
-function moduloVisible(id){ return moduloEnAlcance(id)&&(!COMP_MOD[id]||COMP_MOD[id]===compEfectivo()); }
+/* Pantallas retiradas del menú para trabajar simple (08/11/2026): su función quedó en otra pantalla.
+   Biblioteca de factores y documental → Factores de emisión; Inventario de fuentes, Carga masiva y Hoja de cálculo → Subir facturas y registros;
+   Archivo y Evidencia → Centro de datos de sustentos; poda de sombra, ODS, diagnóstico, mitigación y auditorías → fuera del alcance de la huella de producto. */
+var MOD_OCULTOS=['lfe','bib','tal','pod','car','arc','evi','cal','ods','dia','mit','aui','iai'];
+function moduloVisible(id){ return MOD_OCULTOS.indexOf(id)<0&&moduloEnAlcance(id)&&(!COMP_MOD[id]||COMP_MOD[id]===compEfectivo()); }
 function selectorComponente(){
  if(!compDisponible('H')||!compDisponible('R'))return '';
  var a=compEfectivo();
@@ -23113,50 +23124,81 @@ function capComprobarApi(){
    .then(function(o){ CAP.api=!!(o&&o.disponible); if(vista==='cap')pintar(); }).catch(function(){});
  }catch(e){}
 }
-function capPrompt(cat){
- var ls=capLineas(cat).map(function(l){return l.id+' = '+l.et+' (se anota en '+l.un+')';}).join('\n');
- return 'Lee esta factura o comprobante de compra y devuelve SOLO un objeto JSON, sin texto antes ni después, con esta forma:\n'+
-  '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","items":[{"descripcion":"","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
+function capPrompt(){
+ var lo=capLineas('org').map(function(l){return 'org:'+l.id+' = '+l.et+' (se anota en '+l.un+')';});
+ var lf=capLineas('finca').map(function(l){return 'finca:'+l.id+' = '+l.et+' (se anota en '+l.un+')';});
+ return 'Lee este documento de un programa de huella de carbono de café y cacao (factura, recibo, orden de entrega, bitácora o registro) y devuelve SOLO un objeto JSON, sin texto antes ni después, con esta forma:\n'+
+  '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","ambito":"org|finca","finca_codigo":"","productor":"","items":[{"descripcion":"","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
   'Reglas: copia solo lo que se lee en el documento; si un dato no se lee, déjalo vacío y anótalo en "ilegible"; no estimes ni completes cantidades. '+
-  'La cantidad es la cantidad física comprada o consumida (galones, litros, kWh, quintales, libras, sacos), nunca el precio. '+
-  'En una factura de electricidad, el item es el consumo del período en kWh. '+
-  'Si quien emite es una persona natural, escribe "persona natural" en proveedor en lugar de su nombre. No copies números de identidad, RTN de personas ni datos de tarjetas. '+
-  'En "renglon_sugerido" usa uno de estos códigos, o déjalo vacío si ninguno corresponde:\n'+ls;
+  'La cantidad es la cantidad física (galones, litros, kWh, quintales, libras, sacos, kilómetros), nunca el precio. En una factura de electricidad, el item es el consumo del período en kWh. '+
+  'Si el documento es una bitácora o un registro con muchas filas, suma las cantidades por producto, unidad y finca, y devuelve un item por cada suma; en "observacion" anota el período que cubre. '+
+  '"ambito" es "finca" si el gasto o la entrega es de una finca o un productor, y "org" si es del beneficio, la planta, la oficina o los vehículos de la organización. '+
+  'Si aparece el código de la finca o el nombre del productor o de la finca, cópialo en "finca_codigo" o "productor": solo se usa para asociar el documento a su finca. '+
+  'Si quien emite es una persona natural, escribe "persona natural" en proveedor. No copies números de identidad, RTN de personas ni datos de tarjetas. '+
+  'En "renglon_sugerido" usa uno de estos códigos con su prefijo, o déjalo vacío si ninguno corresponde:\n'+lo.concat(lf).join('\n');
 }
+function capEsHoja(file){ return /\.(xlsx|xls|csv|ods|tsv)$/i.test(file.name||'')||/spreadsheet|excel|csv/i.test(file.type||''); }
 async function capImagenes(file){
  var t=file.type||'';
  if(t.indexOf('image/')===0){ var r=await comprimir(file,1800,0.82); return [r.blob]; }
  if(t.indexOf('pdf')>=0||/\.pdf$/i.test(file.name||''))return await lecPdfAImagenes(file,3);
- throw new Error('Suba una foto (JPG o PNG) o un PDF');
+ throw new Error('Suba una foto, un PDF o una hoja de Excel');
+}
+async function capTextoHoja(file){
+ var res=await leerArchivoCarga(file), out='';
+ (res.hojas||[]).slice(0,4).forEach(function(h){ out+='### Hoja '+(h.nombre||'')+'\n'+(h.tsv||'')+'\n'; });
+ return out.slice(0,60000);
 }
 function capDataURL(b){ return new Promise(function(res,rej){ var fr=new FileReader(); fr.onload=function(){res(String(fr.result));}; fr.onerror=rej; fr.readAsDataURL(b); }); }
-function capNormalizar(r,cat){
- r=r||{};
- var ids=capLineas(cat).map(function(l){return l.id;});
- var items=(r.items instanceof Array?r.items:[]).slice(0,25).map(function(x){
-  x=x||{};
-  var sug=String(x.renglon_sugerido||''); if(ids.indexOf(sug)<0)sug=capSugerir(x.descripcion,cat);
-  var u=capUniDeTexto(x.unidad);
-  return {desc:String(x.descripcion||'').slice(0,160),cant:numDe(x.cantidad),uniTxt:String(x.unidad||'').slice(0,30),uni:u,
-   importe:numDe(x.importe),linea:sug,conf:String(x.confianza||''),incluir:!!sug,conv:''};
- });
- return {proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:String(r.fecha||'').slice(0,10),
-  items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
-  confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)};
+function capNormTx(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+/* A qué finca pertenece el documento: por código o por nombre del productor o de la finca */
+function capBuscarFinca(cod,prod){
+ var c=capNormTx(cod).replace(/ /g,''), p=capNormTx(prod);
+ var f=null;
+ if(c)f=S.fincas.filter(function(x){return capNormTx(x.codigo).replace(/ /g,'')===c;})[0]||null;
+ if(!f&&p&&p.length>4)f=S.fincas.filter(function(x){ var a=capNormTx(x.productor), b=capNormTx(x.nombre);
+  return (a&&(a===p||a.indexOf(p)>=0||p.indexOf(a)>=0))||(b&&b===p); })[0]||null;
+ return f;
 }
-async function capLeerConLector(imgs,cat){
- var lector=capLector();
+function capNormalizar(r){
+ r=r||{};
+ var f=capBuscarFinca(r.finca_codigo,r.productor);
+ var amb=String(r.ambito||'').toLowerCase()==='finca'||!!f;
+ var sug0=(r.items instanceof Array?r.items:[]).map(function(x){return String((x&&x.renglon_sugerido)||'');});
+ if(!r.ambito&&!f&&sug0.some(function(x){return x.indexOf('finca:')===0;}))amb=true;
+ var cat=amb?'finca':'org', fid=f?f.id:'';
+ var ids=capLineas(cat).map(function(l){return l.id;});
+ var items=[];
+ (r.items instanceof Array?r.items:[]).slice(0,40).forEach(function(x){
+  x=x||{};
+  var sug=String(x.renglon_sugerido||'').replace(/^(org|finca):/,''); if(ids.indexOf(sug)<0)sug=capSugerir(x.descripcion,cat);
+  var it={desc:String(x.descripcion||'').slice(0,160),cant:numDe(x.cantidad),uniTxt:String(x.unidad||'').slice(0,30),uni:capUniDeTexto(x.unidad),
+   importe:numDe(x.importe),linea:sug,conf:String(x.confianza||''),incluir:!!sug,conv:''};
+  items.push(it);
+  /* El compost que llega a una finca cuenta dos veces por razones distintas: su producción (comprado) y su aplicación en el suelo */
+  if(cat==='finca'&&(sug==='compost_aplicado'||sug==='compost_comprado')){
+   var otro=(sug==='compost_aplicado')?'compost_comprado':'compost_aplicado';
+   if(ids.indexOf(otro)>=0)items.push({desc:it.desc+(otro==='compost_aplicado'?' · aplicación en la finca':' · producción del compost comprado'),cant:it.cant,uniTxt:it.uniTxt,uni:it.uni,
+    importe:NaN,linea:otro,conf:it.conf,incluir:true,conv:'',par:true});
+  }
+ });
+ return {cat:cat,fid:fid,fincaLeida:String(r.finca_codigo||r.productor||'').slice(0,80),
+  datos:{proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:String(r.fecha||'').slice(0,10),
+  items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
+  confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)}};
+}
+async function capLeerConLector(imgs,texto){
+ var lector=capLector(), instr=capPrompt()+(texto?('\n\nContenido del documento (hoja de cálculo, columnas separadas por tabulador):\n'+texto):'');
  if(lector==='claude'){
-  var r=await LEC.fn.json(capPrompt(cat),{images:imgs,modelTier:'default',cache:false});
-  return capNormalizar(r,cat);
+  var r=await LEC.fn.json(instr,imgs&&imgs.length?{images:imgs,modelTier:'default',cache:false}:{modelTier:'default',cache:false});
+  return capNormalizar(r);
  }
  if(lector==='api'){
-  var urls=[]; for(var i=0;i<imgs.length;i++)urls.push(await capDataURL(imgs[i]));
-  var resp=await fetch('/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({imagenes:urls,instruccion:capPrompt(cat)})});
+  var urls=[]; for(var i=0;imgs&&i<imgs.length;i++)urls.push(await capDataURL(imgs[i]));
+  var resp=await fetch('/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imagenes:urls,instruccion:instr})});
   var o=await resp.json().catch(function(){return null;});
   if(!resp.ok||!o||!o.ok)throw new Error((o&&o.text)||('el servicio respondió '+resp.status));
-  return capNormalizar(o.datos,cat);
+  return capNormalizar(o.datos);
  }
  return null;
 }
@@ -23169,43 +23211,50 @@ function capDuplicado(hash,proveedor,numero){
   return !!(n&&p&&norm(x.numero)===n&&norm(x.proveedor)===p);
  })[0]||null;
 }
-/* 1 · subir: se calcula el sello del archivo y se pide la lectura */
-async function capSubir(file){
- if(!file)return;
+/* 1 · subir: cada archivo entra a la cola, se sella, se lee y queda «por revisar» */
+function capCola(){ return CAP.cola||(CAP.cola=[]); }
+function capSel(P){ CAP.pend=P||null; }
+async function capSubirVarios(files){
  if(!puedeEditar()){ msg('Su perfil no puede capturar'); return; }
- if(file.size>20*1024*1024){ msg('El archivo pesa más de 20 MB'); return; }
- var cat=CAP.cat, fid=(cat==='finca')?CAP.fid:'';
- if(cat==='finca'&&!fid){ msg('Elija primero la finca'); return; }
- var u8=new Uint8Array(await file.arrayBuffer()), s=await selloDeBytes(u8);
- CAP.pend={file:file,nombre:file.name||'factura',hash:s.val,metHash:s.met,cat:cat,fid:fid,
-  url:(file.type.indexOf('image/')===0)?URL.createObjectURL(file):'',origen:'manual',
-  datos:{proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''},error:''};
- var dup=capDuplicado(s.val,'','');
- if(dup)CAP.pend.dup=dup;
- if(capLector()){
-  CAP.leyendo=true; pintar();
-  try{
-   var imgs=await capImagenes(file);
-   var d=await capLeerConLector(imgs,cat);
-   if(d){ CAP.pend.datos=d; CAP.pend.origen='ia'; }
-   if(!CAP.pend.dup){ var d2=capDuplicado('',d&&d.proveedor,d&&d.numero); if(d2)CAP.pend.dup=d2; }
-  }catch(e){
-   var c=(e&&e.code)||'';
-   CAP.pend.error=(c==='rate_limited')?'Demasiadas lecturas seguidas; espere un momento o anote a mano.':
-    ('No se pudo leer la factura ('+((e&&e.message)||'error')+'). Anote los datos a mano.');
-  }
-  CAP.leyendo=false;
+ var nuevos=[];
+ for(var i=0;i<files.length;i++){
+  var file=files[i];
+  if(file.size>20*1024*1024){ msg(file.name+' pesa más de 20 MB'); continue; }
+  var s0=await selloDeBytes(new Uint8Array(await file.arrayBuffer()));
+  if(capCola().some(function(x){return x.hash===s0.val;})){ msg(file.name+' ya está en la cola'); continue; }
+  var P={id:uid('doc'),file:file,nombre:file.name||'documento',hash:s0.val,metHash:s0.met,cat:'org',fid:'',fincaLeida:'',
+   url:(file.type.indexOf('image/')===0)?URL.createObjectURL(file):'',origen:'manual',estado:'leyendo',
+   datos:{proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''},error:''};
+  P.dup=capDuplicado(s0.val,'','');
+  capCola().push(P); nuevos.push(P);
  }
- if(!CAP.pend.datos.items.length)CAP.pend.datos.items.push(capItemVacio());
+ if(!nuevos.length)return;
+ if(!CAP.pend)capSel(nuevos[0]);
  pintar();
+ for(var k=0;k<nuevos.length;k++){
+  var Q=nuevos[k];
+  if(capLector()){
+   try{
+    var hoja=capEsHoja(Q.file), r=hoja?await capLeerConLector(null,await capTextoHoja(Q.file)):await capLeerConLector(await capImagenes(Q.file),'');
+    if(r){ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; }
+    if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero);
+   }catch(e){
+    var c=(e&&e.code)||'';
+    Q.error=(c==='rate_limited')?'Demasiadas lecturas seguidas; espere un momento o anote a mano.':('No se pudo leer ('+((e&&e.message)||'error')+'). Anote los datos a mano.');
+   }
+  }
+  if(!Q.datos.items.length)Q.datos.items.push(capItemVacio());
+  Q.estado='revisar';
+  if(vista==='cap')pintar();
+ }
+ msg(nuevos.length===1?'Documento leído: revíselo y confírmelo':(nuevos.length+' documentos leídos: revíselos y confírmelos'));
 }
+async function capSubir(file){ return capSubirVarios([file]); }
 function capItemVacio(){ return {desc:'',cant:NaN,uniTxt:'',uni:'',importe:NaN,linea:'',conf:'',incluir:true,conv:''}; }
 function capManual(){
- var cat=CAP.cat, fid=(cat==='finca')?CAP.fid:'';
- if(cat==='finca'&&!fid){ msg('Elija primero la finca'); return; }
- CAP.pend={file:null,nombre:'',hash:'',metHash:'',cat:cat,fid:fid,url:'',origen:'manual',
+ var P={id:uid('doc'),file:null,nombre:'Sin archivo',hash:'',metHash:'',cat:'org',fid:'',fincaLeida:'',url:'',origen:'manual',estado:'revisar',
   datos:{proveedor:'',numero:'',fecha:hoy(),items:[capItemVacio()],ilegible:[],confianza:'',observacion:''},error:''};
- pintar();
+ capCola().push(P); capSel(P); pintar();
 }
 /* conversión efectiva de un item: automática si las unidades son compatibles */
 function capConvItem(it,l){
@@ -23217,6 +23266,8 @@ function capConvItem(it,l){
 function capProblemas(P){
  var p=[];
  var d=P.datos, inc=d.items.filter(function(x){return x.incluir;});
+ if(P.estado==='leyendo')p.push('Todavía se está leyendo el documento.');
+ if(P.cat==='finca'&&!P.fid)p.push('Elija la finca a la que pertenece el documento'+(P.fincaLeida?(' (el documento dice «'+P.fincaLeida+'»)'):'')+'.');
  if(!inc.length)p.push('No hay ningún renglón marcado para registrar.');
  if(!d.fecha)p.push('Falta la fecha de la factura.');
  inc.forEach(function(it,i){
@@ -23230,9 +23281,9 @@ function capProblemas(P){
  return p;
 }
 /* 3 · confirmar: se guardan los registros, el respaldo y la bitácora */
-async function capConfirmar(){
- var P=CAP.pend; if(!P)return;
- var pr=capProblemas(P); if(pr.length){ msg(pr[0]); return; }
+async function capConfirmar(P0,silencio){
+ var P=P0||CAP.pend; if(!P)return false;
+ var pr=capProblemas(P); if(pr.length){ if(!silencio)msg(pr[0]); return false; }
  var d=P.datos, ahora=new Date().toISOString(), quien=quienEdita();
  if(P.cat==='finca'){ S.insumos[P.fid]=S.insumos[P.fid]||{}; }
  var adj={}, tocadas={};
@@ -23257,9 +23308,21 @@ async function capConfirmar(){
  Object.keys(tocadas).forEach(capRecalcular);
  marcar('captura/registros'); guardarLocal();
  if(P.url)URL.revokeObjectURL(P.url);
- CAP.pend=null;
- msg(inc.length===1?'Registro guardado y sumado al inventario':(inc.length+' registros guardados y sumados al inventario'));
+ CAP.cola=capCola().filter(function(x){return x!==P;});
+ if(CAP.pend===P)capSel(capCola().filter(function(x){return x.estado==='revisar';})[0]||capCola()[0]||null);
+ if(!silencio){ msg(inc.length===1?'Registrado y sumado a su fuente':(inc.length+' renglones registrados y sumados a sus fuentes')); pintar(); }
+ return true;
+}
+async function capConfirmarListos(){
+ var L=capCola().filter(function(P){return P.estado==='revisar'&&!capProblemas(P).length;}), n=0;
+ for(var i=0;i<L.length;i++){ if(await capConfirmar(L[i],true))n++; }
+ msg(n?(n+' documento'+(n===1?'':'s')+' registrado'+(n===1?'':'s')):'Ningún documento está listo: revise los que tienen avisos');
  pintar();
+}
+function capCambiarAmbito(P,v){
+ var p=String(v||'org').split(':'); P.cat=p[0]==='finca'?'finca':'org'; P.fid=P.cat==='finca'?(p[1]||''):'';
+ var ids=capLineas(P.cat).map(function(l){return l.id;});
+ P.datos.items.forEach(function(it){ if(ids.indexOf(it.linea)<0){ it.linea=capSugerir(it.desc,P.cat); it.incluir=!!it.linea; } });
 }
 function capSumaRef(ref){
  var p=partesRef(ref); if(!p)return 0;
@@ -23333,8 +23396,8 @@ function vistaCaptura(){
  if(cat==='finca'&&fid&&!S.fincas.some(function(x){return x.id===fid;}))CAP.fid=fid='';
  var R=registros(), vig=R.filter(function(x){return x.estado!=='anulado';});
  var h=cabModulo('cap','<p class="vista-sub">Un solo camino para entrar los datos: suba la factura, revise lo que la aplicación leyó, confírmelo y vea cómo se convierte en toneladas de CO₂e. Cada cifra queda unida a su factura, a su sello y a quien la confirmó.</p>');
- var paso=P?(CAP.leyendo?1:2):1;
- h+='<ol class="cap-pasos">'+[['Subir la factura','foto o PDF'],['Revisar lo leído','corrija si hace falta'],['Confirmar','queda el registro y su respaldo'],['Ver el cálculo','dato, factor y resultado']]
+ var paso=P?(P.estado==='leyendo'?1:2):1;
+ h+='<ol class="cap-pasos">'+[['Subir los documentos','foto, PDF o Excel'],['Revisar lo leído','corrija si hace falta'],['Confirmar','queda el registro y su respaldo'],['Ver el cálculo','dato, factor y resultado']]
   .map(function(x,i){ return '<li class="'+(i+1===paso?'act':(i+1<paso?'hecho':''))+'"><span>'+(i+1)+'</span><b>'+x[0]+'</b><small>'+x[1]+'</small></li>'; }).join('')+'</ol>';
  h+='<dl class="cifras">'+
   tarjetaCifra('Facturas registradas',String(vig.length),'renglones vigentes')+
@@ -23342,30 +23405,42 @@ function vistaCaptura(){
   tarjetaCifra('Leídas con ayuda',String(vig.filter(function(x){return x.origen==='ia';}).length),'todas confirmadas por una persona')+
   tarjetaCifra('Anuladas',String(R.length-vig.length),'se conservan con su motivo')+'</dl>';
 
- /* 1 · subir */
- if(!P){
-  h+='<div class="tarjeta cap-subir"><h3>1 · Subir la factura</h3><div class="cuerpo">'+
-   '<div class="cap-amb"><div class="campo"><label for="cap-cat">¿De quién es el gasto?</label><select id="cap-cat" data-cap-cat="1">'+
-    (lineasDe('org').length?'<option value="org"'+(cat==='org'?' selected':'')+'>De la organización (beneficio, planta, oficina)</option>':'')+
-    '<option value="finca"'+(cat==='finca'?' selected':'')+'>De una finca</option></select></div>'+
-   (cat==='finca'?'<div class="campo"><label for="cap-fid">Finca</label><select id="cap-fid" data-cap-fid="1">'+selFinca(fid,true)+'</select></div>':'')+'</div>'+
-   (ed?('<label class="cap-zona'+(cat==='finca'&&!fid?' off':'')+'"><input type="file" accept="image/*,application/pdf" data-cap-subir="1" hidden'+(cat==='finca'&&!fid?' disabled':'')+'>'+
-     '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Tomar la foto o elegir el archivo</b><small>Factura, recibo o comprobante · JPG, PNG o PDF hasta 20 MB</small></label>'+
-     '<div class="acciones cap-alt"><button type="button" data-cap="manual">Anotar sin archivo</button><span class="muted">solo si la factura no existe en papel; el registro queda marcado «sin respaldo»</span></div>')
-    :'<div class="aviso">Su perfil puede consultar, pero no capturar.</div>')+
-   '<p class="cap-lector">'+(lector==='claude'?'✓ La lectura automática está disponible.':lector==='api'?'✓ La lectura automática está disponible (servicio del programa).':
-     'La lectura automática no está disponible en esta copia: al subir el archivo, la aplicación le pide los datos y guarda la factura como respaldo.')+
-   ' Nada se suma al inventario sin que usted lo confirme.</p></div></div>';
+ /* 1 · subir: uno o varios documentos; la aplicación decide a qué fuente y a qué finca va cada uno */
+ h+='<div class="tarjeta cap-subir"><h3>1 · Subir facturas y registros</h3><div class="cuerpo">'+
+  (ed?('<label class="cap-zona"><input type="file" multiple accept="image/*,application/pdf,.xlsx,.xls,.csv,.ods" data-cap-subir="1" hidden>'+
+    '<span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Elegir uno o varios documentos</b><small>Facturas, órdenes de entrega, recibos, bitácoras o registros · foto, PDF o Excel hasta 20 MB cada uno</small></label>'+
+    '<p class="cap-lector">La aplicación lee cada documento y lo manda a su lugar: si es de la organización (diésel de los vehículos, electricidad de la planta, sacos) o de una finca (compost, fertilizante, combustible de la finca), y a qué fuente de emisión. '+
+    (lector?'':'<b>La lectura automática no está disponible en esta copia</b>: los datos se anotan a mano. ')+'Nada se suma sin su confirmación.</p>'+
+    '<div class="acciones cap-alt"><button type="button" data-cap="manual">Anotar sin archivo</button><span class="muted">solo si el documento no existe; queda marcado «sin respaldo»</span></div>')
+   :'<div class="aviso">Su perfil puede consultar, pero no capturar.</div>')+'</div></div>';
+ var COLA=capCola();
+ if(COLA.length){
+  var listos=COLA.filter(function(Q){return Q.estado==='revisar'&&!capProblemas(Q).length;}).length;
+  h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo"><ul class="cap-cola">'+
+   COLA.map(function(Q){
+    var pr=Q.estado==='revisar'?capProblemas(Q):[], fz=S.fincas.filter(function(x){return x.id===Q.fid;})[0];
+    var dest=Q.estado==='leyendo'?'leyendo…':(Q.cat==='org'?'Organización':(fz?('Finca '+(fz.codigo||'')):'Finca sin elegir'));
+    var est=Q.estado==='leyendo'?'<span class="cds-est cds-parcial">Leyendo</span>':pr.length?'<span class="cds-est cds-sin">Revisar</span>':'<span class="cds-est cds-conciliado">Listo</span>';
+    var n=Q.datos.items.filter(function(x){return x.incluir&&x.linea;}).length;
+    return '<li><button type="button" class="'+(Q===P?'sel':'')+'" data-cap="cola-sel" data-id="'+esc(Q.id)+'"><span class="cap-cola-n">'+esc(Q.nombre)+'</span>'+
+     '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+est+'</button></li>';
+   }).join('')+'</ul>'+
+   (listos>1?'<div class="acciones"><button type="button" class="primario" data-cap="listos">Registrar los '+listos+' documentos listos</button><span class="muted">cada uno ya fue leído y no tiene avisos; revise antes los que dicen «Revisar»</span></div>':'')+
+   '</div></div>';
  }
- if(P&&CAP.leyendo)h+='<div class="tarjeta"><div class="cuerpo"><p class="cap-leyendo">Leyendo «'+esc(P.nombre)+'»…</p></div></div>';
+ if(P&&P.estado==='leyendo')h+='<div class="tarjeta"><div class="cuerpo"><p class="cap-leyendo">Leyendo «'+esc(P.nombre)+'»…</p></div></div>';
 
  /* 2 y 3 · revisar y confirmar */
- if(P&&!CAP.leyendo){
+ if(P&&P.estado!=='leyendo'){
   var d=P.datos, ls=capLineas(P.cat), fz=S.fincas.filter(function(x){return x.id===P.fid;})[0];
   h+='<div class="tarjeta cap-rev"><h3>2 · Revisar lo leído y 3 · confirmar</h3><div class="cuerpo">';
   h+='<div class="cap-rev-g">'+(P.url?'<a href="'+P.url+'" target="_blank" rel="noopener" class="cap-mini"><img src="'+P.url+'" alt="Factura subida"></a>':
     (P.file?'<div class="cap-mini cap-pdf">PDF<br><small>'+esc(P.nombre)+'</small></div>':'<div class="cap-mini cap-pdf">Sin archivo</div>'))+
-   '<div><p class="small">'+(P.cat==='org'?'Gasto de la organización':('Gasto de la finca '+esc((fz&&fz.codigo)||'')))+
+   '<div><div class="campo cap-ambito"><label for="cap-amb">¿A dónde va este documento?</label><select id="cap-amb" data-cap-amb="1">'+
+     '<option value="org"'+(P.cat==='org'?' selected':'')+'>A la organización (beneficio, planta, vehículos, oficina)</option>'+
+     (P.cat==='finca'&&!P.fid?'<option value="finca:" selected>A una finca: elija cuál</option>':'')+
+     S.fincas.map(function(f){return '<option value="finca:'+esc(f.id)+'"'+(P.cat==='finca'&&P.fid===f.id?' selected':'')+'>Finca '+esc(f.codigo||'')+(f.productor?(' · '+esc(f.productor)):'')+'</option>';}).join('')+
+     '</select>'+(P.fincaLeida&&P.cat==='finca'?'<small class="muted">el documento dice: «'+esc(P.fincaLeida)+'»</small>':'')+'</div><p class="small">'+esc(P.nombre)+
     (P.hash?(' · sello '+esc(P.metHash)+' <code>'+esc(P.hash.slice(0,16))+'…</code>'):'')+
     (P.origen==='ia'?(' · leída con ayuda, confianza '+esc(d.confianza||'sin declarar')):'')+'</p>'+
    (P.error?'<div class="aviso">'+esc(P.error)+'</div>':'')+
@@ -23383,7 +23458,7 @@ function vistaCaptura(){
    var conv=!l?'<span class="muted">—</span>':(cv.auto?(cv.f===1?'<span class="muted">misma unidad</span>':('<span title="automática">× '+fmt(cv.f,4)+'</span>')):
     ('<input class="cap-conv" data-cap-i="'+i+'" data-cap-k="conv" inputmode="decimal" placeholder="'+esc(CAP_UNI[cv.ul]?CAP_UNI[cv.ul][2]:'')+' por unidad" value="'+esc(it.conv)+'">'));
    var entra=(l&&it.cant>0&&cv.f>0)?('<b>'+fmt(it.cant*cv.f,2)+'</b> '+esc(l.un)):'<span class="muted">—</span>';
-   var baja=(P.origen==='ia'&&it.conf==='baja');
+   var baja=(P.origen==='ia'&&it.conf==='baja'&&!it.par);
    h+='<tr'+(baja?' class="cap-baja"':'')+'><td><input type="checkbox" data-cap-i="'+i+'" data-cap-k="incluir"'+(it.incluir?' checked':'')+' aria-label="Registrar este renglón"></td>'+
     '<td><input data-cap-i="'+i+'" data-cap-k="desc" value="'+esc(it.desc)+'" placeholder="Producto o servicio">'+(baja?'<small class="cap-conf">confianza baja: compruebe</small>':'')+'</td>'+
     '<td><input class="cap-num" data-cap-i="'+i+'" data-cap-k="cant" inputmode="decimal" value="'+(isFinite(it.cant)?String(it.cant).replace('.',','):'')+'"></td>'+
@@ -23395,7 +23470,7 @@ function vistaCaptura(){
   var pr=capProblemas(P);
   h+=pr.length?'<div class="aviso"><b>Antes de confirmar:</b><ul>'+pr.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>':
    '<div class="aviso bien">Todo listo. Al confirmar, cada renglón marcado se suma a su fuente de emisión y la factura queda como respaldo.</div>';
-  h+='<div class="acciones"><button type="button" class="primario" data-cap="confirmar"'+(pr.length?' disabled':'')+'>Confirmar y registrar</button>'+
+  h+='<div class="acciones"><button type="button" class="primario" data-cap="confirmar"'+(pr.length?' disabled':'')+'>Confirmar y registrar'+(capCola().length>1?' y seguir':'')+'</button>'+
    '<button type="button" data-cap="descartar">Descartar</button></div></div></div>';
  }
 
@@ -23462,7 +23537,8 @@ function capSimRes(){
 function capItem(i){ return CAP.pend&&CAP.pend.datos.items[i]; }
 document.addEventListener('change',function(ev){
  var t=ev.target; if(!t||!t.dataset)return;
- if(t.dataset.capSubir){ var f=t.files&&t.files[0]; t.value=''; if(f)capSubir(f); return; }
+ if(t.dataset.capSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)capSubirVarios(fs); return; }
+ if(t.dataset.capAmb&&CAP.pend){ capCambiarAmbito(CAP.pend,t.value); pintar(); return; }
  if(t.dataset.capCat){ CAP.cat=t.value; if(t.value==='org')CAP.fid=''; pintar(); return; }
  if(t.dataset.capFid){ CAP.fid=t.value; pintar(); return; }
  if(t.dataset.capFiltro){ CAP.filtro=t.value; pintar(); return; }
@@ -23489,9 +23565,11 @@ document.addEventListener('click',function(ev){
  var b=ev.target.closest&&ev.target.closest('[data-cap]'); if(!b)return;
  var a=b.dataset.cap;
  if(a==='manual')capManual();
- else if(a==='descartar'){ if(CAP.pend&&CAP.pend.url)URL.revokeObjectURL(CAP.pend.url); CAP.pend=null; pintar(); }
+ else if(a==='descartar'){ var Pd=CAP.pend; if(Pd&&Pd.url)URL.revokeObjectURL(Pd.url); CAP.cola=capCola().filter(function(x){return x!==Pd;}); capSel(capCola()[0]||null); pintar(); }
+ else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
+ else if(a==='listos')capConfirmarListos();
  else if(a==='item-mas'&&CAP.pend){ CAP.pend.datos.items.push(capItemVacio()); pintar(); }
- else if(a==='confirmar')capConfirmar();
+ else if(a==='confirmar')capConfirmar().then(function(ok){ if(ok){ var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); } });
  else if(a==='csv')capCSV();
  else if(a==='anular'){
   var idA=b.dataset.id;
@@ -24075,8 +24153,8 @@ function tarjetaCarpetasLibres(){
  var G=CL_GRUPOS[CL.grupo], ed=puedeEditar();
  var tot=function(g){ return CL_GRUPOS[g].c.reduce(function(s,c){return s+clArchivos(g,c[0]).length;},0); };
  var h='<div class="tarjeta cfe"><h3>Carpetas de documentos</h3><div class="cuerpo">'+
-  '<div class="cl-tabs">'+['fe','da'].map(function(g){ return '<button type="button" data-cl="grupo" data-g="'+g+'" aria-pressed="'+(CL.grupo===g)+'">'+esc(CL_GRUPOS[g].t)+' <small>'+tot(g)+'</small></button>'; }).join('')+'</div>'+
-  '<p>'+esc(G.d)+' Abra una carpeta y suba los archivos (PDF, Excel, Word o fotos, hasta 25 MB cada uno).</p>'+
+  (tot('da')?'<div class="cl-tabs">'+['fe','da'].map(function(g){ return '<button type="button" data-cl="grupo" data-g="'+g+'" aria-pressed="'+(CL.grupo===g)+'">'+esc(CL_GRUPOS[g].t)+' <small>'+tot(g)+'</small></button>'; }).join('')+'</div>':'')+
+  '<p>'+esc(G.d)+' Abra una carpeta y suba los archivos (PDF, Excel, Word o fotos, hasta 25 MB cada uno).'+(CL.grupo==='fe'?' Las facturas y registros de actividad no van aquí: se suben en «Subir facturas y registros», que los lee y los suma a su fuente.':'')+'</p>'+
   '<div class="cfe-rejilla">';
  G.c.forEach(function(c){
   var n=clArchivos(CL.grupo,c[0]).length, ab=CL.abierta===c[0];
