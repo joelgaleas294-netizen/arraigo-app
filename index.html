@@ -1747,6 +1747,12 @@ html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;bord
 .cap-cola li>button.cap-ver{width:auto;display:flex;align-items:center;gap:6px;padding:0 14px;font-weight:600;color:#1e6b47;white-space:nowrap}
 .cap-cola li>button.cap-quitar{width:auto;display:flex;align-items:center;padding:0 12px;color:#9b2c2c;font-weight:600;white-space:nowrap}
 .cl-sub{margin:12px 0 6px}
+#ing-texto{width:100%;font:inherit;line-height:1.5;padding:10px;border:1px solid var(--line);border-radius:8px}
+.ing-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ing-log li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.ing-log li span,.ing-log li small{grid-column:1}.ing-log li small{color:var(--ink-3,#6b7a76)}
+.ing-log li button{grid-column:2;grid-row:1/span 3;align-self:center}
+.ing-log li.error{border-color:#d9a5a5}.ing-log li.ok span{color:#1e6b47}
 .per-tabla{table-layout:fixed;width:100%;border-collapse:collapse}.per-tabla th,.per-tabla td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}.per-tabla th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3,#6b7a76)}.per-tabla input{width:18px;height:18px}.per-tabla td,.per-tabla td b{white-space:normal!important;overflow-wrap:anywhere}.per-tabla th:nth-child(1){width:44px}.per-tabla th:nth-child(2){width:20%}.per-tabla th:nth-child(3){width:46%}
 .per-tabla td{vertical-align:top;overflow-wrap:anywhere}.per-tabla td.per-txt{font-size:14px;line-height:1.5;white-space:normal}
 .cl-selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:8px 12px;border:1px dashed var(--line);border-radius:8px;font-size:14px}
@@ -1847,6 +1853,7 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
    <section id="v-rep" hidden></section>
    <section id="v-apr" hidden></section>
    <section id="v-org" hidden></section>
+   <section id="v-ing" hidden></section>
    <section id="v-per" hidden></section>
    <section id="v-hcp" hidden></section>
    <section id="v-inf" hidden></section>
@@ -5407,6 +5414,7 @@ function odsDeclarables(){
 
 /* ====== módulos ====== */
 var ICO={
+ ing:'<path d="M12 3v12"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>',
  per:'<path d="M4 20V6l8-3 8 3v14"/><path d="M9 20v-5h6v5"/><path d="M8 9h2M14 9h2M8 12h2M14 12h2"/>',
  hcp:'<circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/><circle cx="12" cy="12" r="3"/>',
  inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 15h7M9 18h4"/>',
@@ -5451,6 +5459,8 @@ var ICO={
 };
 function svgIco(k){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICO[k]||'')+'</svg>';}
 var MODULOS=[
+ {id:'ing',scol:'s3',codigo:'MOD-ING',nom:'Ingreso de datos',col:'m3',etapa:'preparar',paso:0,
+  des:'Una sola entrada: información escrita o documentos, ubicados donde corresponden y guardados en el Centro de datos.'},
  {id:'per',scol:'sE',codigo:'MOD-PER',nom:'Perfil de la organización',col:'mE',etapa:'preparar',paso:1,
   des:'Identificación, descripción, contexto y alcance organizacional, con sus documentos de presentación.'},
  {id:'hcp',scol:'s3',codigo:'MOD-HCP',nom:'Estudio de huella ISO 14067',col:'m3',etapa:'preparar',paso:2,
@@ -5543,6 +5553,7 @@ function modulo(id){for(var i=0;i<MODULOS.length;i++)if(MODULOS[i].id===id)retur
 function nomMod(m){return (m&&m.id==='pry'&&proyectoBloqueado())?'La empresa':(m?m.nom:'');}
 function datoModulo(m){
  var R=resumenGlobal();
+ if(m.id==='ing'){ return [String(ING.log.length||''),'',false]; }
  if(m.id==='per'){ var Ap=perAvance(); return [Ap.pct+' %','del perfil completo',Ap.pct===100]; }
  if(m.id==='hcp'){ var Sh=hcpSecciones(), a=0,b=0; Sh.forEach(function(x){a+=x.ok;b+=x.de;}); return [Math.round(a*100/Math.max(1,b))+' %','del estudio definido',a===b]; }
  if(m.id==='inf'){ return ['','',false]; }
@@ -5893,6 +5904,7 @@ function completarEstado(o){
  S.insumos=S.insumos||{}; S.beneficio=S.beneficio||{}; S.ods=S.ods||{};
  S.bitacora=S.bitacora||[]; S.nc=S.nc||[]; S.prod=S.prod||{}; S.cred=S.cred||{};
  S.esq=S.esq||{}; S.esq.i14067=true; S.esq.i14064=false;
+ if(!S.prod.limites)S.prod.limites='De la cuna al puerto de destino';
  S.excl=S.excl||[]; S.mit=S.mit||{}; S.comp=S.comp||{}; S.verif=S.verif||{}; S.unidades=S.unidades||[];
  S.unidadesOp=S.unidadesOp||[]; S.apart=S.apart||[]; S.pron=S.pron||{}; S.publicaciones=S.publicaciones||[]; S.aui=S.aui||{}; S.taller=S.taller||{};
  S.esq=S.esq||{i14064:true,i14067:false,credito:false,i9001:true};
@@ -6527,7 +6539,7 @@ var FLETE_INTL={tm_maritimo:1,tm_aereo:1,frio_transito:1};
 function reglaLimite(nom){
  var n=String(nom||'').trim();
  for(var i=0;i<LIMITES_PROD.length;i++)if(LIMITES_PROD[i][0]===n)return LIMITES_PROD[i][1];
- return LIMITES_PROD[1][1];
+ return LIMITES_PROD[3][1];
 }
 function idsEXPO(){ return memo('idsexpo',function(){ var m={}; (typeof EXPO!=='undefined'?EXPO:[]).forEach(function(l){m[l.id]=1;}); return m; }); }
 function emisionesEnLimite(nom,omitir){
@@ -6556,7 +6568,7 @@ function emisionesEnLimite(nom,omitir){
   if(poda)partes['poda|1']={id:'poda',et:'Destino de la biomasa de poda',cat:1,t:poda,niv:'defecto'};
   if(cult)partes['cultivo|1']={id:'cultivo',et:'Cambio de existencia del cultivo',cat:1,t:cult,niv:'defecto'}; }
  else fuera+=poda+cult;
- return {total:total,fuera:fuera,det:det,omitido:omitido,partes:Object.keys(partes).map(function(k){return partes[k];}),limite:String(nom||'').trim()||LIMITES_PROD[1][0],regla:G};
+ return {total:total,fuera:fuera,det:det,omitido:omitido,partes:Object.keys(partes).map(function(k){return partes[k];}),limite:String(nom||'').trim()||LIMITES_PROD[3][0],regla:G};
 }
 function huellaProducto(){
  var R=resumenGlobal(), P=S.prod||{};
@@ -6672,7 +6684,8 @@ function tarjetaPresentaciones(){
  pres.forEach(function(pr,i){
   h+='<div class="campos" style="margin-top:10px;align-items:end">'+
    '<div class="campo ancho"><label>Presentación</label><input type="text" data-pres="'+i+'" data-pc="nom" value="'+esc(pr.nom||'')+'"'+dis+'></div>'+
-   '<div class="campo"><label>Kilogramos de café oro por unidad</label><input type="text" inputmode="decimal" data-num="1" data-pres="'+i+'" data-pc="kg" value="'+esc(pr.kg)+'"'+dis+'></div></div>'+
+   '<div class="campo"><label>Kilogramos de café oro por unidad</label><input type="text" inputmode="decimal" data-num="1" data-pres="'+i+'" data-pc="kg" value="'+esc(pr.kg)+'"'+dis+'></div>'+
+   (ed&&pres.length>1?'<div class="campo"><button type="button" class="mini peligro" data-accion="pres-del" data-pres="'+i+'">Quitar presentación</button></div>':'')+'</div>'+
    '<div class="tabla-caja"><table><thead><tr><th>Material de empaque</th><th>kg por unidad</th><th>Factor kg CO₂e/kg</th><th>Respaldo de la masa</th>'+(ed?'<th></th>':'')+'</tr></thead><tbody>';
   (pr.mat||[]).forEach(function(m,j){
    h+='<tr><td><select data-pres="'+i+'" data-pm="'+j+'" data-pc="m"'+dis+'>'+Object.keys(MAT_EMP).map(function(k){return '<option value="'+k+'"'+(k===m.m?' selected':'')+'>'+esc(MAT_EMP[k].nom)+'</option>';}).join('')+'</select></td>'+
@@ -6683,14 +6696,15 @@ function tarjetaPresentaciones(){
   });
   h+='</tbody></table></div>'+(ed?'<div class="acciones"><button type="button" class="mini" data-accion="pres-mat-add" data-pres="'+i+'">Agregar material</button></div>':'');
  });
+ if(ed)h+='<div class="acciones" style="margin-top:10px"><button type="button" data-accion="pres-add">Agregar presentación</button></div>';
  /* rutas */
  h+='<h4 style="margin-top:16px">Rutas marítimas</h4><div class="tabla-caja"><table><thead><tr><th>Destino</th><th>Ruta</th><th>Kilómetros por mar</th><th>Respaldo de la distancia</th></tr></thead><tbody>';
  dest.forEach(function(d,k){
-  h+='<tr><td><b>'+esc(d.nom)+'</b></td><td><input type="text" data-dest="'+k+'" data-pc="puerto" value="'+esc(d.puerto||'')+'"'+dis+'></td>'+
+  h+='<tr><td><input type="text" data-dest="'+k+'" data-pc="nom" value="'+esc(d.nom||'')+'"'+dis+'></td><td><input type="text" data-dest="'+k+'" data-pc="puerto" value="'+esc(d.puerto||'')+'"'+dis+'></td>'+
    '<td><input type="text" inputmode="decimal" data-num="1" data-dest="'+k+'" data-pc="km" value="'+esc(d.km)+'" style="max-width:100px"'+dis+'></td>'+
    '<td><input type="text" data-dest="'+k+'" data-pc="origen" value="'+esc(d.origen||'')+'"'+dis+'></td></tr>';
  });
- h+='</tbody></table></div><p class="pista">Flete marítimo: '+fmt(FLETE_MAR.f,5)+' kg CO₂e por t·km de masa bruta (café más empaque). '+esc(FLETE_MAR.fue)+'.</p>';
+ h+='</tbody></table></div>'+(ed?'<div class="acciones"><button type="button" class="mini" data-accion="dest-add">Agregar destino</button>'+(dest.length>1?'<button type="button" class="mini" data-accion="dest-del">Quitar el último destino</button>':'')+'</div>':'')+'<p class="pista">Flete marítimo: '+fmt(FLETE_MAR.f,5)+' kg CO₂e por t·km de masa bruta (café más empaque). '+esc(FLETE_MAR.fue)+'.</p>';
  /* resultados */
  h+='<h4 style="margin-top:16px">Resultado</h4><div class="tabla-caja"><table><thead><tr><th>Presentación</th><th>Destino</th><th>Hasta puerto de embarque</th><th>Empaque</th><th>Flete marítimo</th><th>Total por kg</th><th>Por unidad</th><th>Por tonelada</th><th>Rango de sensibilidad</th></tr></thead><tbody>';
  if(!(C.kgTot>0))h+='<tr><td colspan="9">Falta la producción del ciclo en la tarjeta anterior: sin ella no hay huella por kilogramo.</td></tr>';
@@ -6972,7 +6986,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 function ir(v){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
  if(VISTAS.indexOf(v)<0)v='portada';
@@ -9164,7 +9178,7 @@ var ESQUEMAS=[
  ['i14067','ISO 14067 · huella de carbono de producto','La cifra se declara por unidad de producto, con unidad funcional y reglas de asignación.'],
  ['i9001','ISO 9001 · sistema interno auditable','Control de documentos, responsables, no conformidades y acciones correctivas.'],
 ];
-function esqActivo(k){ return !!((S.esq||{})[k]); }
+function esqActivo(k){ if(k==='i14067')return true; return !!((S.esq||{})[k]); }
 /* ====== MOD-NEU · vista de neutralidad y comunicación ==================== */
 var SUJETOS_NEU=[
  ['org','La organización entera','El sujeto es la organización: la huella del producto que comercializa, conforme a ISO 14067.'],
@@ -23801,6 +23815,12 @@ document.addEventListener('click',function(ev){
    SHA-256 siga siendo el del documento original y se pueda comprobar después. */
 async function capGuardarOriginal(ref,file,sello,met){
  var c=contenedor(ref); if(!c)return '';
+ /* Si el documento ya estaba guardado en una carpeta del Centro de datos (Ingreso de datos), se vincula a su fuente sin guardarlo dos veces */
+ if(sello&&ref.indexOf('linea:')===0){
+  var L_=clLibres();
+  for(var q=0;q<L_.length;q++){ var m_=(L_[q].adjuntos||[]).filter(function(a){return a.sello===sello;})[0];
+   if(m_){ L_[q].adjuntos=L_[q].adjuntos.filter(function(a){return a!==m_;}); c.obj.adjuntos=c.obj.adjuntos||[]; c.obj.adjuntos.push(m_); marcar(c.ruta); marcar('gestion/archivo'); return m_.id; } }
+ }
  /* Las páginas de un mismo PDF comparten el original: se guarda una sola vez por fuente */
  var ya=(c.obj.adjuntos||[]).filter(function(a){ return sello&&a.sello===sello; })[0];
  if(ya)return ya.id;
@@ -24639,7 +24659,7 @@ function perPrompt(){
 async function perConstruir(){
  var D=perDocs().adjuntos||[];
  if(!D.length){ msg('Primero suba la presentación de la organización'); return; }
- if(!capLector()){ capComprobarApi(); msg('La lectura con IA no está disponible en este momento'); return; }
+ if(!(await capAsegurarLector())){ msg('La lectura con IA no está disponible en este momento'); return; }
  PER_IA={estado:'leyendo',prop:null,marca:{},error:''}; pintar();
  try{
   var texto='', imgs=[];
@@ -24805,19 +24825,20 @@ function vistaEstudio(){
   hcpSel('Comunicación prevista','obj_comunica',HCP_OPC.comunica,HCP_OPC.comunica[1])+
   '</div></div></div>';
  h+='<div class="tarjeta"><h3>2. Producto, unidad y flujo de referencia <small class="cl">6.3.3</small></h3><div class="cuerpo"><div class="campos">'+
-  hcpTx('producto',['Producto estudiado','Café verde (oro) exportable'])+
+  hcpTx('producto',['Producto estudiado','Café verde (oro) exportado'])+
   hcpSel('Tipo de unidad','tipoUnidad',HCP_OPC.tipoUnidad,HCP_OPC.tipoUnidad[0])+
   hcpTx('unidad',['Unidad declarada o funcional','quintal de café oro'])+
   hcpTx('kg',['Kilogramos por unidad','45.36','num'])+
   hcpTx('produccion',['Producción del período, en unidades','', 'num'])+
   hcpArea('Descripción técnica del producto','descripcion','Especie y variedades, proceso (lavado, natural, honey), humedad, calidad y presentación.',3)+
   hcpArea('Flujo de referencia','flujo','',2,1)+
-  '</div><p class="pista">Un estudio de la cuna a la puerta no incluye el uso ni el fin de vida del producto; por eso se expresa por unidad declarada y es una huella parcial (ISO 14067, 3.1.1.2 y 6.1).</p></div></div>';
+  '</div><p class="pista">El estudio llega hasta el puerto de destino y no incluye el tostado, el consumo ni el fin de vida del café. ISO 14067 llama a ese resultado huella parcial y lo expresa por <b>unidad declarada</b> (3.1.1.2 y 6.1): kg CO₂e por saco de 69 kg o por big bag de café oro exportado, puesto en el puerto de destino.</p></div></div>'+
+  tarjetaPresentaciones();
  var G=reglaLimite(P.limites), etap=[];
  if(G.finca)etap.push('Producción agrícola en las fincas'); if(G.org)etap.push('Beneficiado y procesamiento');
  if(G.expo)etap.push('Preparación para la exportación'); if(G.flete)etap.push('Transporte internacional');
  h+='<div class="tarjeta"><h3>3. Límite del sistema <small class="cl">6.3.4</small></h3><div class="cuerpo"><div class="campos">'+
-  campoSel('Límite del ciclo de vida','prod.limites',LIMITES_PROD.map(function(x){return x[0];}),P.limites||'De la cuna a la puerta del beneficio')+
+  campoSel('Límite del ciclo de vida','prod.limites',LIMITES_PROD.map(function(x){return x[0];}),P.limites||'De la cuna al puerto de destino')+
   (String(P.limites||'')==='Parcial declarado'?hcpArea('Qué queda fuera del límite parcial y por qué','limitesParcial','',3):'')+
   hcpArea('Ámbito geográfico','lim_geografico','',2,1)+
   hcpArea('Procesos excluidos y justificación','lim_excluidos','',4,1)+
@@ -24876,7 +24897,7 @@ function infDatos(){
  var regs=registros().filter(function(r){return r.estado!=='anulado';});
  var filas=filasHojaTodo();
  return {P:P,HP:HP,LIM:LIM,F:F,etapas:etapas,procesos:procesos,G:desgloseGases(),B:co2Biogenico(),FA:factoresAplicados(),EX:exclusiones(),
-  C:cdsConciliacion(),SU:sustento(),regs:regs,filas:filas,org:perV('razon')||S.perfil.organizacion||'la organización'};
+  C:cdsConciliacion(),SU:sustento(),regs:regs,filas:filas,PC:(nv((S.prod||{}).produccion)>0||produccionTotal()>0)?presentacionesCalc():null,org:perV('razon')||S.perfil.organizacion||'la organización'};
 }
 function filasHojaTodo(){ var g={hojaFinca:sel.hojaFinca,hojaCat:sel.hojaCat,hojaSolo:sel.hojaSolo}; sel.hojaFinca='';sel.hojaCat='';sel.hojaSolo='';
  try{ return filasHoja().filter(function(x){return x.q;}); } finally { sel.hojaFinca=g.hojaFinca; sel.hojaCat=g.hojaCat; sel.hojaSolo=g.hojaSolo; } }
@@ -24909,9 +24930,11 @@ function infSecciones(){
   {p:'El informe se dirige a: '+pv('obj_publico',HCP_OPC.publico[1]).toLowerCase()+'. '+pv('obj_comunica',HCP_OPC.comunica[1])+'.'}
  ],(!pv('obj_aplicacion')?['aplicación prevista']:[]).concat(!pv('obj_razones')?['razones']:[]));
  /* 3 · alcance */
- var parcial=lim.indexOf('tumba')<0;
+ var parcial=lim.indexOf('tumba')<0, G0=reglaLimite(P.limites);
  sec('uni','3.1','Producto, unidad y flujo de referencia','7.3 a)',ok(nv(HP.prod)>0&&pv('producto')),[
   {p:'El producto estudiado es '+pv('producto','café verde (oro) exportable').toLowerCase()+'. '+pv('descripcion','')},
+  (D.PC&&D.PC.res.length&&G0.flete)?{p:'El resultado se expresa por unidad de café oro exportado, puesta en el puerto de destino, para cada presentación de venta: '+presLista().map(function(x){return x.nom+' ('+fx(nv(x.kg),0)+' kg de café oro)';}).join('; ')+'. '+
+   (pv('tipoUnidad',HCP_OPC.tipoUnidad[0])===HCP_OPC.tipoUnidad[0]?'Como el estudio no incluye el tostado, el consumo ni el fin de vida, el resultado es una huella de carbono parcial y cada presentación constituye la unidad declarada del estudio.':'Cada presentación se trata como unidad funcional del estudio.')}:
   {p:'El resultado se expresa por '+u+' ('+fx(HP.kgU,2)+' kg). '+(parcial?'Por tratarse de un estudio que no llega al uso ni al fin de vida del producto, se trata de una huella de carbono parcial expresada por unidad declarada.':'Se expresa por unidad funcional.')},
   {p:'Flujo de referencia: '+minus(pv('flujo',hcpBase('flujo')))+' Producción del período: '+fx(HP.prod,2)+' '+u+'.'}
  ],(nv(HP.prod)>0?[]:['producción del período']).concat(pv('producto')?[]:['producto estudiado']));
@@ -24978,7 +25001,9 @@ function infSecciones(){
  /* 6 · resultados */
  var tot=HP.porU;
  sec('res','6.1','Huella de carbono del producto','7.2',HP.prod>0?'cumple':'falta',[
-  {p:'La huella de carbono '+(parcial?'parcial ':'')+'de '+pv('producto','café verde').toLowerCase()+' es de '+fx(tot,2)+' kg CO₂e por '+u+', equivalente a '+fx(HP.porKg,3)+' kg CO₂e por kilogramo, para el período y el límite del sistema declarados.'},
+  {p:(G0.flete?'Hasta el puerto de destino, la huella':'La huella')+' de carbono '+(parcial?'parcial ':'')+'de '+pv('producto','café verde').toLowerCase()+' es de '+fx(tot,2)+' kg CO₂e por '+u+', equivalente a '+fx(HP.porKg,3)+' kg CO₂e por kilogramo, para el período y el límite del sistema declarados.'},
+  (D.PC&&D.PC.res.length&&G0.flete)?{p:'Para cada presentación de venta y destino, la huella puesta en el puerto de destino es la siguiente. Se compone de la huella del café hasta el puerto de embarque, el empaque de la presentación y el flete marítimo de la masa bruta.'}:null,
+  (D.PC&&D.PC.res.length&&G0.flete)?{tabla:{c:['Presentación','Destino','kg CO₂e por unidad','kg CO₂e por kg de café oro','Hasta embarque','Empaque','Flete marítimo'],f:D.PC.res.map(function(x){return [x.pres.nom,x.dest.nom,fx(x.porU,2),fx(x.tot,4),fx(x.base,4),fx(x.emp,4),fx(x.flete,4)];})}}:null,
   {tabla:{c:['Concepto','Valor','Unidad'],f:[['Emisiones del sistema dentro del límite',fx(HP.emis,3),'t CO₂e'],['Asignado al producto principal',fx(HP.emisAsig,3),'t CO₂e'],['Producción del período',fx(HP.prod,2),u],['Huella por unidad',fx(tot,2),'kg CO₂e por '+u],['Huella por kilogramo',fx(HP.porKg,3),'kg CO₂e por kg']]}}
  ],HP.prod>0?[]:['producción']);
  sec('etp','6.2','Resultados por etapa del ciclo de vida','7.2 a)',D.etapas.length?'cumple':'falta',[
@@ -25000,7 +25025,10 @@ function infSecciones(){
  if(D.G.total>0&&!D.G.mismaSerie)sens.push('Con los potenciales de la serie '+D.G.serieOrigen+' en lugar de '+D.G.serieDecl+', el resultado cambiaría en '+fx(D.G.pctDif,1)+' %.');
  if(D.procesos.length)sens.push('El proceso de mayor aporte es '+D.procesos[0].et.toLowerCase()+', con el '+fx(D.procesos[0].pct,1)+' % del total; una variación del 10 % en su dato de actividad o en su factor cambia la huella en '+fx(D.procesos[0].pct/10,1)+' %.');
  if(niv.defecto>0&&totF>0)sens.push('El '+fx(niv.defecto/totF*100,1)+' % del resultado se calculó con factores por defecto internacionales, que son la principal fuente de incertidumbre.');
- sec('sen','7.1','Análisis de sensibilidad e incertidumbre','7.3 k)',sens.length?'cumple':'falta',[{p:sens.join(' ')||'[Sin resultados de sensibilidad: falta el cálculo.]'}]);
+ var incF=[]; if(D.PC&&D.PC.res.length&&G0.flete)D.PC.res.forEach(function(x){ var I=incertidumbreCaso(x,D.PC); if(I)incF.push([x.pres.nom,x.dest.nom,fx(x.porU,2),'±'+fx(I.u,1)+' %',fx(I.inf*nv(x.pres.kg),2)+' a '+fx(I.sup*nv(x.pres.kg),2)]); });
+ sec('sen','7.1','Análisis de sensibilidad e incertidumbre','7.3 k)',sens.length?'cumple':'falta',[{p:sens.join(' ')||'[Sin resultados de sensibilidad: falta el cálculo.]'},
+  incF.length?{p:'La incertidumbre se estimó por propagación de errores y por simulación de Monte Carlo (10 000 corridas), al 95 % de confianza; se informa el mayor de los dos resultados.'}:null,
+  incF.length?{tabla:{c:['Presentación','Destino','kg CO₂e por unidad','Incertidumbre','Intervalo, kg CO₂e por unidad'],f:incF}}:null]);
  var concl=D.etapas.length?('La etapa de '+D.etapas.slice().sort(function(a,b){return b.tco2-a.tco2;})[0].t.toLowerCase()+' concentra la mayor parte de las emisiones. '):'';
  sec('con','7.2','Conclusiones y limitaciones','7.3 m)',ok(pv('limitaciones')),[
   {p:pv('inf_conclusiones',concl+'Las acciones de reducción con mayor efecto son las que actúan sobre los procesos de mayor aporte señalados en el apartado 3.3.')},
@@ -25147,6 +25175,179 @@ function infWord(){
 }
 
 
+/* ==========================================================================
+   MOD-ING · Ingreso de datos
+   Una sola entrada: se escribe la información o se sube el documento, y la
+   aplicación lo ubica donde corresponde. Todo documento queda guardado en el
+   Centro de datos con su sello, aunque luego se lea como factura o perfil.
+   ========================================================================== */
+var ING={texto:'',estado:'',prop:null,marca:{},log:[],error:''};
+var ING_ESTUDIO=['obj_aplicacion','obj_razones','producto','descripcion','unidad','kg','produccion','flujo','lim_geografico','lim_excluidos','per_inicio','per_fin','per_justif','corte_desc','asig_coproductos','asig_justif','dat_primarios','dat_calidad','limitaciones','seguimiento','rev_organismo'];
+var ING_ESTUDIO_NOM={obj_aplicacion:'Aplicación prevista',obj_razones:'Razones del estudio',producto:'Producto estudiado',descripcion:'Descripción técnica del producto',unidad:'Unidad',kg:'Kilogramos por unidad',produccion:'Producción del período',flujo:'Flujo de referencia',lim_geografico:'Ámbito geográfico',lim_excluidos:'Procesos excluidos',per_inicio:'Inicio del período (AAAA-MM-DD)',per_fin:'Fin del período (AAAA-MM-DD)',per_justif:'Justificación del período',corte_desc:'Criterio de corte',asig_coproductos:'Coproductos',asig_justif:'Justificación de la asignación',dat_primarios:'Uso de datos primarios',dat_calidad:'Calidad de los datos',limitaciones:'Limitaciones',seguimiento:'Seguimiento del desempeño',rev_organismo:'Organismo verificador'};
+function ingPrompt(){
+ var lo=capLineas('org').map(function(l){return 'org:'+l.id+' = '+l.et+' ('+l.un+')';});
+ var lf=capLineas('finca').map(function(l){return 'finca:'+l.id+' = '+l.et+' ('+l.un+')';});
+ var car=[].concat(CL_GRUPOS.fe.c.map(function(c){return 'fe-'+c[0]+' = Factores de emisión · '+c[1];}),CL_GRUPOS.da.c.map(function(c){return 'da-'+c[0]+' = Datos de actividad · '+c[1];}));
+ return 'Eres el clasificador de información del Programa ARRAIGO (huella de carbono de producto ISO 14067, café y cacao, de la finca al puerto de destino). '+
+  'Recibes un texto escrito por el usuario o el contenido de un documento. Devuelve SOLO un objeto JSON con esta forma:\n'+
+  '{"tipo":"factura|registro|perfil|estudio|factor|otro","carpeta":"","resumen":"","perfil":{},"estudio":{},"actividad":[{"renglon":"","descripcion":"","cantidad":0,"unidad":"","fecha":"AAAA-MM-DD","finca_codigo":"","productor":""}]}\n'+
+  'tipo: "factura" o "registro" si es un comprobante o bitácora con cantidades de consumo o compra; "perfil" si describe a la organización; "estudio" si define el alcance, producto, unidad o período del estudio; "factor" si publica factores de emisión; "otro" en los demás casos.\n'+
+  'carpeta: el código de la carpeta del Centro de datos donde debe guardarse, de esta lista:\n'+car.join('\n')+'\n'+
+  'resumen: una oración formal que diga qué es y qué contiene.\n'+
+  'perfil: solo las claves que el contenido permita llenar, de: '+PER_CAMPOS.map(function(c){return c[0];}).join(', ')+'.\n'+
+  'estudio: solo las claves que el contenido permita llenar, de: '+ING_ESTUDIO.join(', ')+'.\n'+
+  'actividad: cada cantidad de consumo, compra, producción o recorrido que aparezca, con el código de renglón (con su prefijo) de esta lista; si ninguno corresponde, deja "renglon" vacío:\n'+lo.concat(lf).join('\n')+'\n'+
+  'Reglas: español formal y técnico, tercera persona, sin lenguaje promocional. Usa solo lo que dice el contenido; lo que no aparece no se escribe. La cantidad es la cantidad física, nunca el precio. No copies números de identidad de personas.';
+}
+async function capAsegurarLector(){
+ if(capLector())return true;
+ try{ var r=await fetch(ARR_BASE+'/api/leer-factura',{cache:'no-store'}); var o=r.ok?await r.json():null; CAP.api=!!(o&&o.disponible); }catch(e){ CAP.api=false; }
+ return !!capLector();
+}
+async function ingLlamar(texto,imgs){
+ var urls=[]; for(var k=0;k<(imgs||[]).length&&k<5;k++)urls.push(await capDataURL(imgs[k]));
+ var cuerpo=JSON.stringify({imagenes:urls,texto:String(texto||'').slice(0,78000),instruccion:ingPrompt()}), resp, o;
+ for(var t=0;t<4;t++){ resp=await fetch(ARR_BASE+'/api/leer-factura',{method:'POST',headers:{'content-type':'application/json'},body:cuerpo});
+  o=await resp.json().catch(function(){return null;}); if(resp.status!==429)break; await capEspera(15000*(t+1)); }
+ if(!resp.ok||!o||!o.ok)throw new Error((o&&o.text)||('el servicio respondió '+resp.status));
+ return o.datos||{};
+}
+/* Guarda el archivo en una carpeta del Centro de datos (una sola vez por sello) */
+async function ingGuardar(file,carpeta,s){
+ var p=String(carpeta||'da-10').split('-'), g=(p[0]==='fe'?'fe':'da'), c=/^\d\d$/.test(p[1])?p[1]:'10';
+ var ya=adjuntosTodos().filter(function(x){return x.a.sello===s.val;})[0];
+ if(ya)return {id:ya.a.id,donde:ya.donde,nuevo:false};
+ clReg(g+'-'+c,true);
+ var id=await capGuardarOriginal('cdoc:'+g+'-'+c,file,s.val,s.met);
+ marcar('gestion/archivo');
+ var cc=CL_GRUPOS[g].c.filter(function(x){return x[0]===c;})[0];
+ return {id:id,donde:CL_GRUPOS[g].t+' › '+(cc?cc[1]:c),nuevo:true,g:g,c:c};
+}
+async function ingArchivos(files){
+ if(!puedeEditar())return;
+ await capAsegurarLector();
+ ING.estado='archivos'; ING.error=''; pintar();
+ for(var i=0;i<files.length;i++){
+  var f=files[i], ent={nombre:f.name,estado:'leyendo',destino:'',resumen:''};
+  ING.log.unshift(ent); pintar();
+  try{
+   if(f.size>MAX_ARCHIVO)throw new Error('pesa más de 200 MB');
+   var s=await selloDeBytes(new Uint8Array(await f.arrayBuffer()));
+   var R={tipo:'otro',carpeta:'da-10'};
+   if(capLector()){
+    var M=await capMaterial({file:f,hash:s.val,pagina:0});
+    R=await ingLlamar(M.texto,(M.imgs||[]).slice(0,3));
+   }
+   var tipo=String(R.tipo||'otro');
+   var carpeta=String(R.carpeta||'')||(tipo==='factor'?'fe-10':'da-10');
+   if(tipo==='perfil'){
+    var id=await capGuardarOriginal('perdoc:pres',f,s.val,s.met); marcar('org/perfil');
+    ent.destino='Perfil de la organización › documentos de presentación'; ent.ir='per';
+    ent.resumen=(R.resumen||'')+' Use «Leer los documentos y proponer el perfil» para llenar sus apartados.';
+   } else {
+    var G=await ingGuardar(f,carpeta,s);
+    ent.destino='Centro de datos › '+G.donde; ent.ir='cds'; ent.resumen=R.resumen||'';
+    if(tipo==='factura'||tipo==='registro'){
+     await capSubirVarios([f]);
+     ent.destino+=' · leída como '+(tipo==='factura'?'factura':'registro')+' en «Subir facturas y registros» para confirmar su dato';
+     ent.ir='cap';
+    }
+   }
+   if((R.estudio&&Object.keys(R.estudio).length)||(tipo!=='perfil'&&R.perfil&&Object.keys(R.perfil).length&&tipo!=='factura'))ingProponer(R,f.name);
+   ent.estado='ok';
+   anotar('dato','Ingreso de datos · documento',f.name,ent.destino,'sello '+s.val.slice(0,16));
+  }catch(e){ ent.estado='error'; ent.resumen='No se pudo procesar: '+((e&&e.message)||'error'); }
+  guardarLocal(); pintar();
+ }
+ ING.estado=''; pintar();
+}
+function ingProponer(R,origen){
+ var P=ING.prop||{perfil:{},estudio:{},actividad:[],origen:[]};
+ Object.keys(R.perfil||{}).forEach(function(k){ if(PER_CAMPOS.some(function(c){return c[0]===k;})&&String(R.perfil[k]).trim()){ P.perfil[k]=String(R.perfil[k]).trim(); ING.marca['p:'+k]=!String(perV(k)||'').trim(); } });
+ Object.keys(R.estudio||{}).forEach(function(k){ if(ING_ESTUDIO.indexOf(k)>=0&&String(R.estudio[k]).trim()){ P.estudio[k]=String(R.estudio[k]).trim(); ING.marca['e:'+k]=!String(pv(k)||'').trim(); } });
+ (R.actividad||[]).forEach(function(x){ if(x&&nv(x.cantidad)>0){ var i=P.actividad.length; P.actividad.push(x); ING.marca['a:'+i]=!!x.renglon; } });
+ if(origen)P.origen.push(origen);
+ ING.prop=P;
+}
+async function ingTexto(){
+ var t=String(ING.texto||'').trim(); if(!t){ msg('Escriba la información'); return; }
+ if(!(await capAsegurarLector())){ msg('La lectura con IA no está disponible en este momento'); return; }
+ ING.estado='texto'; ING.error=''; pintar();
+ try{
+  var R=await ingLlamar('Texto escrito por el usuario el '+hoy()+':\n'+t,[]);
+  ingProponer(R,'texto escrito');
+  if(!ING.prop||(!Object.keys(ING.prop.perfil).length&&!Object.keys(ING.prop.estudio).length&&!ING.prop.actividad.length))ING.error='El texto no trae datos que correspondan al perfil, al estudio o a los datos de actividad.';
+ }catch(e){ ING.error='No se pudo leer el texto: '+((e&&e.message)||'error'); }
+ ING.estado=''; pintar();
+}
+function ingDestinoAct(x){
+ var r=String(x.renglon||''), cat=r.indexOf('finca:')===0?'finca':'org', l=capLinea(cat,r.replace(/^(org|finca):/,''));
+ var f=cat==='finca'?capBuscarFinca(x.finca_codigo,x.productor):null;
+ return {l:l,cat:cat,f:f,txt:l?(l.et+(cat==='finca'?(' · '+(f?(f.codigo||'finca'):'finca por elegir')):' · Organización')):'sin fuente de emisión'};
+}
+async function ingAplicar(){
+ var P=ING.prop; if(!P)return; var n=0, cola=0;
+ Object.keys(P.perfil).forEach(function(k){ if(ING.marca['p:'+k]){ S.perfil['emp_'+k]=P.perfil[k]; n++; } });
+ if(n)marcar('org/perfil');
+ var ne=0; Object.keys(P.estudio).forEach(function(k){ if(ING.marca['e:'+k]){ S.prod=S.prod||{}; S.prod[k]=P.estudio[k]; ne++; } });
+ if(ne)marcar('gestion/declaraciones');
+ var grupos={};
+ P.actividad.forEach(function(x,i){ if(!ING.marca['a:'+i])return; var D=ingDestinoAct(x); if(!D.l)return;
+  var key=D.cat+'|'+(D.f?D.f.id:'')+'|'+(x.fecha||''); (grupos[key]=grupos[key]||{cat:D.cat,fid:D.f?D.f.id:'',fecha:x.fecha||hoy(),items:[]}).items.push(x); });
+ var na=0;
+ for(var k in grupos){ var g=grupos[k];
+  var Q={id:uid('doc'),file:null,nombre:'Dato escrito en Ingreso de datos',hash:'',metHash:'',cat:g.cat,fid:g.fid,fincaLeida:'',url:'',origen:'manual',estado:'revisar',error:'',
+   datos:{proveedor:'',numero:'',fecha:String(g.fecha).slice(0,10),items:g.items.map(function(x){ var it=capItemVacio(); it.desc=String(x.descripcion||'').slice(0,160); it.cant=numDe(x.cantidad); it.uniTxt=String(x.unidad||''); it.uni=capUniDeTexto(x.unidad); it.linea=String(x.renglon||'').replace(/^(org|finca):/,''); it.incluir=true; return it; }),ilegible:[],confianza:'',observacion:'Ingresado como texto, sin documento de respaldo'}};
+  capCola().push(Q);
+  if(await capConfirmar(Q,true))na+=Q.datos.items.length; else cola++;
+ }
+ anotar('dato','Ingreso de datos · aplicado','',n+' del perfil, '+ne+' del estudio, '+na+' datos de actividad',(P.origen||[]).join('; ').slice(0,200));
+ guardarLocal(); ING.prop=null; ING.marca={}; if(n+ne+na)ING.texto='';
+ pintar();
+ msg((n+ne+na)+' datos ubicados'+(cola?(' · '+cola+' quedaron en «Subir facturas y registros» para completar'):''));
+}
+function vistaIngreso(){
+ var ed=puedeEditar();
+ var h=cabModulo('ing','<p class="vista-sub">Una sola entrada para toda la información del estudio. Escriba lo que sabe o suba el documento: la aplicación lo ubica en el perfil, en la definición del estudio, en los datos de actividad o en la carpeta del Centro de datos que corresponda. Todo documento queda guardado en el Centro de datos con su sello.</p>');
+ if(!ed)return h+'<div class="aviso">Su perfil puede consultar, pero no ingresar datos.</div>';
+ h+='<div class="rejilla2"><div class="col"><div class="tarjeta"><h3>Escribir información</h3><div class="cuerpo">'+
+  '<textarea id="ing-texto" data-ing="texto" rows="9" spellcheck="true" lang="es" placeholder="Por ejemplo: En marzo de 2026 el beneficio consumió 1 250 galones de diésel. La cooperativa agrupa a 312 productores en Copán y Ocotepeque.">'+esc(ING.texto)+'</textarea>'+
+  '<div class="acciones"><button type="button" class="primario" data-ing="leer"'+(ING.estado?' disabled':'')+'>'+(ING.estado==='texto'?'Leyendo…':'Ubicar la información')+'</button></div>'+
+  '<p class="pista">Los datos de actividad escritos se registran sin documento de respaldo y así quedan señalados; súbalo después para completar el sustento.</p></div></div></div>'+
+  '<div class="col"><div class="tarjeta"><h3>Subir documentos</h3><div class="cuerpo">'+
+  '<label class="cap-zona"><input type="file" multiple data-ing-subir="1" hidden><span class="cap-zona-ico" aria-hidden="true">⬆</span><b>Elegir uno o varios documentos</b>'+
+  '<small>Facturas, registros, presentaciones, factores de emisión, informes · PDF, Word, Excel, PowerPoint o fotos, hasta 200 MB</small></label>'+
+  '<p class="pista">Cada documento se guarda en su carpeta del Centro de datos. Las facturas y registros pasan además a «Subir facturas y registros», donde se confirma su dato; las presentaciones van a los documentos del perfil.</p></div></div></div></div>';
+ if(ING.error)h+='<div class="aviso">'+esc(ING.error)+'</div>';
+ var P=ING.prop;
+ if(P){
+  var filas=[];
+  PER_CAMPOS.forEach(function(c){ if(P.perfil[c[0]])filas.push(['p:'+c[0],'Perfil de la organización › '+c[1],P.perfil[c[0]],perV(c[0])]); });
+  ING_ESTUDIO.forEach(function(k){ if(P.estudio[k])filas.push(['e:'+k,'Estudio de huella › '+(ING_ESTUDIO_NOM[k]||k),P.estudio[k],pv(k)]); });
+  P.actividad.forEach(function(x,i){ var D=ingDestinoAct(x); filas.push(['a:'+i,'Datos de actividad › '+D.txt,(x.descripcion||'')+': '+fmt(nv(x.cantidad),2)+' '+(x.unidad||'')+(x.fecha?(' · '+x.fecha):''),'']); });
+  h+='<div class="tarjeta"><h3>Dónde se ubica la información</h3><div class="cuerpo"><p>Revise el destino propuesto para cada dato, marque lo que acepta y aplíquelo.</p>'+
+   '<div class="tabla-caja"><table class="per-tabla"><thead><tr><th></th><th>Destino</th><th>Dato</th><th>Valor actual</th></tr></thead><tbody>'+
+   filas.map(function(r){ return '<tr><td><input type="checkbox" data-ing-m="'+esc(r[0])+'"'+(ING.marca[r[0]]?' checked':'')+'></td><td><b>'+esc(r[1])+'</b></td><td class="per-txt">'+esc(r[2]).replace(/\n/g,'<br>')+'</td><td class="per-txt muted">'+(r[3]?esc(r[3]).replace(/\n/g,'<br>'):'—')+'</td></tr>'; }).join('')+
+   '</tbody></table></div><div class="acciones"><button type="button" class="primario" data-ing="aplicar">Aplicar lo marcado</button><button type="button" data-ing="descartar">Descartar</button></div></div></div>';
+ }
+ if(ING.log.length){
+  h+='<div class="tarjeta"><h3>Documentos procesados en esta sesión</h3><div class="cuerpo"><ul class="ing-log">'+
+   ING.log.map(function(e){ return '<li class="'+e.estado+'"><b>'+esc(e.nombre)+'</b><span>'+(e.estado==='leyendo'?'Leyendo y clasificando…':esc(e.destino))+'</span>'+(e.resumen?'<small>'+esc(e.resumen)+'</small>':'')+
+    (e.ir&&e.estado==='ok'?'<button type="button" class="mini" data-vista="'+e.ir+'">Ir</button>':'')+'</li>'; }).join('')+'</ul></div></div>';
+ }
+ return h;
+}
+document.addEventListener('input',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.ing==='texto')ING.texto=t.value; });
+document.addEventListener('change',function(ev){ var t=ev.target; if(!t||!t.dataset)return;
+ if(t.dataset.ingSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)ingArchivos(fs); }
+ if(t.dataset.ingM){ ING.marca[t.dataset.ingM]=t.checked; }
+});
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-ing]'); if(!b||b.tagName==='TEXTAREA')return;
+ var a=b.dataset.ing;
+ if(a==='leer')ingTexto(); else if(a==='aplicar')ingAplicar(); else if(a==='descartar'){ ING.prop=null; ING.marca={}; pintar(); }
+});
+
 /* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
    (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
 var MAX_ARCHIVO=200*1024*1024;
@@ -25177,6 +25378,7 @@ function pintar(){
  else if(vista==='ben')$('v-ben').innerHTML=vistaLineas('org');
  else if(vista==='apr')$('v-apr').innerHTML=vistaAprender();
  else if(vista==='org')$('v-org').innerHTML=vistaOrganizaciones();
+ else if(vista==='ing')$('v-ing').innerHTML=vistaIngreso();
  else if(vista==='per')$('v-per').innerHTML=vistaPerfil();
  else if(vista==='hcp')$('v-hcp').innerHTML=vistaEstudio();
  else if(vista==='inf')$('v-inf').innerHTML=vistaInforme();
@@ -26607,6 +26809,13 @@ document.addEventListener('click',function(ev){
   if(LA[ia]){ anotar('apartamiento','Apartamiento retirado: '+LA[ia].umbral,'',''); LA.splice(ia,1); marcar('gestion/declaraciones'); }
   pintar(); sincronizar(true);
   return;}
+ if(a==='pres-add'||a==='pres-del'||a==='dest-add'||a==='dest-del'){
+  if(!puedeEditar())return; presAsegura();
+  if(a==='pres-add')S.prod.pres.push({id:uid('pres'),nom:'Nueva presentación',kg:'',mat:[{m:'pp',kg:'',origen:'Por confirmar con la ficha del fabricante'}]});
+  if(a==='pres-del')S.prod.pres.splice(+b.dataset.pres,1);
+  if(a==='dest-add')S.prod.dest.push({id:uid('dest'),nom:'Nuevo destino',puerto:'',km:'',origen:'Por confirmar con el conocimiento de embarque'});
+  if(a==='dest-del')S.prod.dest.pop();
+  marcar('gestion/declaraciones'); pintar(); return;}
  if(a==='pres-mat-add'||a==='pres-mat-del'){
   if(!puedeEditar()){msg('Su acceso no permite modificar la huella de producto');return;}
   presAsegura(); var PX=S.prod.pres[+b.dataset.pres]; if(!PX)return;
