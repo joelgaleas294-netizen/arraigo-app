@@ -23492,7 +23492,8 @@ async function capSubirVarios(files){
   var file=files[i];
   if(file.size>MAX_ARCHIVO){ msg(file.name+' pesa más de 200 MB'); continue; }
   var s0=await selloDeBytes(new Uint8Array(await file.arrayBuffer()));
-  if(capCola().some(function(x){return x.hash===s0.val;})){ msg(file.name+' ya está en la cola'); continue; }
+  if(capCola().some(function(x){return x.hash===s0.val;})){ msg(file.name+' ya está en la lista'); continue; }
+  if(!capEsPdf(file)&&registros().some(function(r){return r.estado!=='anulado'&&r.hash===s0.val;})){ msg(file.name+' ya está registrado: no se admiten facturas duplicadas'); anotar('dato','Factura duplicada rechazada',file.name,'','sello '+s0.val.slice(0,16)); continue; }
   /* Un PDF escaneado de varias páginas suele ser un talonario: cada página es una factura y entra a la cola por separado.
      Si el PDF trae texto propio y pocas páginas, se lee como un solo documento (informe, bitácora, estado de cuenta). */
   var pags=[0];
@@ -23566,6 +23567,9 @@ function capProblemas(P){
  if(P.cat==='finca'&&!P.fid)p.push('Elija la finca a la que pertenece el documento'+(P.fincaLeida?(' (el documento dice «'+P.fincaLeida+'»)'):'')+'.');
  if(!inc.length)p.push('No hay ningún renglón marcado para registrar.');
  if(!d.fecha)p.push('Falta la fecha de la factura.');
+ /* Regla: no se admiten facturas duplicadas (el mismo archivo, o el mismo proveedor y número ya registrados) */
+ var dupV=capDuplicado(P.hash,d.proveedor,d.numero,P.pagina||0);
+ if(dupV)p.push('Esta factura ya está registrada'+(dupV.numero?(' (factura '+dupV.numero+(dupV.fecha?(' del '+dupV.fecha):'')+')'):'')+'. No se admiten facturas duplicadas: quítela de la lista.');
  inc.forEach(function(it,i){
   var l=capLinea(P.cat,it.linea), n='Renglón '+(d.items.indexOf(it)+1);
   if(!l){ p.push(n+': elija a qué fuente de emisión corresponde.'); return; }
@@ -23751,7 +23755,7 @@ function vistaCaptura(){
     (P.hash?(' · sello '+esc(P.metHash)+' <code>'+esc(P.hash.slice(0,16))+'…</code>'):'')+
     (P.origen==='ia'?(' · leída con ayuda, confianza '+esc(d.confianza||'sin declarar')):'')+'</p>'+
    (P.error?'<div class="aviso">'+esc(P.error)+'</div>':'')+
-   (P.dup?'<div class="aviso"><b>Posible duplicado.</b> Ya hay un registro '+(P.dup.hash===P.hash?'con el mismo archivo':'con el mismo proveedor y número')+': factura '+esc(P.dup.numero||'s/n')+' del '+esc(P.dup.fecha)+', '+esc(P.dup.lineaNom)+'. Revise antes de confirmar.</div>':'')+
+   (P.dup?'<div class="aviso"><b>Factura duplicada: no se puede registrar.</b> Ya hay un registro '+(P.dup.hash===P.hash?'con el mismo archivo':'con el mismo proveedor y número')+': factura '+esc(P.dup.numero||'s/n')+' del '+esc(P.dup.fecha)+', '+esc(P.dup.lineaNom)+'. Quítela de la lista.</div>':'')+
    (d.ilegible.length?'<div class="aviso"><b>No se leyó con claridad:</b> '+esc(d.ilegible.join(', '))+'. Compruébelo en la factura.</div>':'')+
    '<div class="cap-cab">'+
     '<div class="campo"><label for="cap-prov">Proveedor</label><input id="cap-prov" data-cap-h="proveedor" value="'+esc(d.proveedor)+'"></div>'+
@@ -25176,7 +25180,7 @@ function vistaInforme(){
  h+='<div class="tarjeta"><h3>Control del documento</h3><div class="cuerpo"><div class="campos">'+
   hcpTx('inf_codigo',['Código del documento',infCodDef()])+hcpTx('inf_version',['Versión','1.0'])+hcpTx('inf_fecha',['Fecha de emisión','', 'date'])+
   hcpTx('inf_elabora',['Elaborado por',perV('responsable')])+hcpTx('inf_revisa',['Revisado por',''])+hcpTx('inf_aprueba',['Aprobado por',perV('representante')])+
-  '</div><div class="acciones"><button type="button" class="primario" data-inf="docx">Descargar en Word</button><button type="button" data-inf="pdf">Imprimir o guardar en PDF</button></div></div></div>';
+  '</div><div class="acciones"><button type="button" class="primario" data-inf="docx">Descargar en Word</button><button type="button" data-inf="pdf">Imprimir o guardar en PDF</button><button type="button" data-calc-xls="1">Cálculo en Excel para el auditor</button></div></div></div>';
  var grpV={};
  S7.concat(AN).forEach(function(s){
   var ab=INF.abierto===s.id, an=s.id.indexOf('an')===0, g=String(s.num).split('.')[0];
@@ -25535,6 +25539,7 @@ function vistaCalculadora(){
  var D=calcDatos(), HP=huellaProducto();
  var h=cabModulo('calc','<p class="vista-sub">La huella de carbono del café oro exportado, puesto en el puerto de destino, por presentación de venta. Cada cifra se puede seguir hasta su dato de actividad y su factor.</p>');
  h+='<div class="calc">';
+ h+='<div class="acciones" style="justify-content:flex-end;margin:-6px 0 14px"><button type="button" class="primario" data-calc-xls="1">Exportar a Excel para el auditor</button></div>';
  h+='<div class="calc-sel"><div><span class="calc-et">Presentación</span><div class="calc-pills">'+D.pres.map(function(p){ return '<button type="button" data-calc-p="'+esc(p.id)+'" aria-pressed="'+(p===D.pr)+'">'+esc(p.nom)+'</button>'; }).join('')+'</div></div>'+
   '<div><span class="calc-et">Destino</span><div class="calc-pills">'+D.dest.map(function(d){ return '<button type="button" data-calc-d="'+esc(d.id)+'" aria-pressed="'+(d===D.de)+'">'+esc(d.nom)+'</button>'; }).join('')+'</div></div></div>';
  if(!(D.C.kgTot>0)){
@@ -25579,6 +25584,67 @@ document.addEventListener('click',function(ev){
  if(b.dataset.calcE)CALC.abierta=(CALC.abierta===b.dataset.calcE)?'':b.dataset.calcE;
  pintar();
 });
+
+/* Excel de la Calculadora para el auditor: resultado por presentación, camino del cálculo, datos de actividad
+   por mes con fórmulas vivas, cada factura registrada con su sello, factores y bases del cálculo. */
+async function calcExcel(){
+ presAsegura();
+ var D=calcDatos(), HP=huellaProducto(), MS=calcMeses(), EX=idsEXPO();
+ var res=[[{b:'Presentación'},{b:'Destino'},{b:'kg CO₂e por unidad'},{b:'kg CO₂e por kg de café oro'},{b:'Hasta el puerto de embarque, kg CO₂e/kg'},{b:'Empaque, kg CO₂e/kg'},{b:'Flete marítimo, kg CO₂e/kg'},{b:'Incertidumbre al 95 %, ±%'}]];
+ if(D.C.kgTot>0)D.C.res.forEach(function(x){ var I=incertidumbreCaso(x,D.C); res.push([x.pres.nom,x.dest.nom,x.porU,x.tot,x.base,x.emp,x.flete,I?Math.round(I.u*10)/10:'']); });
+ else res.push(['Falta la producción del período: sin ella no hay huella por unidad.']);
+ var et=[[{b:'Etapa'},{b:'Fuente'},{b:'Dato de actividad'},{b:'Factor'},{b:'kg CO₂e por kg de café oro'},{b:'kg CO₂e por '+(D.pr?D.pr.nom:'unidad')}]];
+ D.etapas.forEach(function(e){ e.filas.forEach(function(f){ et.push([e.t,f.et,f.dato,f.fac,f.kgkg,f.kgU]); }); et.push([{v:'Subtotal '+e.t.toLowerCase(),s:7},'','','',{v:e.kg,s:7},{v:e.kgU,s:7}]); });
+ /* datos de actividad con fórmulas */
+ var cab=[{b:'Ámbito'},{b:'Finca'},{b:'Categoría'},{b:'Fuente'},{b:'Unidad'}].concat(MS.map(function(k){return {b:mesNom(k)};})).concat([{b:'Sin factura con fecha'},{b:'Total'},{b:'Conversión a la unidad del factor'},{b:'Factor'},{b:'Unidad del factor'},{b:'Ajuste'},{b:'t CO₂e'},{b:'t CO₂e de fabricación'},{b:'Archivos de respaldo'}]);
+ var da=[cab], c0=5, cTot=c0+MS.length+1;
+ function fila(amb,fz,l,cat,fid){
+  var q=cantidad(l,cat,fid); if(!(q>0))return;
+  var M={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat||String(r.fid||'')!==String(fid||''))return; var k=String(r.fecha||'').slice(0,7); M[k]=(M[k]||0)+(nv(r.cantidadLinea)||0); });
+  var sm=0; MS.forEach(function(k){ sm+=M[k]||0; });
+  var R=da.length+1, cc=CL_GRUPOS.da.c.filter(function(x){return x[0]===clCarpetaDeLinea(l);})[0]||['','Otros'];
+  var conv=conver(l,cat,fid), fac=factor(l,cat,fid), aj=ajusteCons(l)*ajusteDato(l,cat,fid), dir=esDirecta(l);
+  var colL=function(c){return colLetra(c);};
+  var row=[amb,fz||'',cc[1],l.et,l.un].concat(MS.map(function(k){return M[k]?Math.round(M[k]*1e6)/1e6:'';})).concat([Math.round(Math.max(0,q-sm)*1e6)/1e6]);
+  var sumR=colL(c0)+R+':'+colL(c0+MS.length)+R;
+  row.push({f:'SUM('+sumR+')',v:q,s:3});
+  row.push(conv,fac,(dir?'t CO₂e por ':'kg CO₂e por ')+l.unTec,Math.round(aj*1e6)/1e6);
+  var tF=colL(cTot)+R+'*'+colL(cTot+1)+R+'*'+colL(cTot+2)+R+(dir?'':'/1000')+'*'+colL(cTot+4)+R;
+  row.push({f:tF,v:tco2Linea(l,cat,fid),s:3});
+  row.push(tco2Linea2(l,cat,fid)||'');
+  row.push(nEvidenciaLinea(l,cat,fid));
+  da.push(row);
+ }
+ S.fincas.forEach(function(f){ lineasDe('finca').forEach(function(l){ fila('Finca',f.codigo||f.productor||'',l,'finca',f.id); }); });
+ lineasDe('org').forEach(function(l){ fila(EX[l.id]?'Exportación':'Beneficio y planta','',l,'org',null); });
+ if(da.length>1){ var n=da.length, tot=['Total','','','','']; for(var c=c0;c<=cTot+7;c++)tot.push(''); tot[cTot+5]={f:'SUM('+colLetra(cTot+5)+'2:'+colLetra(cTot+5)+n+')',s:7}; tot[cTot+6]={f:'SUM('+colLetra(cTot+6)+'2:'+colLetra(cTot+6)+n+')',s:7}; da.push(tot); }
+ /* facturas y registros */
+ var rg=[[{b:'Fecha'},{b:'Número'},{b:'Proveedor'},{b:'Ámbito'},{b:'Finca'},{b:'Fuente'},{b:'Descripción en la factura'},{b:'Cantidad'},{b:'Unidad de la factura'},{b:'Conversión'},{b:'Cantidad en la unidad de la fuente'},{b:'Unidad de la fuente'},{b:'Archivo'},{b:'Página'},{b:'Sello SHA-256'},{b:'Lectura'},{b:'Registrado por'},{b:'Registrado el'}]];
+ registros().filter(function(r){return r.estado!=='anulado';}).sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha));}).forEach(function(r,i){
+  var fz=r.fid?(S.fincas.filter(function(f){return f.id===r.fid;})[0]||{}):{}, R=i+2;
+  rg.push([r.fecha,r.numero||'',r.proveedor||'',r.cat==='finca'?'Finca':'Organización',fz.codigo||'',r.lineaNom,r.desc||'',r.cantidad,(CAP_UNI[r.unidad]||[0,0,r.unidad])[2],r.conversion,{f:'H'+R+'*J'+R,v:r.cantidadLinea,s:3},r.unidadLinea,r.archivo||'',r.pagina||'',r.hash||'sin archivo',r.origen==='ia'?'asistida y confirmada':'manual',r.por||'',String(r.cuando||'').slice(0,10)]);
+ });
+ var fac=[[{b:'Fuente'},{b:'Factor'},{b:'Unidad'},{b:'Nivel'},{b:'Fuente bibliográfica'},{b:'Año'},{b:'t CO₂e'}]];
+ factoresAplicados().forEach(function(x){ fac.push([x.et,nv(x.f),x.uf,x.niv||'',x.fue||'',String(x.anio||''),x.t]); });
+ var P=S.prod||{};
+ var bas=[[{b:'Concepto'},{b:'Valor'}],['Organización',perV('razon')||S.perfil.organizacion||''],['Producto',pv('producto','Café verde (oro) exportado')],['Período',(P.per_inicio&&P.per_fin)?(P.per_inicio+' a '+P.per_fin):('ciclo '+(S.perfil.ciclo||''))],
+  ['Límite del sistema','De la finca al puerto de destino'],['Unidades declaradas',presLista().map(function(x){return 'kg CO₂e por '+x.nom.toLowerCase();}).join('; ')],
+  ['Producción del período',HP.prod+' '+HP.unidad],['Kilogramos por unidad de producción',HP.kgU],['Kilogramos de café oro del período',D.C.kgTot],
+  ['Regla de asignación',(P.asignacion||'Por masa')+', '+D.C.asig+' % al café oro'],['Potenciales de calentamiento',serieDeclarada()+' a 100 años'],
+  ['Regla de cálculo','t CO₂e = Total × Conversión × Factor ÷ 1000 × Ajuste (el divisor es 1 cuando el factor está en t CO₂e). La huella por kg = emisiones dentro del límite × asignación ÷ kg de café oro; por unidad = huella por kg × kg de la presentación, más empaque y flete marítimo.'],
+  ['Condición del resultado','Medición propia de la organización hasta la verificación independiente.'],['Generado',new Date().toISOString().replace('T',' ').slice(0,16)+' · Programa ARRAIGO, JJ Global']];
+ var est=[4,4,4,4,4].concat(MS.map(function(){return 6;})).concat([6,3,8,2,4,8,3,2,9]);
+ var bytes=xlsxLibro([
+  {nombre:'Resultado',filas:res,congelar:{x:0,y:1},anchos:[30,18,18,18,22,16,18,18],estilos:[4,4,6,2,2,2,2,6]},
+  {nombre:'Camino del cálculo',filas:et,filtro:true,congelar:{x:0,y:1},anchos:[30,46,30,22,18,18],estilos:[4,4,4,4,8,2]},
+  {nombre:'Datos de actividad',filas:da,filtro:true,congelar:{x:4,y:1},anchos:[16,12,22,44,20].concat(MS.map(function(){return 11;})).concat([14,14,14,12,22,10,13,13,12]),estilos:est},
+  {nombre:'Facturas y registros',filas:rg,filtro:true,congelar:{x:0,y:1},anchos:[11,16,24,13,10,36,32,11,14,11,14,18,30,8,66,18,18,12],estilos:[4,4,4,4,4,4,4,6,4,8,3,4,4,9,4,4,4,4]},
+  {nombre:'Factores',filas:fac,filtro:true,congelar:{x:1,y:1},anchos:[44,12,26,10,60,8,12],estilos:[4,2,4,4,4,4,3]},
+  {nombre:'Bases del cálculo',filas:bas,congelar:{x:0,y:1},anchos:[36,110],estilos:[4,4]}]);
+ var ok=await bajar('ARRAIGO-calculadora-'+cdsNomSeguro(perV('razon')||S.perfil.organizacion||'organizacion')+'-'+hoy()+'.xlsx',bytes);
+ if(ok)anotar('dato','Calculadora · Excel para el auditor descargado','',(da.length-2)+' fuentes, '+(rg.length-1)+' facturas','');
+}
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-calc-xls]'); if(b)calcExcel(); });
 
 /* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
    (IndexedDB); se pide al navegador que no los borre aunque necesite espacio. */
