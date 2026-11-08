@@ -1718,7 +1718,7 @@ html body .lateral nav button{padding:8px 10px}
 .cfe-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
 .cfe-car{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font:inherit;color:var(--ink)}
 .cfe-car:hover{border-color:#8dbf3f;background:color-mix(in srgb,#8dbf3f 8%,var(--surface))}
-.cfe .cfe-rejilla .cfe-car.abierta{border:2px solid #1e6b47;background:#e8f3ec}
+html body .cfe-rejilla .cfe-car.abierta{border:2px solid #1e6b47!important;background:#e8f3ec!important}
 .cfe-ic{font-size:22px;width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:#f3e9d2;flex:none}
 .cfe-tx{display:flex;flex-direction:column;min-width:0}.cfe-tx b{font-size:var(--t-3)}.cfe-tx small{color:var(--ink-3);font-size:var(--t-1)}
 .cfe-det{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
@@ -1729,6 +1729,12 @@ html body .lateral nav button{padding:8px 10px}
 .fxl-pasos li::before{content:counter(fx);width:26px;height:26px;border-radius:50%;background:#15513a;color:#fff;display:grid;place-items:center;font-weight:700;font-size:.85rem}
 .fxl-pasos li span{font-size:var(--t-2);color:var(--ink-2)}
 .fxl-pasos li button,.fxl-pasos li label{margin-top:auto}
+
+.cl-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.cl-tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer;color:var(--ink)}
+.cl-tabs button small{background:var(--surface-3);border-radius:999px;padding:0 7px;margin-left:4px}
+html body .cl-tabs button[aria-pressed="true"]{background:#15513a!important;border-color:#15513a!important;color:#fff!important}
+.cl-tabs button[aria-pressed="true"] small{background:rgba(255,255,255,.2)}
 </style>
 </head>
 <body>
@@ -5146,6 +5152,7 @@ function contenedor(ref){
  if(p[0]==='poda'){var d=S.podas.find(function(x){return x.id===p[1];}); return d?{obj:d,ruta:'podas/'+d.id}:null;}
  if(p[0]==='contrato'){var ct=contratoDe(p[1]); return ct?{obj:ct,ruta:'gestion/declaraciones'}:null;}
  if(p[0]==='arcdoc'){var ad=arcDe(p[1]); return ad?{obj:ad,ruta:'gestion/archivo'}:null;}
+ if(p[0]==='cdoc'){var cd=clReg(p[1],true); return {obj:cd,ruta:'gestion/archivo'};}
  if(p[0]==='arbol'){var q2=S.parcelas.find(function(x){return x.id===p[1];}); if(!q2)return null;
   var ind=(q2.individuos||[])[parseInt(p[2],10)]; return ind?{obj:ind,ruta:'parcelas/'+q2.id}:null;}
  return null;
@@ -5182,6 +5189,7 @@ function adjuntosTodos(){
  }
  S.fincas.forEach(function(f){ porLinea(S.insumos[f.id],'finca',f.id,(f.codigo||'Finca')); });
  porLinea(S.beneficio,'org',null,'Beneficio');
+ ((S.archivo&&S.archivo.libres)||[]).forEach(function(r){ (r.adjuntos||[]).forEach(function(a){ t.push({a:a,ref:'cdoc:'+r.id,donde:'Carpeta de documentos · '+((CL_GRUPOS[r.grupo]&&CL_GRUPOS[r.grupo].t)||'')+' '+r.carpeta}); }); });
  return t;
 }
 
@@ -12213,7 +12221,7 @@ function vistaPaises(){
    PAISES.map(function(x){return '<option value="'+x[0]+'"'+(cod===x[0]?' selected':'')+'>'+esc(x[1])+(x[0]===pp?' · el del proyecto':'')+'</option>';}).join('')+
    '</select></div>'+
   '</div>';
- h+=tarjetaCarpetaFactores();
+ h+=tarjetaCarpetasLibres();
 
  var e=ecuPais(cod);
  h+='<div class="rejilla2"><div class="col">';
@@ -23948,6 +23956,107 @@ function tarjetaFincasExcel(){
 }
 document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-fxl]'); if(b&&b.dataset.fxl==='plantilla')bajarPlantillaFincas(); });
 document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.fxlSubir){ var f=t.files&&t.files[0]; t.value=''; if(f)subirPlantillaFincas(f); } });
+
+/* ====== Carpetas de documentos (libres) ======
+   Dos árboles vacíos que llena la organización: los documentos de donde salen los factores de
+   emisión y los documentos con los datos de actividad. Cada archivo se guarda tal como se sube,
+   con su sello SHA-256, y viaja con el proyecto a la base central. */
+var CL={grupo:'fe',abierta:''};
+var CL_GRUPOS={
+ fe:{t:'Factores de emisión',d:'Los documentos de donde salen los factores: publicaciones oficiales, inventarios nacionales, declaraciones de los proveedores, fichas técnicas.',
+  c:[['01','Electricidad','⚡'],['02','Combustibles','⛽'],['03','Residuos, pulpa y aguas mieles','♻'],['04','Fertilizantes y enmiendas','🌱'],['05','Plaguicidas y otros insumos','🧪'],
+     ['06','Empaques','📦'],['07','Transporte terrestre','🚚'],['08','Transporte marítimo y puerto','🚢'],['09','Refrigerantes','❄'],['10','Otros','📄']]},
+ da:{t:'Datos de actividad',d:'Los documentos con las cantidades: facturas, recibos, bitácoras, registros de compra, de producción y de embarque.',
+  c:[['01','Electricidad','⚡'],['02','Combustibles','⛽'],['03','Residuos, pulpa y aguas mieles','♻'],['04','Fertilizantes y enmiendas','🌱'],['05','Plaguicidas y otros insumos','🧪'],
+     ['06','Empaques','📦'],['07','Transporte terrestre','🚚'],['08','Exportación y transporte marítimo','🚢'],['09','Producción y acopio','☕'],['10','Otros','📄']]}
+};
+function clLibres(){ S.archivo=S.archivo||{}; S.archivo.libres=S.archivo.libres||[]; return S.archivo.libres; }
+function clReg(id,crear){ var L=clLibres(); for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i];
+ if(!crear)return null; var p=id.split('-'), r={id:id,grupo:p[0],carpeta:p[1],adjuntos:[]}; L.push(r); return r; }
+function clArchivos(g,c){ var r=clReg(g+'-'+c); return (r&&r.adjuntos)||[]; }
+async function clSubir(files){
+ if(!puedeEditar()){ msg('Su perfil no puede cargar documentos'); return; }
+ var g=CL.grupo, c=CL.abierta; if(!c)return;
+ clReg(g+'-'+c,true);
+ var ok=0, mal=[];
+ for(var i=0;i<files.length;i++){
+  var f=files[i];
+  if(f.size>25*1024*1024){ mal.push(f.name+' (más de 25 MB)'); continue; }
+  try{ var s=await selloDeBytes(new Uint8Array(await f.arrayBuffer()));
+   var id=await capGuardarOriginal('cdoc:'+g+'-'+c,f,s.val,s.met); if(id)ok++; else mal.push(f.name); }
+  catch(e){ mal.push(f.name); }
+ }
+ if(ok)anotar('dato','Carpeta de documentos · '+CL_GRUPOS[g].t,'',ok+' archivo'+(ok===1?'':'s'),'carpeta '+c);
+ marcar('gestion/archivo'); guardarLocal(); pintar();
+ msg(ok+' documento'+(ok===1?'':'s')+' cargado'+(ok===1?'':'s')+(mal.length?(' · no se pudo: '+mal.join(', ')):''));
+}
+function clQuitar(id){
+ var g=CL.grupo, c=CL.abierta, r=clReg(g+'-'+c); if(!r)return;
+ var m=(r.adjuntos||[]).filter(function(a){return a.id===id;})[0]; if(!m)return;
+ pedir({titulo:'Quitar el documento',peligro:true,ok:'Quitar',texto:['Se quita «'+m.nombre+'» de esta carpeta. Si lo necesita después, tendrá que volver a cargarlo.']}).then(function(sí){
+  if(!sí)return;
+  r.adjuntos=r.adjuntos.filter(function(a){return a.id!==id;});
+  try{ archivoBorrar(id); }catch(e){}
+  anotar('dato','Carpeta de documentos · quitado',m.nombre,'',CL_GRUPOS[g].t+' · carpeta '+c);
+  marcar('gestion/archivo'); guardarLocal(); pintar();
+ });
+}
+async function clDescargar(soloCarpeta){
+ var arch=[], falta=0, G=CL_GRUPOS[CL.grupo];
+ for(var i=0;i<G.c.length;i++){
+  var c=G.c[i]; if(soloCarpeta&&c[0]!==soloCarpeta)continue;
+  var L=clArchivos(CL.grupo,c[0]);
+  for(var j=0;j<L.length;j++){ var b=await cdsBlob(L[j]); if(!b){falta++;continue;}
+   arch.push({nombre:cdsNomSeguro(G.t)+'/'+c[0]+'-'+cdsNomSeguro(c[1])+'/'+cdsNomSeguro(L[j].nombre.replace(/\.[^.]+$/,''))+(L[j].nombre.match(/\.[^.]+$/)||[''])[0],datos:await bytesDeBlob(b)}); }
+ }
+ if(!arch.length){ msg(falta?'Los archivos no están en este equipo ni en la base central':'La carpeta está vacía'); return; }
+ var blob=armarZip(arch), nom=cdsNomSeguro(G.t)+(soloCarpeta?('-'+soloCarpeta):'')+'-'+hoy()+'.zip';
+ try{ var dl=await usarCap('downloads'); if(dl){ await dl.save({filename:nom,data:blob}); msg('Descargado'); return; } }catch(e){ if(e&&e.code==='declined')return; }
+ var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=nom; document.body.appendChild(a); a.click();
+ setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },4000); msg('Descargado'+(falta?(' · faltaron '+falta+' archivos'):''));
+}
+function tarjetaCarpetasLibres(){
+ var G=CL_GRUPOS[CL.grupo], ed=puedeEditar();
+ var tot=function(g){ return CL_GRUPOS[g].c.reduce(function(s,c){return s+clArchivos(g,c[0]).length;},0); };
+ var h='<div class="tarjeta cfe"><h3>Carpetas de documentos</h3><div class="cuerpo">'+
+  '<div class="cl-tabs">'+['fe','da'].map(function(g){ return '<button type="button" data-cl="grupo" data-g="'+g+'" aria-pressed="'+(CL.grupo===g)+'">'+esc(CL_GRUPOS[g].t)+' <small>'+tot(g)+'</small></button>'; }).join('')+'</div>'+
+  '<p>'+esc(G.d)+' Abra una carpeta y suba los archivos (PDF, Excel, Word o fotos, hasta 25 MB cada uno).</p>'+
+  '<div class="cfe-rejilla">';
+ G.c.forEach(function(c){
+  var n=clArchivos(CL.grupo,c[0]).length, ab=CL.abierta===c[0];
+  h+='<button type="button" class="cfe-car'+(ab?' abierta':'')+'" data-cl="abrir" data-c="'+c[0]+'"><span class="cfe-ic" aria-hidden="true">'+c[2]+'</span>'+
+   '<span class="cfe-tx"><b>'+esc(c[1])+'</b><small>'+(n?(n+' documento'+(n===1?'':'s')):'vacía')+'</small></span></button>';
+ });
+ h+='</div>';
+ if(tot(CL.grupo))h+='<div class="acciones" style="margin-top:12px"><button type="button" data-cl="todo">Descargar todas las carpetas (ZIP)</button></div>';
+ if(CL.abierta){
+  var c=G.c.filter(function(x){return x[0]===CL.abierta;})[0], L=clArchivos(CL.grupo,CL.abierta);
+  if(c){
+   h+='<div class="cfe-det"><div class="cfe-det-cab"><b>'+c[2]+' '+esc(c[1])+' · '+esc(G.t)+'</b><span>'+
+    (ed?'<label class="adj-boton primario"><input type="file" multiple data-cl-subir="1" hidden>Subir documentos</label> ':'')+
+    (L.length?'<button type="button" data-cl="bajar" data-c="'+c[0]+'">Descargar esta carpeta</button>':'')+'</span></div>';
+   h+=L.length?('<div class="tabla-caja"><table class="hoja cds-tabla"><thead><tr><th>Documento</th><th>Cargado</th><th>Sello</th><th></th></tr></thead><tbody>'+
+     L.slice().reverse().map(function(a){ return '<tr><td>'+esc(a.nombre)+'<div class="muted">'+kb(a.bytes||0)+'</div></td><td>'+esc(String(a.fecha||'').slice(0,10))+'<div class="muted">'+esc(a.tecnico||'')+'</div></td>'+
+      '<td>'+(a.sello?'<code title="'+esc(a.selloMet+' '+a.sello)+'">'+esc(a.sello.slice(0,10))+'</code>':'—')+'</td>'+
+      '<td style="white-space:nowrap"><button type="button" class="mini" data-cl="ver" data-id="'+esc(a.id)+'">Ver</button>'+(ed?' <button type="button" class="mini" data-cl="quitar" data-id="'+esc(a.id)+'">Quitar</button>':'')+'</td></tr>'; }).join('')+
+     '</tbody></table></div>'):'<div class="vacio">Carpeta vacía. Suba aquí los documentos.</div>';
+   h+='</div>';
+  }
+ }
+ return h+'</div></div>';
+}
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-cl]'); if(!b)return;
+ var a=b.dataset.cl;
+ if(a==='grupo'){ CL.grupo=b.dataset.g; CL.abierta=''; pintar(); }
+ else if(a==='abrir'){ CL.abierta=(CL.abierta===b.dataset.c)?'':b.dataset.c; pintar(); }
+ else if(a==='todo')clDescargar('');
+ else if(a==='bajar')clDescargar(b.dataset.c);
+ else if(a==='quitar')clQuitar(b.dataset.id);
+ else if(a==='ver'){ var m=clArchivos(CL.grupo,CL.abierta).filter(function(x){return x.id===b.dataset.id;})[0];
+  if(m)fuenteAdjunto(m).then(function(u){ if(u)window.open(u,'_blank','noopener'); else msg('El archivo no está en este equipo ni en la base central'); }); }
+});
+document.addEventListener('change',function(ev){ var t=ev.target; if(t&&t.dataset&&t.dataset.clSubir){ var fs=[].slice.call(t.files||[]); t.value=''; if(fs.length)clSubir(fs); } });
 
 function pintar(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
