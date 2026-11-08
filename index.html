@@ -23891,36 +23891,92 @@ document.addEventListener('click',function(ev){
    nada se crea hasta que la persona confirma.                                                  */
 var FXL_AYUDA={codigo:'Obligatorio. Código único de la finca, p. ej. CFC-001. Si ya existe, la fila actualiza esa finca.',
  productor:'Nombre del productor o productora.',documento:'Número de identidad. Opcional.',comunidad:'Comunidad, aldea o municipio.',
- lat:'Latitud en grados decimales, p. ej. 14.7123. O use UTM en las columnas Este y Norte.',lon:'Longitud en grados decimales, p. ej. -88.8456 (negativa en Centroamérica).',
- este:'UTM Este en metros, si no trae grados.',norte:'UTM Norte en metros, si no trae grados.',zona:'Zona UTM y datum, p. ej. 16P WGS84.',
+ lat:'Latitud en grados decimales, p. ej. 14.712345.',lon:'Longitud en grados decimales, p. ej. -88.8456 (negativa en Centroamérica).',
+
  altitud:'Metros sobre el nivel del mar.',superficie:'Superficie total en hectáreas (1 manzana = 0,7 ha).',sombra:'Hectáreas bajo sombra.',
  cultivo:'Café o cacao.',anio:'Año de establecimiento del cultivo.',consentimiento:'Sí o No: consentimiento firmado del productor.',
  certificaciones:'Sellos vigentes, separados por coma.',produccion:'Producción del ciclo, en quintales oro.',obs:'Cualquier observación.'};
 function fxlXml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fxlCol(i){ var s=''; i++; while(i>0){ var m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; }
-function fxlHoja(filas,anchos,cabEstilo){
- var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+
-  anchos.map(function(w,i){return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>';}).join('')+'</cols><sheetData>';
- filas.forEach(function(f,r){
-  x+='<row r="'+(r+1)+'">'+f.map(function(v,c){ return '<c r="'+fxlCol(c)+(r+1)+'" t="inlineStr"'+(r===0&&cabEstilo?' s="1"':(c===0&&!cabEstilo?' s="2"':''))+'><is><t xml:space="preserve">'+fxlXml(v)+'</t></is></c>'; }).join('')+'</row>';
- });
- return x+'</sheetData></worksheet>';
+/* Columnas de la plantilla: las del padrón sin UTM (la aplicación lo calcula desde la latitud y la longitud) */
+var FXL_FORMATO={lat:['Número decimal','14.712345',3],lon:['Número decimal, negativo','-88.845678',3],altitud:['Número entero','1250',5],superficie:['Hectáreas, 2 decimales','3.50',4],
+ sombra:['Hectáreas, 2 decimales','3.00',4],anio:['Año, 4 cifras','2015',5],produccion:['Quintales oro','40.00',4],cultivo:['Lista: Café o Cacao','Café',2],consentimiento:['Lista: Sí o No','Sí',2],
+ codigo:['Texto único','CFC-001',2],productor:['Texto','Nombre Apellido',2],documento:['Texto','0401-1980-00000',2],comunidad:['Texto','Corquín, Copán',2],certificaciones:['Texto','Orgánico, Comercio Justo',2],obs:['Texto','',2]};
+function fxlCampos(){ return CAMPOS_FIN.filter(function(x){ return ['este','norte','zona'].indexOf(x[0])<0; }); }
+function fxlCelda(c,r,v,st){ var ref=fxlCol(c)+r; if(v===''||v==null)return '<c r="'+ref+'" s="'+st+'"/>';
+ return '<c r="'+ref+'" s="'+st+'" t="inlineStr"><is><t xml:space="preserve">'+fxlXml(v)+'</t></is></c>'; }
+function fxlHojaFincas(){
+ var C=fxlCampos(), N=500, x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+  '<sheetPr><tabColor rgb="FF15513A"/><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" zoomScale="110"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'+
+  '<sheetFormatPr defaultRowHeight="18" customHeight="1"/><cols>'+C.map(function(f,i){ var w=Math.max(14,Math.min(30,f[1].length+3)); if(f[0]==='productor'||f[0]==='certificaciones'||f[0]==='obs')w=30; return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'; }).join('')+'</cols><sheetData>';
+ x+='<row r="1" ht="40" customHeight="1">'+C.map(function(f,i){ return fxlCelda(i,1,f[1]+(f[2]?' *':''),1); }).join('')+'</row>';
+ for(var r=2;r<=N+1;r++){ x+='<row r="'+r+'">'+C.map(function(f,i){ var st=(FXL_FORMATO[f[0]]||[0,0,2])[2]; return '<c r="'+fxlCol(i)+r+'" s="'+st+'"/>'; }).join('')+'</row>'; }
+ x+='</sheetData>';
+ var col=function(k){ for(var i=0;i<C.length;i++)if(C[i][0]===k)return fxlCol(i); return null; }, dv=[], rg=function(k){ var c=col(k); return c?(c+'2:'+c+(N+1)):null; };
+ if(rg('cultivo'))dv.push('<dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Cultivo" error="Elija Café o Cacao." sqref="'+rg('cultivo')+'"><formula1>"Café,Cacao"</formula1></dataValidation>');
+ if(rg('consentimiento'))dv.push('<dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Consentimiento" error="Elija Sí o No." sqref="'+rg('consentimiento')+'"><formula1>"Sí,No"</formula1></dataValidation>');
+ if(rg('lat'))dv.push('<dataValidation type="decimal" operator="between" allowBlank="1" showErrorMessage="1" errorTitle="Latitud" error="Grados decimales entre 5 y 25 (Centroamérica)." sqref="'+rg('lat')+'"><formula1>5</formula1><formula2>25</formula2></dataValidation>');
+ if(rg('lon'))dv.push('<dataValidation type="decimal" operator="between" allowBlank="1" showErrorMessage="1" errorTitle="Longitud" error="Grados decimales negativos entre -95 y -75." sqref="'+rg('lon')+'"><formula1>-95</formula1><formula2>-75</formula2></dataValidation>');
+ ['superficie','sombra','produccion'].forEach(function(k){ if(rg(k))dv.push('<dataValidation type="decimal" operator="greaterThanOrEqual" allowBlank="1" showErrorMessage="1" error="Escriba un número igual o mayor que cero." sqref="'+rg(k)+'"><formula1>0</formula1></dataValidation>'); });
+ if(rg('anio'))dv.push('<dataValidation type="whole" operator="between" allowBlank="1" showErrorMessage="1" error="Año de cuatro cifras." sqref="'+rg('anio')+'"><formula1>1950</formula1><formula2>2100</formula2></dataValidation>');
+ if(rg('altitud'))dv.push('<dataValidation type="whole" operator="between" allowBlank="1" showErrorMessage="1" error="Metros sobre el nivel del mar, entre 0 y 4000." sqref="'+rg('altitud')+'"><formula1>0</formula1><formula2>4000</formula2></dataValidation>');
+ x+='<dataValidations count="'+dv.length+'">'+dv.join('')+'</dataValidations>';
+ x+='<pageMargins left="0.4" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
+ return x;
+}
+function fxlHojaInstrucciones(){
+ var C=fxlCampos(), org=(S.perfil&&S.perfil.organizacion)||(pryActual()&&pryActual().empresa)||'';
+ var filas=[], r=0, merges=[];
+ var fila=function(celdas,ht){ r++; filas.push('<row r="'+r+'"'+(ht?(' ht="'+ht+'" customHeight="1"'):'')+'>'+celdas.map(function(c,i){return fxlCelda(i,r,c[0],c[1]);}).join('')+'</row>'); return r; };
+ var a=fila([['Programa ARRAIGO · Plantilla de fincas y productores',6]],30); merges.push('A'+a+':E'+a);
+ a=fila([['Huella de carbono de producto (ISO 14067)'+(org?(' · '+org):'')+' · versión del '+hoy(),7]]); merges.push('A'+a+':E'+a);
+ fila([['',0]]);
+ a=fila([['Cómo usarla',11]],22); merges.push('A'+a+':E'+a);
+ ['1. Pegue los datos de su base en la hoja «Fincas», una fila por finca, desde la fila 2. No cambie ni mueva los títulos.',
+  '2. Solo el código de la finca es obligatorio. Si el código ya existe en ARRAIGO, la fila actualiza esa finca en lugar de crear otra.',
+  '3. La ubicación va en latitud y longitud en grados decimales. ARRAIGO calcula solo las coordenadas UTM y la zona.',
+  '4. Guarde el archivo y súbalo en ARRAIGO: «Fincas y productores» → «Subir la plantilla llena». Nada se crea hasta que usted revisa y confirma.'].forEach(function(t){ var k=fila([[t,10]],30); merges.push('A'+k+':E'+k); });
+ fila([['',0]]);
+ a=fila([['Columnas de la hoja «Fincas»',11]],22); merges.push('A'+a+':E'+a);
+ fila([['Columna',1],['Obligatoria',1],['Formato',1],['Ejemplo',1],['Qué escribir',1]],28);
+ C.forEach(function(f){ var F=FXL_FORMATO[f[0]]||['Texto','',2]; fila([[f[1],8],[f[2]?'Sí':'No',12],[F[0],9],[F[1],9],[FXL_AYUDA[f[0]]||'',9]],32); });
+ fila([['',0]]);
+ a=fila([['Los datos de esta plantilla son de la organización y se usan solo para la medición de su huella de carbono de producto.',7]]); merges.push('A'+a+':E'+a);
+ return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><tabColor rgb="FFC99A3E"/><pageSetUpPr fitToPage="1"/></sheetPr>'+
+  '<sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><cols><col min="1" max="1" width="32" customWidth="1"/><col min="2" max="2" width="13" customWidth="1"/><col min="3" max="3" width="24" customWidth="1"/><col min="4" max="4" width="24" customWidth="1"/><col min="5" max="5" width="70" customWidth="1"/></cols>'+
+  '<sheetData>'+filas.join('')+'</sheetData><mergeCells count="'+merges.length+'">'+merges.map(function(m){return '<mergeCell ref="'+m+'"/>';}).join('')+'</mergeCells>'+
+  '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
 }
 function plantillaFincasXlsx(){
- var cab=CAMPOS_FIN.map(function(x){return x[1]+(x[2]?' *':'');});
- var h1=fxlHoja([cab],CAMPOS_FIN.map(function(x){return Math.max(16,Math.min(34,x[1].length+4));}),true);
- var ins=[['Columna','Qué escribir']].concat(CAMPOS_FIN.map(function(x){return [x[1]+(x[2]?' (obligatoria)':''),FXL_AYUDA[x[0]]||''];}));
- ins.push(['','']);ins.push(['Cómo usarla','Pegue los datos de su base en la hoja «Fincas», una fila por finca, sin cambiar los títulos. Guarde y súbala en ARRAIGO, en «Fincas y productores» → «Subir la plantilla llena».']);
- ins.push(['','La aplicación muestra la revisión antes de crear: nada se guarda hasta que usted confirma.']);
- var h2=fxlHoja(ins,[30,95],true);
+ var estilos='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+  '<numFmts count="2"><numFmt numFmtId="164" formatCode="0.000000"/><numFmt numFmtId="165" formatCode="#,##0.00"/></numFmts>'+
+  '<fonts count="6"><font><sz val="11"/><color rgb="FF1D2420"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF15513A"/><name val="Calibri"/></font>'+
+  '<font><b/><sz val="18"/><color rgb="FF15513A"/><name val="Calibri"/></font><font><i/><sz val="10"/><color rgb="FF5F6964"/><name val="Calibri"/></font><font><b/><sz val="12"/><color rgb="FF8A6418"/><name val="Calibri"/></font></fonts>'+
+  '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF15513A"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8F3EC"/><bgColor indexed="64"/></patternFill></fill></fills>'+
+  '<borders count="2"><border/><border><left style="thin"><color rgb="FFC9CFC8"/></left><right style="thin"><color rgb="FFC9CFC8"/></right><top style="thin"><color rgb="FFC9CFC8"/></top><bottom style="thin"><color rgb="FFC9CFC8"/></bottom></border></borders>'+
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="13">'+
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>'+
+  '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+  '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>'+
+  '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1"/>'+
+  '<xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1"/>'+
+  '<xf numFmtId="1" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyBorder="1"/>'+
+  '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>'+
+  '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" applyFont="1"/>'+
+  '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+  '<xf numFmtId="0" fontId="5" fillId="0" borderId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>'+
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+  '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
  var arch=[
   {nombre:'[Content_Types].xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
   {nombre:'_rels/.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
-  {nombre:'xl/workbook.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Fincas" sheetId="1" r:id="rId1"/><sheet name="Instrucciones" sheetId="2" r:id="rId2"/></sheets></workbook>'},
+  {nombre:'xl/workbook.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets><sheet name="Fincas" sheetId="1" r:id="rId1"/><sheet name="Instrucciones" sheetId="2" r:id="rId2"/></sheets><definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">Fincas!$1:$1</definedName></definedNames></workbook>'},
   {nombre:'xl/_rels/workbook.xml.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
-  {nombre:'xl/styles.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF15513A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/></border></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1"><alignment wrapText="1" vertical="center"/></xf><xf fontId="2" applyFont="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>'},
-  {nombre:'xl/worksheets/sheet1.xml',datos:h1},
-  {nombre:'xl/worksheets/sheet2.xml',datos:h2}];
+  {nombre:'xl/styles.xml',datos:estilos},
+  {nombre:'xl/worksheets/sheet1.xml',datos:fxlHojaFincas()},
+  {nombre:'xl/worksheets/sheet2.xml',datos:fxlHojaInstrucciones()}];
  return armarZip(arch);
 }
 async function bajarPlantillaFincas(){
