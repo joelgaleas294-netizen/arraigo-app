@@ -1793,6 +1793,8 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-mes .n{text-align:right}.calc-mes td:first-child{white-space:normal;min-width:220px;position:sticky;left:0;background:var(--surface)}
 .calc-mes th:first-child{position:sticky;left:0;background:var(--surface)}
 .calc-mes tr.calc-sin td{color:var(--ink-3,#6b7a76)}
+.calc-nf{display:block;font-size:11px;color:var(--ink-3,#6b7a76)}
+.calc-facts{margin:10px 0 0}.calc-facts summary{cursor:pointer;font-size:14px;padding:6px 0}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -23342,6 +23344,19 @@ function capBuscarFinca(cod,prod){
   return (a&&(a===p||a.indexOf(p)>=0||p.indexOf(a)>=0))||(b&&b===p); })[0]||null;
  return f;
 }
+/* Fechas a AAAA-MM-DD: las facturas traen 15/01/2026, 15-01-26, 15 de enero de 2026… y el modelo no siempre las convierte */
+var MESES_N={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,set:9,oct:10,nov:11,dic:12};
+function normFecha(t){
+ t=String(t||'').trim(); if(!t)return '';
+ var m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t); if(m)return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
+ m=/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})/.exec(t); if(m)return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
+ m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/.exec(t);
+ if(m){ var y=+m[3]; if(y<100)y+=2000; var d=+m[1], mo=+m[2]; if(mo>12&&d<=12){ var x=d; d=mo; mo=x; } if(mo>=1&&mo<=12&&d>=1&&d<=31)return y+'-'+('0'+mo).slice(-2)+'-'+('0'+d).slice(-2); }
+ var tn=t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+ m=/(\d{1,2})\s*(?:de\s*)?([a-z]{3})[a-z]*\.?\s*(?:de\s*|del\s*)?(\d{4})/.exec(tn);
+ if(m&&MESES_N[m[2]])return m[3]+'-'+('0'+MESES_N[m[2]]).slice(-2)+'-'+('0'+m[1]).slice(-2);
+ return '';
+}
 function capNormalizar(r){
  r=r||{};
  var f=capBuscarFinca(r.finca_codigo,r.productor);
@@ -23365,7 +23380,7 @@ function capNormalizar(r){
   }
  });
  return {cat:cat,fid:fid,fincaLeida:String(r.finca_codigo||r.productor||'').slice(0,80),
-  datos:{proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:String(r.fecha||'').slice(0,10),
+  datos:{proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:normFecha(r.fecha),
   items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
   confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)}};
 }
@@ -23481,6 +23496,7 @@ function capQuitarDeCola(lista){
  Object.keys(hs).forEach(function(h){ if(!capCola().some(function(x){return x.hash===h;})){ try{ CAP_PDF[h]&&CAP_PDF[h].destroy&&CAP_PDF[h].destroy(); }catch(e){} delete CAP_PDF[h]; } });
  if(CV.P&&lista.indexOf(CV.P)>=0)cvAccion('cerrar');
  if(lista.indexOf(CAP.pend)>=0)capSel(capCola().filter(function(x){return x.estado==='revisar';})[0]||capCola()[0]||null);
+ capColaGuardar();
  msg(lista.length===1?'Documento quitado de la lista':(lista.length+' documentos quitados de la lista'));
  pintar();
 }
@@ -23518,7 +23534,13 @@ async function capSubirVarios(files){
  }
  if(!nuevos.length)return;
  if(!CAP.pend)capSel(nuevos[0]);
+ capColaGuardar();
  pintar();
+ await capLeerLista(nuevos);
+ nuevos=nuevos.filter(function(Q){return !Q.quitado;}); if(!nuevos.length)return;
+ msg(nuevos.length===1?'Documento leído: revíselo y confírmelo':(nuevos.length+' documentos leídos: revíselos y confírmelos'));
+}
+async function capLeerLista(nuevos){
  await capAsegurarLector();
  /* Lectura en paralelo: varias facturas a la vez (antes, una por una) */
  async function leerUno(Q){
@@ -23537,14 +23559,50 @@ async function capSubirVarios(files){
   }
   if(!Q.datos.items.length)Q.datos.items.push(capItemVacio());
   Q.estado='revisar';
+  capColaGuardar();
   if(vista==='cap')pintar();
   }
  var cola_=nuevos.slice(), PAR=4;
  async function trabajador(){ while(cola_.length){ var Q=cola_.shift(); try{ await leerUno(Q); }catch(e){} } }
  var hilos=[]; for(var w=0;w<Math.min(PAR,nuevos.length);w++)hilos.push(trabajador());
  await Promise.all(hilos);
- nuevos=nuevos.filter(function(Q){return !Q.quitado;}); if(!nuevos.length)return;
- msg(nuevos.length===1?'Documento leído: revíselo y confírmelo':(nuevos.length+' documentos leídos: revíselos y confírmelos'));
+}
+/* La lista de documentos por registrar se guarda en este equipo: si la aplicación se cierra o se actualiza
+   a mitad de la lectura, lo leído no se pierde y lo pendiente se vuelve a leer al abrirla. */
+function capColaClave(){ return 'arraigo-cola-'+(PRY||'sin-proyecto'); }
+var CAP_GUARDA=null;
+function capColaGuardar(){
+ clearTimeout(CAP_GUARDA);
+ CAP_GUARDA=setTimeout(async function(){
+  try{
+   var L=capCola().filter(function(q){return q.file&&!q.quitado;}), vivos={};
+   for(var i=0;i<L.length;i++){ var q=L[i]; vivos[q.hash]=1; CAP.colaBlobs=CAP.colaBlobs||{};
+    if(!CAP.colaBlobs[q.hash]){ try{ await archivoGuardar({id:'cola-'+q.hash,blob:q.file,ref:'cola'}); CAP.colaBlobs[q.hash]=1; }catch(e){} } }
+   Object.keys(CAP.colaBlobs||{}).forEach(function(h){ if(!vivos[h]){ try{ archivoBorrar('cola-'+h); }catch(e){} delete CAP.colaBlobs[h]; } });
+   var meta=L.map(function(q){ return {id:q.id,nombre:q.nombre,archivo:q.file.name||q.nombre,tipo:q.file.type||'',pagina:q.pagina||0,paginas:q.paginas||0,hash:q.hash,metHash:q.metHash,
+    cat:q.cat,fid:q.fid,fincaLeida:q.fincaLeida,origen:q.origen,estado:q.estado,datos:q.datos,error:q.error}; });
+   localStorage.setItem(capColaClave(),JSON.stringify(meta));
+  }catch(e){}
+ },400);
+}
+async function capColaRestaurar(){
+ if(CAP.restPry===PRY)return; CAP.restPry=PRY;
+ var meta=[]; try{ meta=JSON.parse(localStorage.getItem(capColaClave())||'[]')||[]; }catch(e){ meta=[]; }
+ if(!meta.length)return;
+ var ya={}; capCola().forEach(function(q){ ya[q.id]=1; });
+ var releer=[], arch={};
+ for(var i=0;i<meta.length;i++){ var m=meta[i]; if(ya[m.id])continue;
+  if(!arch[m.hash]){ try{ var rec=await archivoLeer('cola-'+m.hash); if(rec&&rec.blob){ arch[m.hash]=new File([rec.blob],m.archivo,{type:m.tipo||rec.blob.type}); CAP.colaBlobs=CAP.colaBlobs||{}; CAP.colaBlobs[m.hash]=1; } }catch(e){} }
+  if(!arch[m.hash])continue;
+  var Q={id:m.id,file:arch[m.hash],nombre:m.nombre,pagina:m.pagina,paginas:m.paginas,hash:m.hash,metHash:m.metHash,cat:m.cat,fid:m.fid,fincaLeida:m.fincaLeida,
+   url:(m.tipo||'').indexOf('image/')===0?URL.createObjectURL(arch[m.hash]):'',origen:m.origen,estado:m.estado==='leyendo'?'leyendo':'revisar',datos:m.datos||{proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''},error:m.error||''};
+  if(Q.estado==='leyendo'){ Q.datos={proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''}; releer.push(Q); }
+  capCola().push(Q);
+ }
+ if(!capCola().length)return;
+ msg(capCola().length+' documento'+(capCola().length===1?'':'s')+' pendiente'+(capCola().length===1?'':'s')+' recuperado'+(capCola().length===1?'':'s')+' de la sesión anterior'+(releer.length?(' · '+releer.length+' se vuelven a leer'):''));
+ pintar();
+ if(releer.length)await capLeerLista(releer);
 }
 async function capSubir(file){ return capSubirVarios([file]); }
 function capItemVacio(){ return {desc:'',cant:NaN,uniTxt:'',uni:'',importe:NaN,linea:'',conf:'',incluir:true,conv:''}; }
@@ -23608,7 +23666,7 @@ async function capConfirmar(P0,silencio){
  Object.keys(tocadas).forEach(capRecalcular);
  marcar('captura/registros'); guardarLocal();
  if(P.url)URL.revokeObjectURL(P.url);
- CAP.cola=capCola().filter(function(x){return x!==P;});
+ CAP.cola=capCola().filter(function(x){return x!==P;}); capColaGuardar();
  if(CAP.pend===P)capSel(capCola().filter(function(x){return x.estado==='revisar';})[0]||capCola()[0]||null);
  if(!silencio){ var car=inc.length?CL_GRUPOS.da.c.filter(function(c){return c[0]===clCarpetaDeLinea(capLinea(P.cat,inc[0].linea));})[0]:null;
   msg((inc.length===1?'Registrado y sumado a su fuente':(inc.length+' renglones registrados y sumados a sus fuentes'))+(car&&P.file?(' · guardado en Datos de actividad › '+car[1]):'')); pintar(); }
@@ -23692,6 +23750,7 @@ function capRenglonesConDato(cat,fid){
 
 /* ---- la pantalla ---- */
 function vistaCaptura(){
+ if(CAP.restPry!==PRY)setTimeout(capColaRestaurar,0);
  capComprobarApi();
  var ed=puedeEditar(), cat=CAP.cat, fid=CAP.fid, P=CAP.pend, lector=capLector();
  if(cat==='finca'&&fid&&!S.fincas.some(function(x){return x.id===fid;}))CAP.fid=fid='';
@@ -25475,8 +25534,19 @@ function calcMeses(){
 }
 function mesNom(k){ return MES_C[+k.slice(5,7)-1]+' '+k.slice(2,4); }
 function calcMensual(l,cat){
- var m={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat)return; var k=String(r.fecha||'').slice(0,7); m[k]=(m[k]||0)+(nv(r.cantidadLinea)||0); });
+ var m={}, n={}, tot=0, regs=[]; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat)return; var k=String(r.fecha||'').slice(0,7), v=nv(r.cantidadLinea)||0; m[k]=(m[k]||0)+v; n[k]=(n[k]||0)+1; tot+=v; regs.push(r); });
+ m.__n=n; m.__tot=tot; m.__regs=regs;
  return m;
+}
+/* Todas las facturas registradas de la categoría, por fecha: para comprobar mes por mes qué entró */
+function calcListaFacturas(C){
+ var ids={}; C.filas.forEach(function(f){ ids[f.l.id+'|'+f.cat]=f.l; });
+ var R=registros().filter(function(r){ return r.estado!=='anulado'&&ids[r.linea+'|'+r.cat]; }).sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha));});
+ var cola=capCola().filter(function(q){ return q.estado!=='leyendo'&&(q.datos.items||[]).some(function(it){ return ids[it.linea+'|'+(q.cat==='finca'?'finca':'org')]; }); }).length;
+ var h='<details class="calc-facts"><summary>Facturas registradas de esta categoría: <b>'+R.length+'</b>'+(cola?(' · <span class="falta">'+cola+' más leídas sin confirmar en «Subir facturas y registros»</span>'):'')+'</summary>';
+ if(R.length)h+='<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th>Fuente</th><th class="n">Cantidad</th><th>Unidad</th><th>Archivo</th></tr></thead><tbody>'+
+  R.map(function(r){ return '<tr><td>'+esc(r.fecha||'sin fecha')+(r.fechaLeida?(' <small class="calc-nf">leída «'+esc(r.fechaLeida)+'»</small>'):'')+'</td><td>'+esc(r.numero||'s/n')+'</td><td>'+esc(r.proveedor||'')+'</td><td>'+esc(r.lineaNom)+'</td><td class="n">'+fmt(r.cantidadLinea,2)+'</td><td>'+esc(r.unidadLinea)+'</td><td>'+esc(r.archivo||'')+'</td></tr>'; }).join('')+'</tbody></table></div>';
+ return h+'</details>';
 }
 function tarjetaEstructura(){
  var E=calcEstructura(), ks=Object.keys(E); if(!ks.length)return '';
@@ -25493,16 +25563,16 @@ function tarjetaEstructura(){
    var MS=calcMeses();
    h+='<div class="calc-det"><p class="calc-per">'+(MS.length?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[MS.length-1])+'</b>. Cantidades en la unidad de cada fuente, según la fecha de su factura o registro.'):'Todavía no hay facturas o registros con fecha: las cantidades se muestran como total del período.')+'</p>'+
     '<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fuente</th><th>Unidad</th>'+MS.map(function(k){return '<th class="n">'+mesNom(k)+'</th>';}).join('')+
-    (MS.length?'<th class="n">Sin factura</th>':'')+'<th class="n">Total</th><th class="n">Factor</th><th class="n">t CO₂e</th><th>Respaldo</th></tr></thead><tbody>'+
+    (MS.length?'<th class="n">Facturas fuera de esos meses</th><th class="n">Anotado sin factura</th>':'')+'<th class="n">Total</th><th class="n">Factor</th><th class="n">t CO₂e</th><th>Respaldo</th></tr></thead><tbody>'+
     C.filas.sort(function(a,b){return b.t-a.t||b.q-a.q;}).map(function(f){
      var M=MS.length?calcMensual(f.l,f.cat):{}, sm=0; MS.forEach(function(k){ sm+=M[k]||0; });
-     var resto=Math.max(0,f.q-sm);
+     var fuera=Math.max(0,(M.__tot||0)-sm), resto=Math.max(0,f.q-(M.__tot||0)); var NN=M.__n||{};
      return '<tr class="'+(f.q>0?'':'calc-sin')+'"><td>'+esc(f.l.et)+'</td><td>'+esc(f.l.un)+'</td>'+
-      MS.map(function(k){ return '<td class="n">'+(M[k]?fmt(M[k],1):'·')+'</td>'; }).join('')+
-      (MS.length?'<td class="n">'+(resto>0.0001?fmt(resto,1):'·')+'</td>':'')+
+      MS.map(function(k){ return '<td class="n">'+(M[k]?(fmt(M[k],1)+'<small class="calc-nf">'+NN[k]+' fact.</small>'):'·')+'</td>'; }).join('')+
+      (MS.length?'<td class="n'+(fuera>0.0001?' falta':'')+'">'+(fuera>0.0001?fmt(fuera,1):'·')+'</td><td class="n">'+(resto>0.0001?fmt(resto,1):'·')+'</td>':'')+
       '<td class="n"><b>'+(f.q>0?fmt(f.q,2):'—')+'</b></td><td class="n">'+(f.fac?fmt(f.fac,4):'—')+'</td><td class="n">'+(f.q>0?fmt(f.t,3):'—')+'</td>'+
       '<td>'+(f.q>0?(f.ev?('✓ '+f.ev):'<b class="falta">sin archivo</b>'):'')+'</td></tr>'; }).join('')+
-    '</tbody></table></div>'+
+    '</tbody></table></div>'+calcListaFacturas(C)+
     '<div class="acciones" style="margin:8px 0 0"><button type="button" class="mini" data-vista="ing">Ingresar datos</button><button type="button" class="mini" data-vista="'+(CALC.amb==='finca'?'ins':'ben')+'">Ver en el inventario</button></div></div>';
   }
  });
@@ -25535,6 +25605,7 @@ function calcDatos(){
  return {C:C,pres:pres,dest:dest,pr:pr,de:de,R:R,kgU:kgU,etapas:etapas,I:I,tot:tot};
 }
 function vistaCalculadora(){
+ if(CAP.restPry!==PRY)setTimeout(capColaRestaurar,0);
  presAsegura();
  var D=calcDatos(), HP=huellaProducto();
  var h=cabModulo('calc','<p class="vista-sub">La huella de carbono del café oro exportado, puesto en el puerto de destino, por presentación de venta. Cada cifra se puede seguir hasta su dato de actividad y su factor.</p>');
@@ -25677,6 +25748,7 @@ function migrarLitros(){
  var cr=false;
  (S.registros||[]).forEach(function(r){ if(GAL_IDS.indexOf(r.linea)<0||!/gal/i.test(r.unidadLinea||''))return; r.cantidadLinea=Math.round(nv(r.cantidadLinea)*GAL_L*1e6)/1e6; r.conversion=nv(r.conversion)*GAL_L; r.unidadLinea='litros comprados'; cr=true; });
  Object.keys(S.capBase||{}).forEach(function(k){ var id=k.split(':').pop(), e=S.capBase[k]; if(GAL_IDS.indexOf(id)>=0&&e&&!e.uLitros){ e.base=nv(e.base)*GAL_L; e.suma=nv(e.suma)*GAL_L; e.uLitros=true; } });
+ (S.registros||[]).forEach(function(r){ if(r.fecha&&!/^\d{4}-\d{2}-\d{2}$/.test(r.fecha)){ var nf=normFecha(r.fecha); if(nf){ r.fechaLeida=r.fecha; r.fecha=nf; cr=true; } } });
  if(cr)marcar('captura/registros');
  }catch(e){}
 }
