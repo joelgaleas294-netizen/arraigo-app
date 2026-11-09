@@ -23281,10 +23281,11 @@ function capPrompt(){
   'En una factura de combustible, la cantidad son los litros o galones despachados (columna Cantidad, Litros o Galones); nunca el valor en lempiras, el precio unitario ni el total. '+
   'Reglas: copia solo lo que se lee en el documento; si un dato no se lee, déjalo vacío y anótalo en "ilegible"; no estimes ni completes cantidades. '+
   'La cantidad es la cantidad física (galones, litros, kWh, quintales, libras, sacos, kilómetros), nunca el precio. En una factura de electricidad, el item es el consumo del período en kWh. '+
-  'En "mes_consumo" va el mes al que corresponde el consumo, no el mes en que se emitió la factura: en electricidad y agua es el mes del período facturado (de la lectura anterior a la lectura actual); si el período toma dos meses, el mes que tiene más días del período. En facturas de combustible y compras, es el mes de la fecha de la factura. Si no se lee el período, déjalo vacío. '+
+  'En "mes_consumo", en electricidad y agua, va el mes de la lectura actual, es decir, el mes en que termina el período facturado (un período del 15/01 al 12/02 es febrero); así cada recibo mensual queda en un mes distinto. En facturas de combustible y compras, es el mes de la fecha de la factura. Si no se lee el período, déjalo vacío. '+
   'Si el documento trae cantidades de varios meses (historial de consumo de electricidad, estado de cuenta, bitácora o registro mensual), devuelve un item por cada mes con su "mes" (AAAA-MM); nunca sumes meses distintos en un mismo item. Dentro de un mismo mes, suma por producto, unidad y finca. En "observacion" anota el período que cubre. En una factura de un solo mes, "mes" es el mismo "mes_consumo". '+
   '"ambito" es "finca" si el gasto o la entrega es de una finca o un productor, y "org" si es del beneficio, la planta, la oficina o los vehículos de la organización. '+
   'Si aparece el código de la finca o el nombre del productor o de la finca, cópialo en "finca_codigo" o "productor": solo se usa para asociar el documento a su finca. '+
+  'En "numero" va el número de la factura o del documento fiscal; si no tiene (recibos de la ENEE o del agua), déjalo vacío: no copies el código de cliente, la clave, el NIS ni el número de medidor, que se repiten todos los meses. '+
   'Si quien emite es una persona natural, escribe "persona natural" en proveedor. No copies números de identidad, RTN de personas ni datos de tarjetas. '+
   'En "renglon_sugerido" usa uno de estos códigos con su prefijo, o déjalo vacío si ninguno corresponde:\n'+lo.concat(lf).join('\n');
 }
@@ -23515,13 +23516,17 @@ async function capLeerConLector(imgs,texto,tipo,calidad){
  }
  return null;
 }
-function capDuplicado(hash,proveedor,numero,pagina){
+/* Duplicado: mismo archivo y página, o mismo proveedor, número y fecha. Los recibos de servicios (ENEE, agua) no traen
+   número de factura y repiten el código de cliente cada mes: con fechas distintas no son la misma factura. */
+function capDuplicado(hash,proveedor,numero,pagina,fecha){
  var norm=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');};
  var p=norm(proveedor), n=norm(numero);
  return registros().filter(function(x){
   if(x.estado==='anulado')return false;
   if(hash&&x.hash===hash&&(x.pagina||0)===(pagina||0))return true;
-  return !!(n&&p&&norm(x.numero)===n&&norm(x.proveedor)===p);
+  if(!(n&&p&&norm(x.numero)===n&&norm(x.proveedor)===p))return false;
+  if(fecha&&x.fecha&&String(fecha).slice(0,10)!==String(x.fecha).slice(0,10))return false;
+  return true;
  })[0]||null;
 }
 /* 1 · subir: cada archivo entra a la cola, se sella, se lee y queda «por revisar» */
@@ -23589,8 +23594,8 @@ async function capLeerLista(nuevos){
     var M=await capMaterial(Q), r=await capLeerConLector(M.imgs,M.texto,M.tipo);
     if(!Q.url&&Q.pagina&&M.imgs&&M.imgs[0])Q.url=URL.createObjectURL(M.imgs[0]);
     if(r){ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; }
-    if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero);
-    if(Q.pagina&&!Q.dup)Q.dup=capCola().filter(function(x){ return x!==Q&&x.pagina&&x.datos.numero&&x.datos.numero===Q.datos.numero&&x.datos.proveedor===Q.datos.proveedor; })[0]?{numero:Q.datos.numero,fecha:Q.datos.fecha||'s/f',lineaNom:'en otra página de este mismo PDF'}:null;
+    if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero,0,Q.datos.fecha);
+    if(Q.pagina&&!Q.dup)Q.dup=capCola().filter(function(x){ return x!==Q&&x.pagina&&x.datos.numero&&x.datos.numero===Q.datos.numero&&x.datos.proveedor===Q.datos.proveedor&&(!x.datos.fecha||!Q.datos.fecha||x.datos.fecha===Q.datos.fecha); })[0]?{numero:Q.datos.numero,fecha:Q.datos.fecha||'s/f',lineaNom:'en otra página de este mismo PDF'}:null;
    }catch(e){
     var c=(e&&e.code)||'';
     Q.error=(c==='rate_limited')?'Demasiadas lecturas seguidas; espere un momento o anote a mano.':('No se pudo leer ('+((e&&e.message)||'error')+'). Anote los datos a mano.');
@@ -23666,7 +23671,7 @@ function capProblemas(P){
  if(!d.fecha)p.push('Falta la fecha de la factura.');
  /* Regla: no se admiten facturas duplicadas (el mismo archivo, o el mismo proveedor y número ya registrados) */
  inc.forEach(function(it){ if(it.cant>0&&isFinite(it.importe)&&Math.abs(it.cant-it.importe)<0.005)p.push('Renglón '+(d.items.indexOf(it)+1)+': la cantidad es igual al monto de la factura; anote la cantidad física (litros, galones, kWh), no el valor en lempiras.'); });
- var dupV=capDuplicado(P.hash,d.proveedor,d.numero,P.pagina||0);
+ var dupV=capDuplicado(P.hash,d.proveedor,d.numero,P.pagina||0,d.fecha);
  if(dupV)p.push('Esta factura ya está registrada'+(dupV.numero?(' (factura '+dupV.numero+(dupV.fecha?(' del '+dupV.fecha):'')+')'):'')+'. No se admiten facturas duplicadas: quítela de la lista.');
  inc.forEach(function(it,i){
   var l=capLinea(P.cat,it.linea), n='Renglón '+(d.items.indexOf(it)+1);
@@ -23956,7 +23961,7 @@ document.addEventListener('change',function(ev){
  if(t.dataset.capFiltro){ CAP.filtro=t.value; pintar(); return; }
  if(t.dataset.capSim==='l'){ CAP.sim.l=t.value; pintar(); return; }
  if(t.dataset.capH&&CAP.pend){ CAP.pend.datos[t.dataset.capH]=t.value;
-  if(t.dataset.capH!=='fecha'&&!CAP.pend.dup){ var d=capDuplicado('',CAP.pend.datos.proveedor,CAP.pend.datos.numero); if(d)CAP.pend.dup=d; }
+  if(!(CAP.pend.dup&&CAP.pend.dup.hash&&CAP.pend.dup.hash===CAP.pend.hash)){ CAP.pend.dup=capDuplicado('',CAP.pend.datos.proveedor,CAP.pend.datos.numero,0,CAP.pend.datos.fecha)||null; }
   pintar(); return; }
  if(t.dataset.capI!=null&&capItem(+t.dataset.capI)){
   var it=capItem(+t.dataset.capI), k=t.dataset.capK;
