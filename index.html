@@ -1797,6 +1797,7 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-susp td{background:#fbefee}
 .calc-facts{margin:10px 0 0}.calc-facts summary{cursor:pointer;font-size:14px;padding:6px 0}
 .cero-tarjeta{border-color:#e3b9b6}.cero-tarjeta h3{color:#9b2c2c}
+.cap-mes-it{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--tinta-2,#555);margin-top:4px}.cap-mes-it input{width:auto;padding:2px 6px;font-size:12px}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -23274,13 +23275,14 @@ function capPrompt(){
  var lo=capLineas('org').map(function(l){return 'org:'+l.id+' = '+l.et+' (se anota en '+l.un+')';});
  var lf=capLineas('finca').map(function(l){return 'finca:'+l.id+' = '+l.et+' (se anota en '+l.un+')';});
  return 'Lee este documento de un programa de huella de carbono de café y cacao (factura, recibo, orden de entrega, bitácora o registro) y devuelve SOLO un objeto JSON, sin texto antes ni después, con esta forma:\n'+
-  '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","ambito":"org|finca","finca_codigo":"","productor":"","items":[{"descripcion":"","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
+  '{"proveedor":"","numero":"","fecha":"AAAA-MM-DD","mes_consumo":"AAAA-MM","ambito":"org|finca","finca_codigo":"","productor":"","items":[{"descripcion":"","mes":"AAAA-MM","cantidad":0,"unidad":"","importe":0,"renglon_sugerido":"","confianza":"alta|media|baja"}],"ilegible":[],"confianza":"alta|media|baja","observacion":""}\n'+
   'La imagen puede venir girada o escrita a mano: léela en su orientación correcta. Si es un talonario o un escaneo con varias facturas, lee solo la factura de esta página; si en la página hay más de una, devuelve la más completa y anota las demás en "observacion". '+
   'La fecha va en formato AAAA-MM-DD. En Honduras las facturas escriben día/mes/año: 05/12/25 es el 5 de diciembre de 2025 (2025-12-05), nunca el año 2005. '+
   'En una factura de combustible, la cantidad son los litros o galones despachados (columna Cantidad, Litros o Galones); nunca el valor en lempiras, el precio unitario ni el total. '+
   'Reglas: copia solo lo que se lee en el documento; si un dato no se lee, déjalo vacío y anótalo en "ilegible"; no estimes ni completes cantidades. '+
   'La cantidad es la cantidad física (galones, litros, kWh, quintales, libras, sacos, kilómetros), nunca el precio. En una factura de electricidad, el item es el consumo del período en kWh. '+
-  'Si el documento es una bitácora o un registro con muchas filas, suma las cantidades por producto, unidad y finca, y devuelve un item por cada suma; en "observacion" anota el período que cubre. '+
+  'En "mes_consumo" va el mes al que corresponde el consumo, no el mes en que se emitió la factura: en electricidad y agua es el mes del período facturado (de la lectura anterior a la lectura actual); si el período toma dos meses, el mes que tiene más días del período. En facturas de combustible y compras, es el mes de la fecha de la factura. Si no se lee el período, déjalo vacío. '+
+  'Si el documento trae cantidades de varios meses (historial de consumo de electricidad, estado de cuenta, bitácora o registro mensual), devuelve un item por cada mes con su "mes" (AAAA-MM); nunca sumes meses distintos en un mismo item. Dentro de un mismo mes, suma por producto, unidad y finca. En "observacion" anota el período que cubre. En una factura de un solo mes, "mes" es el mismo "mes_consumo". '+
   '"ambito" es "finca" si el gasto o la entrega es de una finca o un productor, y "org" si es del beneficio, la planta, la oficina o los vehículos de la organización. '+
   'Si aparece el código de la finca o el nombre del productor o de la finca, cópialo en "finca_codigo" o "productor": solo se usa para asociar el documento a su finca. '+
   'Si quien emite es una persona natural, escribe "persona natural" en proveedor. No copies números de identidad, RTN de personas ni datos de tarjetas. '+
@@ -23370,6 +23372,19 @@ function fechaPlausible(f){
  return f;
 }
 function normFecha(t){ return fechaPlausible(normFechaBase(t)); }
+/* Mes de consumo AAAA-MM; acepta también AAAA-MM-DD o MM/AAAA, y aplica la misma prueba de año que la fecha */
+function normMes(t){
+ var x=String(t||'').trim(), m;
+ if((m=/^(\d{4})-(\d{1,2})/.exec(x)))x=m[1]+'-'+m[2].padStart(2,'0');
+ else if((m=/^(\d{1,2})[\/\-](\d{4})$/.exec(x)))x=m[2]+'-'+m[1].padStart(2,'0');
+ else return '';
+ var mm=+x.slice(5,7); if(!(mm>=1&&mm<=12))return '';
+ var f=fechaPlausible(x+'-01'); return f?String(f).slice(0,7):'';
+}
+/* El mes de consumo se acepta si queda a tres meses o menos de la fecha de la factura; si no, cuenta el mes de la fecha */
+function mesCercano(mes,fecha,tol){ tol=tol||3; var f=String(fecha||'').slice(0,7); if(!mes)return f; if(!/^\d{4}-\d{2}$/.test(f))return mes;
+ var dif=Math.abs((+mes.slice(0,4)*12+ +mes.slice(5,7))-(+f.slice(0,4)*12+ +f.slice(5,7))); return dif<=tol?mes:f; }
+function mesDeRegistro(r){ var m=String((r&&r.mes)||''); return /^\d{4}-\d{2}$/.test(m)?m:String((r&&r.fecha)||'').slice(0,7); }
 function normFechaBase(t){
  t=String(t||'').trim(); if(!t)return '';
  var m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t); if(m)return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
@@ -23394,7 +23409,7 @@ function capNormalizar(r){
   x=x||{};
   var sug=String(x.renglon_sugerido||'').replace(/^(org|finca):/,''); if(ids.indexOf(sug)<0)sug=capSugerir(x.descripcion,cat);
   var it={desc:String(x.descripcion||'').slice(0,160),cant:numDe(x.cantidad),uniTxt:String(x.unidad||'').slice(0,30),uni:capUniDeTexto(x.unidad),
-   importe:numDe(x.importe),linea:sug,conf:String(x.confianza||''),incluir:!!sug,conv:''};
+   importe:numDe(x.importe),linea:sug,conf:String(x.confianza||''),incluir:!!sug,conv:'',mes:normMes(x.mes)};
   items.push(it);
   /* El compost que llega a una finca cuenta dos veces por razones distintas: su producción (comprado) y su aplicación en el suelo */
   if(cat==='finca'&&(sug==='compost_aplicado'||sug==='compost_comprado')){
@@ -23404,7 +23419,7 @@ function capNormalizar(r){
   }
  });
  return {cat:cat,fid:fid,fincaLeida:String(r.finca_codigo||r.productor||'').slice(0,80),
-  datos:{proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:normFecha(r.fecha),
+  datos:{proveedor:String(r.proveedor||'').slice(0,120),numero:String(r.numero||'').slice(0,60),fecha:normFecha(r.fecha),mes:normMes(r.mes_consumo),
   items:items,ilegible:(r.ilegible instanceof Array?r.ilegible:[]).slice(0,12).map(String),
   confianza:String(r.confianza||''),observacion:String(r.observacion||'').slice(0,400)}};
 }
@@ -23677,7 +23692,7 @@ async function capConfirmar(P0,silencio){
    adj[ref]=await capGuardarOriginal(ref,P.file,P.hash,P.metHash);
   }
   var cv=capConvItem(it,l);
-  var reg={id:uid('reg'),fecha:d.fecha,numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
+  var reg={id:uid('reg'),fecha:d.fecha,mes:(it.mes?mesCercano(it.mes,d.fecha,15):mesCercano(normMes(d.mes),d.fecha,3)),numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
    linea:l.id,lineaNom:l.et,desc:it.desc,cantidad:it.cant,unidad:it.uni,conversion:cv.f,convAuto:cv.auto,
    cantidadLinea:Math.round(it.cant*cv.f*1e6)/1e6,unidadLinea:l.un,importe:isFinite(it.importe)?it.importe:null,
    adjuntoId:adj[ref]||'',archivo:P.nombre||'',pagina:P.pagina||0,hash:P.hash||'',metHash:P.metHash||'',
@@ -23844,7 +23859,8 @@ function vistaCaptura(){
    '<div class="cap-cab">'+
     '<div class="campo"><label for="cap-prov">Proveedor</label><input id="cap-prov" data-cap-h="proveedor" value="'+esc(d.proveedor)+'"></div>'+
     '<div class="campo"><label for="cap-num">N.º de factura</label><input id="cap-num" data-cap-h="numero" value="'+esc(d.numero)+'"></div>'+
-    '<div class="campo"><label for="cap-fec">Fecha</label><input id="cap-fec" type="date" data-cap-h="fecha" value="'+esc(d.fecha)+'"></div></div></div></div>';
+    '<div class="campo"><label for="cap-fec">Fecha</label><input id="cap-fec" type="date" data-cap-h="fecha" value="'+esc(d.fecha)+'"></div>'+
+    '<div class="campo"><label for="cap-mes">Mes de consumo</label><input id="cap-mes" type="month" data-cap-h="mes" value="'+esc(d.mes||(d.fecha||'').slice(0,7))+'" title="Mes al que corresponde el consumo (en electricidad, el período facturado)"></div></div></div></div>';
   h+='<div class="tabla-caja"><table class="cap-items"><thead><tr><th>✓</th><th>Lo que dice la factura</th><th>Cantidad</th><th>Unidad</th><th>Fuente de emisión</th><th>Conversión</th><th>Entra al inventario</th></tr></thead><tbody>';
   d.items.forEach(function(it,i){
    var l=capLinea(P.cat,it.linea), cv=l?capConvItem(it,l):null;
@@ -23855,7 +23871,7 @@ function vistaCaptura(){
    var entra=(l&&it.cant>0&&cv.f>0)?('<b>'+fmt(it.cant*cv.f,2)+'</b> '+esc(l.un)):'<span class="muted">—</span>';
    var baja=(P.origen==='ia'&&it.conf==='baja'&&!it.par);
    h+='<tr'+(baja?' class="cap-baja"':'')+'><td><input type="checkbox" data-cap-i="'+i+'" data-cap-k="incluir"'+(it.incluir?' checked':'')+' aria-label="Registrar este renglón"></td>'+
-    '<td><input data-cap-i="'+i+'" data-cap-k="desc" value="'+esc(it.desc)+'" placeholder="Producto o servicio">'+(baja?'<small class="cap-conf">confianza baja: compruebe</small>':'')+'</td>'+
+    '<td><input data-cap-i="'+i+'" data-cap-k="desc" value="'+esc(it.desc)+'" placeholder="Producto o servicio"><label class="cap-mes-it">Mes <input type="month" data-cap-i="'+i+'" data-cap-k="mes" value="'+esc(it.mes||d.mes||(d.fecha||'').slice(0,7))+'"></label>'+(baja?'<small class="cap-conf">confianza baja: compruebe</small>':'')+'</td>'+
     '<td><input class="cap-num" data-cap-i="'+i+'" data-cap-k="cant" inputmode="decimal" value="'+(isFinite(it.cant)?String(it.cant).replace('.',','):'')+'"></td>'+
     '<td><select data-cap-i="'+i+'" data-cap-k="uni">'+opU+'</select>'+(it.uniTxt&&!it.uni?'<small class="cap-conf">leído: «'+esc(it.uniTxt)+'»</small>':'')+'</td>'+
     '<td><select data-cap-i="'+i+'" data-cap-k="linea">'+opL+'</select></td>'+
@@ -23949,6 +23965,7 @@ document.addEventListener('change',function(ev){
   else if(k==='uni')it.uni=t.value;
   else if(k==='linea')it.linea=t.value;
   else if(k==='conv')it.conv=t.value;
+  else if(k==='mes')it.mes=normMes(t.value);
   else if(k==='desc'){ it.desc=t.value; if(!it.linea){ it.linea=capSugerir(t.value,CAP.pend.cat); } }
   pintar(); return;
  }
@@ -25553,14 +25570,14 @@ function calcEstructura(){
 var MES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 function calcMeses(){
  var P=S.prod||{}, a=String(P.per_inicio||'').slice(0,7), b=String(P.per_fin||'').slice(0,7);
- if(!(a&&b)){ var yM=new Date().getFullYear()+1; var fs=registros().filter(function(r){ var y=+String(r.fecha||'').slice(0,4), RA=aniosRef(); return r.estado!=='anulado'&&/^\d{4}-\d{2}/.test(r.fecha||'')&&y<=yM&&RA.some(function(x){return Math.abs(y-x)<=2;});}).map(function(r){return r.fecha.slice(0,7);}).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
+ if(!(a&&b)){ var yM=new Date().getFullYear()+1; var fs=registros().filter(function(r){ var k=mesDeRegistro(r), y=+k.slice(0,4), RA=aniosRef(); return r.estado!=='anulado'&&/^\d{4}-\d{2}$/.test(k)&&y<=yM&&RA.some(function(x){return Math.abs(y-x)<=2;});}).map(mesDeRegistro).sort(); if(!fs.length)return []; a=fs[0]; b=fs[fs.length-1]; }
  var out=[], y=+a.slice(0,4), m=+a.slice(5,7);
  while(out.length<24){ var k=y+'-'+String(m).padStart(2,'0'); out.push(k); if(k>=b)break; m++; if(m>12){m=1;y++;} }
  return out;
 }
 function mesNom(k){ return MES_C[+k.slice(5,7)-1]+' '+k.slice(2,4); }
 function calcMensual(l,cat){
- var m={}, n={}, tot=0, regs=[]; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat)return; var k=String(r.fecha||'').slice(0,7), v=nv(r.cantidadLinea)||0; m[k]=(m[k]||0)+v; n[k]=(n[k]||0)+1; tot+=v; regs.push(r); });
+ var m={}, n={}, tot=0, regs=[]; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat)return; var k=mesDeRegistro(r), v=nv(r.cantidadLinea)||0; m[k]=(m[k]||0)+v; n[k]=(n[k]||0)+1; tot+=v; regs.push(r); });
  m.__n=n; m.__tot=tot; m.__regs=regs;
  return m;
 }
@@ -25642,7 +25659,7 @@ function tarjetaEstructura(){
    '<span>'+fmt(C.tot,3)+'</span><span>t CO₂e</span><span>'+(A.tot>0?fmt(C.tot/A.tot*100,1):'0.0')+' %</span></button>';
   if(ab){
    var MS=calcMeses();
-   h+='<div class="calc-det"><p class="calc-per">'+(MS.length?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[MS.length-1])+'</b>. Cantidades en la unidad de cada fuente, según la fecha de su factura o registro.'):'Todavía no hay facturas o registros con fecha: las cantidades se muestran como total del período.')+'</p>'+
+   h+='<div class="calc-det"><p class="calc-per">'+(MS.length?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[MS.length-1])+'</b>. Cantidades en la unidad de cada fuente, según el mes de consumo de cada factura o registro.'):'Todavía no hay facturas o registros con fecha: las cantidades se muestran como total del período.')+'</p>'+
     '<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fuente</th><th>Unidad</th>'+MS.map(function(k){return '<th class="n">'+mesNom(k)+'</th>';}).join('')+
     (MS.length?'<th class="n">Facturas fuera de esos meses</th><th class="n">Anotado sin factura</th>':'')+'<th class="n">Total</th><th class="n">Factor</th><th class="n">t CO₂e</th><th>Respaldo</th></tr></thead><tbody>'+
     C.filas.sort(function(a,b){return b.t-a.t||b.q-a.q;}).map(function(f){
@@ -25752,7 +25769,7 @@ async function calcExcel(){
  var da=[cab], c0=5, cTot=c0+MS.length+1;
  function fila(amb,fz,l,cat,fid){
   var q=cantidad(l,cat,fid); if(!(q>0))return;
-  var M={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat||String(r.fid||'')!==String(fid||''))return; var k=String(r.fecha||'').slice(0,7); M[k]=(M[k]||0)+(nv(r.cantidadLinea)||0); });
+  var M={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat||String(r.fid||'')!==String(fid||''))return; var k=mesDeRegistro(r); M[k]=(M[k]||0)+(nv(r.cantidadLinea)||0); });
   var sm=0; MS.forEach(function(k){ sm+=M[k]||0; });
   var R=da.length+1, cc=CL_GRUPOS.da.c.filter(function(x){return x[0]===clCarpetaDeLinea(l);})[0]||['','Otros'];
   var conv=conver(l,cat,fid), fac=factor(l,cat,fid), aj=ajusteCons(l)*ajusteDato(l,cat,fid), dir=esDirecta(l);
