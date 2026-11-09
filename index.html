@@ -23430,14 +23430,14 @@ var CV={P:null,pag:1,n:1,giro:0,zoom:1,url:''};
 function cvLista(){ return capCola().filter(function(x){ return x.file&&!capEsHoja(x.file)&&!capEsWord(x.file); }); }
 async function capVerHoja(P){
  if(!P||!P.file)return;
- CV.P=P; CV.giro=0; CV.zoom=1;
+ CV.P=P; CV.giro=0; CV.zoom=1; CV.giroInicial=P.giro||0;
  var v=$('cap-visor');
  if(!v){ v=document.createElement('div'); v.id='cap-visor'; v.setAttribute('role','dialog'); v.setAttribute('aria-label','Ver hoja'); document.body.appendChild(v);
   v.addEventListener('click',function(e){ var x=e.target.closest('[data-cv]'); if(x)cvAccion(x.dataset.cv); }); }
  v.innerHTML='<div class="cv-barra"><b></b>'+
   '<button type="button" data-cv="ant">◀ Anterior</button><button type="button" data-cv="sig">Siguiente ▶</button>'+
   '<button type="button" data-cv="izq" title="Girar a la izquierda">⟲ Girar</button><button type="button" data-cv="girar" title="Girar a la derecha">Girar ⟳</button><button type="button" data-cv="menos">−</button><button type="button" data-cv="mas">+</button>'+
-  '<button type="button" data-cv="revisar">Revisar esta hoja</button><a data-cv="orig" target="_blank" rel="noopener">Abrir original</a>'+
+  '<button type="button" data-cv="leer-giro" title="Gire la hoja hasta que el texto quede derecho y léala de nuevo">↻ Leer así</button><button type="button" data-cv="revisar">Revisar esta hoja</button><a data-cv="orig" target="_blank" rel="noopener">Abrir original</a>'+
   '<button type="button" data-cv="cerrar">✕ Cerrar</button></div><div class="cv-lienzo"><div class="cv-msj">Cargando la hoja…</div></div>';
  v.style.display='flex';
  await cvPintar();
@@ -23459,7 +23459,8 @@ async function cvPintar(){
   if(!P.urlOrig)P.urlOrig=URL.createObjectURL(P.file);
   var o=v.querySelector('[data-cv=orig]'); o.href=P.urlOrig+(P.pagina?('#page='+P.pagina):'');
   lz.innerHTML=src?'<img alt="Hoja del documento" src="'+src+'">':'<div class="cv-msj">Este tipo de archivo no se puede mostrar aquí.</div>';
-  cvAjustar();
+  cvAjustar(); CV.giro=0;
+  if(P.giro&&src){ var im0=lz.querySelector('img'), g0=P.giro; fetch(src).then(function(x){return x.blob();}).then(function(bl){ return capGirarBlob(bl,g0); }).then(function(bl){ if(CV.P!==P)return; if(CV.urlGiro)URL.revokeObjectURL(CV.urlGiro); CV.urlGiro=URL.createObjectURL(bl); im0.src=CV.urlGiro; CV.giro=g0; }).catch(function(){}); }
  }catch(e){ lz.innerHTML='<div class="cv-msj">No se pudo mostrar la hoja.</div>'; }
 }
 function cvAjustar(){
@@ -23469,10 +23470,23 @@ function cvAjustar(){
 }
 /* Girar de verdad la imagen (no solo su apariencia), para que el desplazamiento y el acercamiento sigan funcionando */
 function cvGirar(izq){
+ CV.giro=((CV.giro||0)+(izq?270:90))%360;
  var v=$('cap-visor'); if(!v)return; var im=v.querySelector('.cv-lienzo img'); if(!im||!im.naturalWidth)return;
  var c=document.createElement('canvas'); c.width=im.naturalHeight; c.height=im.naturalWidth;
  var x=c.getContext('2d'); x.translate(c.width/2,c.height/2); x.rotate(izq?-Math.PI/2:Math.PI/2); x.drawImage(im,-im.naturalWidth/2,-im.naturalHeight/2);
  c.toBlob(function(bl){ if(!bl)return; if(CV.urlGiro)URL.revokeObjectURL(CV.urlGiro); CV.urlGiro=URL.createObjectURL(bl); im.src=CV.urlGiro; c.width=c.height=0; },'image/jpeg',0.9);
+}
+async function cvLeerGirada(){
+ var P=CV.P, v=$('cap-visor'); if(!P||!v)return; var im=v.querySelector('.cv-lienzo img'); if(!im)return;
+ var bt=v.querySelector('[data-cv="leer-giro"]'); if(bt){ bt.disabled=true; bt.textContent='Leyendo…'; }
+ try{
+  await capAsegurarLector();
+  var blob=await capGirarBlob(await (await fetch(im.src)).blob(),0);
+  var M=await capMaterial(P), r=await capLeerConLector([blob],M.texto,M.tipo,'alta');
+  if(capConCantidad(r)){ capAplicarLectura(P,r); P.giro=CV.giro||0; P.estado='revisar'; capColaGuardar(); msg('Hoja leída de nuevo: revise lo leído y confírmela'); cvAccion('revisar'); return; }
+  msg('Tampoco se leyó una cantidad con este giro. Pruebe otro giro o anote los datos a mano');
+ }catch(e){ msg('No se pudo leer la hoja: '+((e&&e.message)||'error')); }
+ if(bt){ bt.disabled=false; bt.textContent='↻ Leer así'; }
 }
 function cvAccion(a){
  var L=cvLista(), i=L.indexOf(CV.P);
@@ -23482,12 +23496,39 @@ function cvAccion(a){
  else if(a==='girar'||a==='izq'){ cvGirar(a==='izq'); }
  else if(a==='mas'){ CV.zoom=Math.min(CV.zoom*1.25,4); cvAjustar(); }
  else if(a==='menos'){ CV.zoom=Math.max(CV.zoom/1.25,0.3); cvAjustar(); }
+ else if(a==='leer-giro'){ cvLeerGirada(); }
  else if(a==='revisar'){ var P=CV.P; cvAccion('cerrar'); capSel(P); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
 }
 document.addEventListener('keydown',function(e){
  var v=$('cap-visor'); if(!v||v.style.display==='none'||!CV.P)return;
  if(e.key==='Escape')cvAccion('cerrar'); else if(e.key==='ArrowRight')cvAccion('sig'); else if(e.key==='ArrowLeft')cvAccion('ant');
 });
+/* Hojas escaneadas de lado: si la lectura no da ninguna cantidad, se gira la imagen y se lee otra vez */
+function capConCantidad(r){ return !!(r&&r.datos&&(r.datos.items||[]).some(function(x){ return isFinite(x.cant)&&x.cant>0; })); }
+function capGirarBlob(blob,grados){
+ return new Promise(function(ok,mal){
+  var u=URL.createObjectURL(blob), im=new Image();
+  im.onload=function(){ var w=im.naturalWidth, h=im.naturalHeight, lado=(grados%180)!==0, k=Math.min(1,1700/Math.max(w,h));
+   var c=document.createElement('canvas'); c.width=Math.round((lado?h:w)*k); c.height=Math.round((lado?w:h)*k);
+   var x=c.getContext('2d'); x.translate(c.width/2,c.height/2); x.rotate(grados*Math.PI/180); x.drawImage(im,-w*k/2,-h*k/2,w*k,h*k);
+   URL.revokeObjectURL(u); c.toBlob(function(b){ c.width=c.height=0; b?ok(b):mal(new Error('giro')); },'image/jpeg',0.85); };
+  im.onerror=function(){ URL.revokeObjectURL(u); mal(new Error('imagen')); };
+  im.src=u;
+ });
+}
+async function capLeerGirando(M,r){
+ if(capConCantidad(r)||!(M.imgs&&M.imgs.length===1))return {r:r,giro:0};
+ var G=[90,270,180];
+ for(var i=0;i<G.length;i++){
+  try{ var b=await capGirarBlob(M.imgs[0],G[i]), r2=await capLeerConLector([b],M.texto,M.tipo,'alta'); if(capConCantidad(r2))return {r:r2,giro:G[i]}; }catch(e){}
+ }
+ return {r:r,giro:0};
+}
+function capAplicarLectura(Q,r){
+ if(!r)return;
+ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; Q.error=''; Q.dup=null;
+ Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero,0,Q.datos.fecha)||null;
+}
 function capEspera(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 async function capLeerConLector(imgs,texto,tipo,calidad){
  var lector=capLector(), instr=capPrompt();
@@ -23600,6 +23641,7 @@ async function capLeerLista(nuevos){
       await new Promise(function(ok){ setTimeout(ok,20000*(intento+1)); }); Q.espera=''; }
     }
     Q.error='';
+    if(!capConCantidad(r)&&!Q.quitado){ var GR=await capLeerGirando(M,r); if(GR.giro){ r=GR.r; Q.giro=GR.giro; } }
     if(!Q.url&&Q.pagina&&M.imgs&&M.imgs[0])Q.url=URL.createObjectURL(M.imgs[0]);
     if(r){ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; }
     if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero,0,Q.datos.fecha);
