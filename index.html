@@ -1799,6 +1799,7 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .cero-tarjeta{border-color:#e3b9b6}.cero-tarjeta h3{color:#9b2c2c}
 .cap-mes-it{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--tinta-2,#555);margin-top:4px}.cap-mes-it input{width:auto;padding:2px 6px;font-size:12px}
 .cap-motivo{display:block;font-size:12px;color:#9b2c2c;margin-top:2px}
+.regla-mes{display:block;margin-top:6px;font-size:13px}.regla-mes select{width:auto;padding:2px 6px;font-size:13px;margin:0 4px}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -23388,7 +23389,26 @@ function normMes(t){
 /* El mes de consumo se acepta si queda a tres meses o menos de la fecha de la factura; si no, cuenta el mes de la fecha */
 function mesCercano(mes,fecha,tol){ tol=tol||3; var f=String(fecha||'').slice(0,7); if(!mes)return f; if(!/^\d{4}-\d{2}$/.test(f))return mes;
  var dif=Math.abs((+mes.slice(0,4)*12+ +mes.slice(5,7))-(+f.slice(0,4)*12+ +f.slice(5,7))); return dif<=tol?mes:f; }
-function mesDeRegistro(r){ var m=String((r&&r.mes)||''); return /^\d{4}-\d{2}$/.test(m)?m:String((r&&r.fecha)||'').slice(0,7); }
+/* Mes de referencia de cada factura, según las instrucciones del proyecto (Calculadora · «Mes de referencia»):
+   electricidad por período facturado, fecha o archivo; combustibles y demás por archivo o fecha.
+   Un mes escrito a mano en la revisión manda sobre la regla. Cada registro conserva los tres meses posibles. */
+var REGLA_MES_TXT={archivo:'mes del nombre del archivo',periodo:'mes del período facturado',fecha:'mes de la fecha de la factura',manual:'mes escrito en la revisión'};
+function reglasMes(){ var R=(S.prod&&S.prod.reglasMes)||{}; return {elec:R.elec||'periodo',otros:R.otros||'archivo'}; }
+function esRegElec(r){ var l=capLinea(r.cat,r.linea); return !!(l&&capUniLinea(l)==='kWh'); }
+function mesesDeRegistro(r){
+ var ok=function(m){ return /^\d{4}-\d{2}$/.test(String(m||''))?String(m):''; };
+ var per=ok(r.mesLeido)||((r.mesRevisado||r.mesLeido!==undefined)?'':ok(r.mes));
+ return {manual:ok(r.mesManual),archivo:ok(r.mesArchivo)||ok(capMesDeNombre(r.archivo)),periodo:per,fecha:ok(String(r.fecha||'').slice(0,7))};
+}
+function mesYRegla(r){
+ if(!r)return {mes:'',regla:''};
+ var M=mesesDeRegistro(r); if(M.manual)return {mes:M.manual,regla:'manual'};
+ var R=reglasMes(), base=esRegElec(r)?R.elec:R.otros;
+ var orden={archivo:['archivo','fecha','periodo'],periodo:['periodo','fecha','archivo'],fecha:['fecha','periodo','archivo']}[base]||['fecha','periodo','archivo'];
+ for(var i=0;i<orden.length;i++){ if(M[orden[i]])return {mes:M[orden[i]],regla:orden[i]}; }
+ return {mes:'',regla:''};
+}
+function mesDeRegistro(r){ return mesYRegla(r).mes; }
 function normFechaBase(t){
  t=String(t||'').trim(); if(!t)return '';
  var m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t); if(m)return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
@@ -23679,7 +23699,7 @@ async function capRegistrarPendiente(Q){
  else { var c=clCarpetaDeLinea({id:'',et:(Q.nombre||'')+' '+(it.desc||'')}); if(!/^\d\d$/.test(c||''))c='10'; ref='cdoc:da-'+c; }
  var adj=Q.file?await capGuardarOriginal(ref,Q.file,Q.hash,Q.metHash):'';
  var pr=capSinLectura(Q)?['No se leyó ninguna cantidad']:capProblemas(Q);
- var reg={id:uid('reg'),fecha:d.fecha||'',mes:((d.mesDeNombre||!d.fecha)?(normMes(d.mes)||''):mesCercano(normMes(d.mes),d.fecha,3)),numero:d.numero||'',proveedor:d.proveedor||'',cat:Q.cat||'org',fid:Q.fid||'',
+ var reg={id:uid('reg'),fecha:d.fecha||'',mes:'',mesLeido:(d.fecha?mesCercano(normMes(d.mes),d.fecha,3):(normMes(d.mes)||'')),mesArchivo:d.mesArchivo||capMesDeNombre(Q.nombre),mesManual:normMes(d.mesManual)||'',numero:d.numero||'',proveedor:d.proveedor||'',cat:Q.cat||'org',fid:Q.fid||'',
   linea:l?l.id:'',lineaNom:l?l.et:'Sin fuente asignada',desc:it.desc||'',cantidad:isFinite(it.cant)?it.cant:0,unidad:it.uni||'',conversion:0,convAuto:false,
   cantidadLinea:0,unidadLinea:l?l.un:'',importe:isFinite(it.importe)?it.importe:null,adjuntoId:adj||'',archivo:Q.nombre||'',pagina:Q.pagina||0,hash:Q.hash||'',metHash:Q.metHash||'',
   origen:Q.origen||'',confianza:'',por:quien,cuando:ahora,nota:'Pendiente de cantidad: '+(pr[0]||'revisar'),estado:'pendiente'};
@@ -23733,13 +23753,14 @@ function capCompletar(Q){
  if(mn&&!d.mesRevisado){
   d.mesRevisado=true;
   var varios={}; (d.items||[]).forEach(function(it){ if(it.mes)varios[it.mes]=1; });
-  if(Object.keys(varios).length<=1){
-   if(!d.fecha){ d.mes=mn; d.mesDeNombre=true; }
+  if(Object.keys(varios).length<=1){ d.mesArchivo=mn;
+   d.mesArchivo=mn;
+   if(!d.fecha){ d.mesDeNombre=true; }
    else if(String(d.fecha).slice(0,7)!==mn){
     var fm=capFechaHaciaMes(d.fecha,mn);
-    if(fm){ d.fechaLeida=d.fecha; d.fecha=fm; d.mes=mn; d.notaMes='fecha leída '+d.fechaLeida+' corregida a día/mes/año'; }
-    else { d.mes=mn; d.mesDeNombre=true; d.notaMes='la factura dice '+d.fecha+'; cuenta en el mes del archivo'; }
-    (d.items||[]).forEach(function(it){ it.mes=''; it.deduccion=(it.deduccion?it.deduccion+'; ':'')+d.notaMes; });
+    if(fm){ d.fechaLeida=d.fecha; d.fecha=fm; d.notaMes='fecha leída '+d.fechaLeida+' corregida a día/mes/año'; }
+    else { d.mesDeNombre=true; d.notaMes='la factura dice '+d.fecha+', el archivo es de '+mn; }
+    (d.items||[]).forEach(function(it){ it.deduccion=(it.deduccion?it.deduccion+'; ':'')+d.notaMes; });
    }
   }
  }
@@ -23756,14 +23777,15 @@ function capFechaHaciaMes(f,mn){
 function capRepararMesesPorArchivo(){
  var cambios=0;
  registros().forEach(function(r){
-  if(r.estado==='anulado'||r.mesRevisado)return;
-  var mn=capMesDeNombre(r.archivo); if(!mn)return; r.mesRevisado=true;
-  if(mesDeRegistro(r)===mn)return;
+  if(r.estado==='anulado'||r.mesRevisado2)return;
+  var mn=capMesDeNombre(r.archivo); if(!mn)return; r.mesRevisado2=true;
+  if(String(r.fecha||'').slice(0,7)===mn){ r.mesArchivo=mn; return; }
   var fm=r.fecha?capFechaHaciaMes(r.fecha,mn):'';
-  if(fm){ r.fechaLeida=r.fechaLeida||r.fecha; r.fecha=fm; }
-  r.mes=mn; r.fechaNota=(r.fechaNota?r.fechaNota+'; ':'')+(fm?('fecha leída '+r.fechaLeida+' corregida a día/mes/año'):('cuenta en el mes del archivo ('+mn+')')); cambios++;
+  if(r.mesLeido===undefined)r.mesLeido=/^\d{4}-\d{2}$/.test(String(r.mes||''))&&!r.mesRevisado?r.mes:'';
+  r.mesArchivo=mn;
+  if(fm){ r.fechaLeida=r.fechaLeida||r.fecha; r.fecha=fm; r.fechaNota=(r.fechaNota?r.fechaNota+'; ':'')+'fecha leída '+r.fechaLeida+' corregida a día/mes/año'; cambios++; }
  });
- if(cambios){ marcar('captura/registros'); guardarLocal(); anotar('dato','Meses de consumo ajustados al mes del archivo','',String(cambios),'Facturas cargadas en archivos con el mes en el nombre que quedaron en otro mes'); }
+ if(cambios){ marcar('captura/registros'); guardarLocal(); anotar('dato','Fechas corregidas a día/mes/año','',String(cambios),'Fechas leídas como mes/día que, al intercambiarse, caen en el mes del nombre del archivo'); }
 }
 /* Hoja que no dio datos: falló la lectura o no se leyó ninguna cantidad */
 function capSinLectura(Q){ return !!Q.error||!Q.datos.items.some(function(x){ return isFinite(x.cant)&&x.cant>0; }); }
@@ -23822,7 +23844,7 @@ function capProblemas(P){
  if(P.estado==='leyendo')p.push('Todavía se está leyendo el documento.');
  if(P.cat==='finca'&&!P.fid)p.push('Elija la finca a la que pertenece el documento'+(P.fincaLeida?(' (el documento dice «'+P.fincaLeida+'»)'):'')+'.');
  if(!inc.length)p.push('No hay ningún renglón marcado para registrar.');
- if(!d.fecha&&!/^\d{4}-\d{2}$/.test(d.mes||''))p.push('Falta la fecha de la factura (o el mes de consumo).');
+ if(!d.fecha&&!/^\d{4}-\d{2}$/.test(d.mes||'')&&!d.mesArchivo)p.push('Falta la fecha de la factura (o el mes de consumo).');
  /* Regla: no se admiten facturas duplicadas (el mismo archivo, o el mismo proveedor y número ya registrados) */
  inc.forEach(function(it){ if(it.cant>0&&isFinite(it.importe)&&Math.abs(it.cant-it.importe)<0.005)p.push('Renglón '+(d.items.indexOf(it)+1)+': la cantidad es igual al monto de la factura; anote la cantidad física (litros, galones, kWh), no el valor en lempiras.'); });
  var dupV=capDuplicado(P.hash,d.proveedor,d.numero,P.pagina||0,d.fecha);
@@ -23851,7 +23873,7 @@ async function capConfirmar(P0,silencio){
    adj[ref]=await capGuardarOriginal(ref,P.file,P.hash,P.metHash);
   }
   var cv=capConvItem(it,l);
-  var reg={id:uid('reg'),fecha:d.fecha||'',fechaNota:d.notaMes||((!d.fecha&&d.mesDeNombre)?'mes tomado del nombre del archivo':''),deduccion:it.deduccion||'',mes:(it.mes?mesCercano(it.mes,d.fecha,15):((d.mesDeNombre||!d.fecha)?(normMes(d.mes)||''):mesCercano(normMes(d.mes),d.fecha,3))),numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
+  var reg={id:uid('reg'),fecha:d.fecha||'',fechaNota:d.notaMes||((!d.fecha&&d.mesDeNombre)?'mes tomado del nombre del archivo':''),deduccion:it.deduccion||'',mes:'',mesLeido:(it.mes?mesCercano(it.mes,d.fecha,15):(d.fecha?mesCercano(normMes(d.mes),d.fecha,3):(normMes(d.mes)||''))),mesArchivo:d.mesArchivo||capMesDeNombre(P.nombre),mesManual:normMes(it.mesManual||d.mesManual)||'',numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
    linea:l.id,lineaNom:l.et,desc:it.desc,cantidad:it.cant,unidad:it.uni,conversion:cv.f,convAuto:cv.auto,
    cantidadLinea:Math.round(it.cant*cv.f*1e6)/1e6,unidadLinea:l.un,importe:isFinite(it.importe)?it.importe:null,
    adjuntoId:adj[ref]||'',archivo:P.nombre||'',pagina:P.pagina||0,hash:P.hash||'',metHash:P.metHash||'',
@@ -24129,7 +24151,7 @@ document.addEventListener('change',function(ev){
  if(t.dataset.capFid){ CAP.fid=t.value; pintar(); return; }
  if(t.dataset.capFiltro){ CAP.filtro=t.value; pintar(); return; }
  if(t.dataset.capSim==='l'){ CAP.sim.l=t.value; pintar(); return; }
- if(t.dataset.capH&&CAP.pend){ CAP.pend.datos[t.dataset.capH]=t.value;
+ if(t.dataset.capH&&CAP.pend){ CAP.pend.datos[t.dataset.capH]=t.value; if(t.dataset.capH==='mes')CAP.pend.datos.mesManual=normMes(t.value);
   if(!(CAP.pend.dup&&CAP.pend.dup.hash&&CAP.pend.dup.hash===CAP.pend.hash)){ CAP.pend.dup=capDuplicado('',CAP.pend.datos.proveedor,CAP.pend.datos.numero,0,CAP.pend.datos.fecha)||null; }
   pintar(); return; }
  if(t.dataset.capI!=null&&capItem(+t.dataset.capI)){
@@ -24139,7 +24161,7 @@ document.addEventListener('change',function(ev){
   else if(k==='uni')it.uni=t.value;
   else if(k==='linea')it.linea=t.value;
   else if(k==='conv')it.conv=t.value;
-  else if(k==='mes')it.mes=normMes(t.value);
+  else if(k==='mes'){ it.mes=normMes(t.value); it.mesManual=it.mes; }
   else if(k==='desc'){ it.desc=t.value; if(!it.linea){ it.linea=capSugerir(t.value,CAP.pend.cat); } }
   pintar(); return;
  }
@@ -25840,7 +25862,7 @@ function tarjetaEstructura(){
    '<span>'+fmt(C.tot,3)+'</span><span>t CO₂e</span><span>'+(A.tot>0?fmt(C.tot/A.tot*100,1):'0.0')+' %</span></button>';
   if(ab){
    var MS=calcMeses();
-   h+='<div class="calc-det"><p class="calc-per">'+(MS.length?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[MS.length-1])+'</b>. Cantidades en la unidad de cada fuente, según el mes de consumo de cada factura o registro.'):'Todavía no hay facturas o registros con fecha: las cantidades se muestran como total del período.')+'</p>'+
+   h+='<div class="calc-det"><p class="calc-per">'+(MS.length?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[MS.length-1])+'</b>. Cantidades en la unidad de cada fuente, en su mes de referencia.'+tarjetaReglaMes()):'Todavía no hay facturas o registros con fecha: las cantidades se muestran como total del período.')+'</p>'+
     '<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fuente</th><th>Unidad</th>'+MS.map(function(k){return '<th class="n">'+mesNom(k)+'</th>';}).join('')+
     (MS.length?'<th class="n">Facturas fuera de esos meses</th><th class="n">Anotado sin factura</th>':'')+'<th class="n">Total</th><th class="n">Factor</th><th class="n">t CO₂e</th><th>Respaldo</th></tr></thead><tbody>'+
     C.filas.sort(function(a,b){return b.t-a.t||b.q-a.q;}).map(function(f){
@@ -25883,6 +25905,16 @@ function calcDatos(){
  var I=R?incertidumbreCaso(R,C):null;
  return {C:C,pres:pres,dest:dest,pr:pr,de:de,R:R,kgU:kgU,etapas:etapas,I:I,tot:tot};
 }
+function tarjetaReglaMes(){
+ var R=reglasMes(), ed=puedeEditar();
+ var sel=function(k,v,ops){ return '<select data-regla-mes="'+k+'"'+(ed?'':' disabled')+'>'+ops.map(function(o){ return '<option value="'+o+'"'+(o===v?' selected':'')+'>'+esc(REGLA_MES_TXT[o])+'</option>'; }).join('')+'</select>'; };
+ return '<span class="regla-mes">Mes de referencia · electricidad: '+sel('elec',R.elec,['periodo','fecha','archivo'])+' · combustibles y demás: '+sel('otros',R.otros,['archivo','fecha'])+'</span>';
+}
+document.addEventListener('change',function(ev){ var t=ev.target; if(!t.dataset||!t.dataset.reglaMes)return;
+ S.prod=S.prod||{}; S.prod.reglasMes=S.prod.reglasMes||{}; var antes=reglasMes()[t.dataset.reglaMes];
+ S.prod.reglasMes[t.dataset.reglaMes]=t.value; marcar('gestion/declaraciones');
+ anotar('dato','Mes de referencia de '+(t.dataset.reglaMes==='elec'?'electricidad':'combustibles y demás'),REGLA_MES_TXT[antes]||'',REGLA_MES_TXT[t.value]||t.value,'Instrucción del proyecto para agrupar las facturas por mes');
+ guardarLocal(); pintar(); try{ sincronizar(true); }catch(e){} });
 function vistaCalculadora(){
  if(CAP.restPry!==PRY)setTimeout(capColaRestaurar,0);
  presAsegura(); try{ capRepararMesesPorArchivo(); }catch(e){}
@@ -25969,10 +26001,10 @@ async function calcExcel(){
  lineasDe('org').forEach(function(l){ fila(EX[l.id]?'Exportación':'Beneficio y planta','',l,'org',null); });
  if(da.length>1){ var n=da.length, tot=['Total','','','','']; for(var c=c0;c<=cTot+7;c++)tot.push(''); tot[cTot+5]={f:'SUM('+colLetra(cTot+5)+'2:'+colLetra(cTot+5)+n+')',s:7}; tot[cTot+6]={f:'SUM('+colLetra(cTot+6)+'2:'+colLetra(cTot+6)+n+')',s:7}; da.push(tot); }
  /* facturas y registros */
- var rg=[[{b:'Fecha'},{b:'Número'},{b:'Proveedor'},{b:'Ámbito'},{b:'Finca'},{b:'Fuente'},{b:'Descripción en la factura'},{b:'Cantidad'},{b:'Unidad de la factura'},{b:'Conversión'},{b:'Cantidad en la unidad de la fuente'},{b:'Unidad de la fuente'},{b:'Archivo'},{b:'Página'},{b:'Sello SHA-256'},{b:'Lectura'},{b:'Registrado por'},{b:'Registrado el'},{b:'Mes de consumo'},{b:'Estado'},{b:'Deducciones y notas'}]];
+ var rg=[[{b:'Fecha'},{b:'Número'},{b:'Proveedor'},{b:'Ámbito'},{b:'Finca'},{b:'Fuente'},{b:'Descripción en la factura'},{b:'Cantidad'},{b:'Unidad de la factura'},{b:'Conversión'},{b:'Cantidad en la unidad de la fuente'},{b:'Unidad de la fuente'},{b:'Archivo'},{b:'Página'},{b:'Sello SHA-256'},{b:'Lectura'},{b:'Registrado por'},{b:'Registrado el'},{b:'Mes de referencia'},{b:'Regla aplicada'},{b:'Mes del archivo'},{b:'Mes del período'},{b:'Mes de la fecha'},{b:'Estado'},{b:'Deducciones y notas'}]];
  registros().filter(function(r){return r.estado!=='anulado';}).sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha));}).forEach(function(r,i){
   var fz=r.fid?(S.fincas.filter(function(f){return f.id===r.fid;})[0]||{}):{}, R=i+2;
-  rg.push([r.fecha,r.numero||'',r.proveedor||'',r.cat==='finca'?'Finca':'Organización',fz.codigo||'',r.lineaNom,r.desc||'',r.cantidad,(CAP_UNI[r.unidad]||[0,0,r.unidad])[2],r.conversion,{f:'H'+R+'*J'+R,v:r.cantidadLinea,s:3},r.unidadLinea,r.archivo||'',r.pagina||'',r.hash||'sin archivo',r.origen==='ia'?'asistida y confirmada':'manual',r.por||'',String(r.cuando||'').slice(0,10),mesDeRegistro(r),r.estado==='pendiente'?'pendiente de cantidad':(r.estado||''),[r.deduccion,r.fechaNota,r.estado==='pendiente'?r.nota:''].filter(Boolean).join('; ')]);
+  rg.push([].concat(r.fecha,r.numero||'',r.proveedor||'',r.cat==='finca'?'Finca':'Organización',fz.codigo||'',r.lineaNom,r.desc||'',r.cantidad,(CAP_UNI[r.unidad]||[0,0,r.unidad])[2],r.conversion,{f:'H'+R+'*J'+R,v:r.cantidadLinea,s:3},r.unidadLinea,r.archivo||'',r.pagina||'',r.hash||'sin archivo',r.origen==='ia'?'asistida y confirmada':'manual',r.por||'',String(r.cuando||'').slice(0,10),(function(){ var Y=mesYRegla(r), M=mesesDeRegistro(r); return [Y.mes,REGLA_MES_TXT[Y.regla]||'',M.archivo,M.periodo,M.fecha]; })(),r.estado==='pendiente'?'pendiente de cantidad':(r.estado||''),[r.deduccion,r.fechaNota,r.estado==='pendiente'?r.nota:''].filter(Boolean).join('; ')));
  });
  var fac=[[{b:'Fuente'},{b:'Factor'},{b:'Unidad'},{b:'Nivel'},{b:'Fuente bibliográfica'},{b:'Año'},{b:'t CO₂e'}]];
  factoresAplicados().forEach(function(x){ fac.push([x.et,nv(x.f),x.uf,x.niv||'',x.fue||'',String(x.anio||''),x.t]); });
@@ -25988,7 +26020,7 @@ async function calcExcel(){
   {nombre:'Resultado',filas:res,congelar:{x:0,y:1},anchos:[30,18,18,18,22,16,18,18],estilos:[4,4,6,2,2,2,2,6]},
   {nombre:'Camino del cálculo',filas:et,filtro:true,congelar:{x:0,y:1},anchos:[30,46,30,22,18,18],estilos:[4,4,4,4,8,2]},
   {nombre:'Datos de actividad',filas:da,filtro:true,congelar:{x:4,y:1},anchos:[16,12,22,44,20].concat(MS.map(function(){return 11;})).concat([14,14,14,12,22,10,13,13,12]),estilos:est},
-  {nombre:'Facturas y registros',filas:rg,filtro:true,congelar:{x:0,y:1},anchos:[11,16,24,13,10,36,32,11,14,11,14,18,30,8,66,18,18,12,12,18,50],estilos:[4,4,4,4,4,4,4,6,4,8,3,4,4,9,4,4,4,4,4,4,4]},
+  {nombre:'Facturas y registros',filas:rg,filtro:true,congelar:{x:0,y:1},anchos:[11,16,24,13,10,36,32,11,14,11,14,18,30,8,66,18,18,12,12,26,12,12,12,18,50],estilos:[4,4,4,4,4,4,4,6,4,8,3,4,4,9,4,4,4,4,4,4,4,4,4,4,4]},
   {nombre:'Factores',filas:fac,filtro:true,congelar:{x:1,y:1},anchos:[44,12,26,10,60,8,12],estilos:[4,2,4,4,4,4,3]},
   {nombre:'Bases del cálculo',filas:bas,congelar:{x:0,y:1},anchos:[36,110],estilos:[4,4]}]);
  var ok=await bajar('ARRAIGO-calculadora-'+cdsNomSeguro(perV('razon')||S.perfil.organizacion||'organizacion')+'-'+hoy()+'.xlsx',bytes);
