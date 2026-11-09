@@ -23679,7 +23679,7 @@ async function capRegistrarPendiente(Q){
  else { var c=clCarpetaDeLinea({id:'',et:(Q.nombre||'')+' '+(it.desc||'')}); if(!/^\d\d$/.test(c||''))c='10'; ref='cdoc:da-'+c; }
  var adj=Q.file?await capGuardarOriginal(ref,Q.file,Q.hash,Q.metHash):'';
  var pr=capSinLectura(Q)?['No se leyó ninguna cantidad']:capProblemas(Q);
- var reg={id:uid('reg'),fecha:d.fecha||'',mes:mesCercano(normMes(d.mes),d.fecha,3),numero:d.numero||'',proveedor:d.proveedor||'',cat:Q.cat||'org',fid:Q.fid||'',
+ var reg={id:uid('reg'),fecha:d.fecha||'',mes:((d.mesDeNombre||!d.fecha)?(normMes(d.mes)||''):mesCercano(normMes(d.mes),d.fecha,3)),numero:d.numero||'',proveedor:d.proveedor||'',cat:Q.cat||'org',fid:Q.fid||'',
   linea:l?l.id:'',lineaNom:l?l.et:'Sin fuente asignada',desc:it.desc||'',cantidad:isFinite(it.cant)?it.cant:0,unidad:it.uni||'',conversion:0,convAuto:false,
   cantidadLinea:0,unidadLinea:l?l.un:'',importe:isFinite(it.importe)?it.importe:null,adjuntoId:adj||'',archivo:Q.nombre||'',pagina:Q.pagina||0,hash:Q.hash||'',metHash:Q.metHash||'',
   origen:Q.origen||'',confianza:'',por:quien,cuando:ahora,nota:'Pendiente de cantidad: '+(pr[0]||'revisar'),estado:'pendiente'};
@@ -23729,7 +23729,41 @@ function capCompletar(Q){
    if(u){ it.uni=u; it.deduccion=(it.deduccion?it.deduccion+'; ':'')+'unidad deducida'+(isFinite(pu)?(' por el precio (L '+fmt(pu,2)+' por unidad)'):''); }
   }
  });
- if(!d.fecha&&!d.mes){ var mn=capMesDeNombre(nom); if(mn){ d.mes=mn; d.mesDeNombre=true; } }
+ var mn=capMesDeNombre(nom);
+ if(mn&&!d.mesRevisado){
+  d.mesRevisado=true;
+  var varios={}; (d.items||[]).forEach(function(it){ if(it.mes)varios[it.mes]=1; });
+  if(Object.keys(varios).length<=1){
+   if(!d.fecha){ d.mes=mn; d.mesDeNombre=true; }
+   else if(String(d.fecha).slice(0,7)!==mn){
+    var fm=capFechaHaciaMes(d.fecha,mn);
+    if(fm){ d.fechaLeida=d.fecha; d.fecha=fm; d.mes=mn; d.notaMes='fecha leída '+d.fechaLeida+' corregida a día/mes/año'; }
+    else { d.mes=mn; d.mesDeNombre=true; d.notaMes='la factura dice '+d.fecha+'; cuenta en el mes del archivo'; }
+    (d.items||[]).forEach(function(it){ it.mes=''; it.deduccion=(it.deduccion?it.deduccion+'; ':'')+d.notaMes; });
+   }
+  }
+ }
+}
+/* «05/01/2025» leída como 1 de mayo: si al intercambiar día y mes la fecha cae en el mes del archivo, se corrige */
+function capFechaHaciaMes(f,mn){
+ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(f||'')); if(!m)return '';
+ var y=m[1], mo=+m[2], dd=+m[3];
+ if(dd<=12&&(y+'-'+String(dd).padStart(2,'0'))===mn)return y+'-'+String(dd).padStart(2,'0')+'-'+String(mo).padStart(2,'0');
+ if(m[2]===mn.slice(5,7)&&y!==mn.slice(0,4)&&y.slice(-1)===mn.slice(3,4))return mn+'-'+m[3];
+ return '';
+}
+/* Registros ya confirmados: el mismo criterio, una vez por sesión (los de archivos con mes en el nombre) */
+function capRepararMesesPorArchivo(){
+ var cambios=0;
+ registros().forEach(function(r){
+  if(r.estado==='anulado'||r.mesRevisado)return;
+  var mn=capMesDeNombre(r.archivo); if(!mn)return; r.mesRevisado=true;
+  if(mesDeRegistro(r)===mn)return;
+  var fm=r.fecha?capFechaHaciaMes(r.fecha,mn):'';
+  if(fm){ r.fechaLeida=r.fechaLeida||r.fecha; r.fecha=fm; }
+  r.mes=mn; r.fechaNota=(r.fechaNota?r.fechaNota+'; ':'')+(fm?('fecha leída '+r.fechaLeida+' corregida a día/mes/año'):('cuenta en el mes del archivo ('+mn+')')); cambios++;
+ });
+ if(cambios){ marcar('captura/registros'); guardarLocal(); anotar('dato','Meses de consumo ajustados al mes del archivo','',String(cambios),'Facturas cargadas en archivos con el mes en el nombre que quedaron en otro mes'); }
 }
 /* Hoja que no dio datos: falló la lectura o no se leyó ninguna cantidad */
 function capSinLectura(Q){ return !!Q.error||!Q.datos.items.some(function(x){ return isFinite(x.cant)&&x.cant>0; }); }
@@ -23817,7 +23851,7 @@ async function capConfirmar(P0,silencio){
    adj[ref]=await capGuardarOriginal(ref,P.file,P.hash,P.metHash);
   }
   var cv=capConvItem(it,l);
-  var reg={id:uid('reg'),fecha:d.fecha||'',fechaNota:(!d.fecha&&d.mesDeNombre)?'mes tomado del nombre del archivo':'',deduccion:it.deduccion||'',mes:(it.mes?mesCercano(it.mes,d.fecha,15):(d.fecha?mesCercano(normMes(d.mes),d.fecha,3):(normMes(d.mes)||''))),numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
+  var reg={id:uid('reg'),fecha:d.fecha||'',fechaNota:d.notaMes||((!d.fecha&&d.mesDeNombre)?'mes tomado del nombre del archivo':''),deduccion:it.deduccion||'',mes:(it.mes?mesCercano(it.mes,d.fecha,15):((d.mesDeNombre||!d.fecha)?(normMes(d.mes)||''):mesCercano(normMes(d.mes),d.fecha,3))),numero:d.numero,proveedor:d.proveedor,cat:P.cat,fid:P.fid||'',
    linea:l.id,lineaNom:l.et,desc:it.desc,cantidad:it.cant,unidad:it.uni,conversion:cv.f,convAuto:cv.auto,
    cantidadLinea:Math.round(it.cant*cv.f*1e6)/1e6,unidadLinea:l.un,importe:isFinite(it.importe)?it.importe:null,
    adjuntoId:adj[ref]||'',archivo:P.nombre||'',pagina:P.pagina||0,hash:P.hash||'',metHash:P.metHash||'',
@@ -23939,6 +23973,7 @@ function vistaCaptura(){
     (lector?'':'<b>La lectura automática no está disponible en esta copia</b>: los datos se anotan a mano. ')+'Nada se suma sin su confirmación.</p>'+
     '<div class="acciones cap-alt"><button type="button" data-cap="manual">Anotar sin archivo</button><span class="muted">solo si el documento no existe; queda marcado «sin respaldo»</span></div>')
    :'<div class="aviso">Su perfil puede consultar, pero no capturar.</div>')+'</div></div>';
+ try{ capRepararMesesPorArchivo(); }catch(e){}
  var COLA=capCola();
  COLA.forEach(function(Q){ if(Q.estado==='revisar'&&!Q.completado){ try{ capCompletar(Q); }catch(e){} Q.completado=true; } });
  if(COLA.length){
@@ -25850,7 +25885,7 @@ function calcDatos(){
 }
 function vistaCalculadora(){
  if(CAP.restPry!==PRY)setTimeout(capColaRestaurar,0);
- presAsegura();
+ presAsegura(); try{ capRepararMesesPorArchivo(); }catch(e){}
  var D=calcDatos(), HP=huellaProducto();
  var h=cabModulo('calc','<p class="vista-sub">La huella de carbono del café oro exportado, puesto en el puerto de destino, por presentación de venta. Cada cifra se puede seguir hasta su dato de actividad y su factor.</p>');
  h+='<div class="calc">';
