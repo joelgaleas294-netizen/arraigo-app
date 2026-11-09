@@ -23825,7 +23825,9 @@ function vistaCaptura(){
   var acc=ed?('<div class="cap-cola-acc">'+Object.keys(archivos).filter(function(k){return archivos[k].n>1;}).map(function(k){
     return '<button type="button" data-cap="quitar-archivo" data-hash="'+esc(k)+'">🗑 Quitar «'+esc(archivos[k].nombre)+'» completo ('+archivos[k].n+' páginas)</button>'; }).join('')+
     '<button type="button" data-cap="vaciar">🗑 Vaciar la lista</button>'+
-    (Object.keys(CAP.marcados||{}).length?'<button type="button" data-cap="quitar-sel">🗑 Quitar seleccionados ('+Object.keys(CAP.marcados).length+')</button><button type="button" class="cap-conf-sel" data-cap="confirmar-sel">✓ Confirmar seleccionados</button>':'<span class="muted" style="align-self:center">Marque varios documentos para quitarlos o confirmarlos juntos.</span>')+'</div>'):'';
+    '<button type="button" data-cap="sel-todos">'+(Object.keys(CAP.marcados||{}).length>=COLA.length?'☐ Quitar la selección':'☑ Seleccionar todos ('+COLA.length+')')+'</button>'+
+    (listos?'<button type="button" class="primario" data-cap="listos">✓ Confirmar todos los listos ('+listos+')</button>':'')+
+    (Object.keys(CAP.marcados||{}).length?'<button type="button" data-cap="quitar-sel">🗑 Quitar seleccionados ('+Object.keys(CAP.marcados).length+')</button><button type="button" class="cap-conf-sel" data-cap="confirmar-sel">✓ Confirmar seleccionados ('+COLA.filter(function(Q){return CAP.marcados[Q.id]&&Q.estado==='revisar';}).length+' leídos)</button>':'<span class="muted" style="align-self:center">Marque varios documentos para quitarlos o confirmarlos juntos.</span>')+'</div>'):'';
   h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo">'+acc+'<ul class="cap-cola">'+
    COLA.map(function(Q){
     var marcaQ=ed?'<label class="cap-marca"><input type="checkbox" data-cap-marca="'+esc(Q.id)+'"'+(CAP.marcados&&CAP.marcados[Q.id]?' checked':'')+' aria-label="Seleccionar"></label>':'';
@@ -23986,9 +23988,12 @@ document.addEventListener('click',function(ev){
  else if(a==='descartar'){ if(CAP.pend)capQuitarDeCola([CAP.pend]); }
  else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
  else if(a==='ver'){ ev.preventDefault(); capVerHoja(capCola().filter(function(x){return x.id===b.dataset.id;})[0]); }
+ else if(a==='sel-todos'){ var C0=capCola(); if(Object.keys(CAP.marcados||{}).length>=C0.length)CAP.marcados={}; else { CAP.marcados={}; C0.forEach(function(x){ CAP.marcados[x.id]=1; }); } pintar(); }
  else if(a==='confirmar-sel'){ (async function(){ var L=capCola().filter(function(x){return CAP.marcados&&CAP.marcados[x.id]&&x.estado==='revisar';}), n=0, mal=0;
-   for(var i=0;i<L.length;i++){ if(await capConfirmar(L[i],true))n++; else mal++; } CAP.marcados={}; pintar();
-   msg(n+' documento'+(n===1?'':'s')+' registrado'+(n===1?'':'s')+(mal?(' · '+mal+' con datos por completar'):'')); })(); }
+   for(var i=0;i<L.length;i++){ if(await capConfirmar(L[i],true)){ n++; delete CAP.marcados[L[i].id]; } else mal++; }
+   var vivos={}; capCola().forEach(function(x){ if(CAP.marcados[x.id])vivos[x.id]=1; }); CAP.marcados=vivos; pintar();
+   var leyendo=Object.keys(vivos).length-mal;
+   msg(n+' documento'+(n===1?'':'s')+' registrado'+(n===1?'':'s')+(mal?(' · '+mal+' con datos por completar'):'')+(leyendo>0?(' · '+leyendo+' aún en lectura: siguen seleccionados para confirmarlos al terminar'):'')); })(); }
  else if(a==='quitar'||a==='quitar-archivo'||a==='vaciar'||a==='quitar-sel'){
   var sel=capCola().filter(function(x){ return a==='vaciar'||(a==='quitar-sel'?(CAP.marcados&&CAP.marcados[x.id]):a==='quitar'?x.id===b.dataset.id:x.hash===b.dataset.hash); });
   if(!sel.length)return;
