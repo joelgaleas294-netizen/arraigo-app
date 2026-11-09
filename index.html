@@ -1839,6 +1839,18 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .graf .graf-ley button,.graf .graf-limpiar{border:0!important;background:none;box-shadow:none!important;min-height:0}.graf .graf-ley button:hover{background:var(--surface-2)}
 @media (max-width:600px){.graf-barras{overflow-x:auto;-webkit-overflow-scrolling:touch}.graf-svg{min-width:600px}}
 @media (max-width:900px){.graf-cuerpo{grid-template-columns:1fr}.graf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.graf{padding:16px 14px}}
+.inf-fig{margin:18px 0 8px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.inf-fig-svg{width:100%;height:auto;display:block}
+.inf-fig figcaption{font-size:13px;margin-top:8px;color:var(--ink)}
+.odsh{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin:14px 0}
+.odsh-f{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;transition:box-shadow .2s}
+.odsh-f:hover{box-shadow:0 8px 24px -16px #0e3a5f55}
+.odsh-num{border-radius:12px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;height:62px}.odsh-num b{font-size:24px;line-height:1}.odsh-num small{font-size:10px;letter-spacing:.08em}
+.odsh-meta{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.odsh-tit{font-weight:600;margin:2px 0 6px;line-height:1.35}.odsh-ind{font-size:13px;color:var(--ink-2);margin-bottom:8px}
+.odsh-val{background:var(--acento-suave);border-radius:10px;padding:8px 10px;font-size:13px;margin-bottom:8px}.odsh-et{display:inline-block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:var(--acento);color:#fff;border-radius:6px;padding:1px 6px;margin-right:8px}
+.odsh-pie{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.odsh-pie label{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-3)}.odsh-pie select{width:auto}.odsh-nota{flex:1;min-width:160px}
+.odsh-no{opacity:.72}.odsh-sin .odsh-num{filter:grayscale(.65)}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -5602,8 +5614,8 @@ var MODULOS=[
   des:'Fotografías y documentos de respaldo, con su fecha, su autor y su coordenada.'},
  {id:'cal',scol:'s8',codigo:'MOD-CAL',nom:'Hoja de cálculo',col:'m8',etapa:'revisar',paso:12,
   des:'Todo el proyecto en una rejilla: dato, factor, evidencia y resultado.'},
- {id:'ods',scol:'s7',codigo:'MOD-ODS',nom:'Objetivos de desarrollo sostenible',col:'m7',etapa:'revisar',paso:13,
-  des:'Los diez objetivos que el programa puede declarar, cada uno con su indicador medido.'},
+ {id:'ods',scol:'s7',codigo:'MOD-ODS',nom:'Vinculación con los ODS',col:'m7',etapa:'cerrar',paso:16.5,
+  des:'Las metas de los Objetivos de Desarrollo Sostenible que el estudio sostiene con un indicador del período; pasan al informe como anexo.'},
  {id:'dia',scol:'s6',codigo:'MOD-DIA',nom:'Diagnóstico agronómico',col:'m6',etapa:'revisar',paso:14,
   des:'Lo que el mismo dato dice de la finca: sombra, especies, reemplazo, nitrógeno y eficiencia.'},
  {id:'res',scol:'s8',codigo:'MOD-RES',nom:'Resultado del ciclo',col:'m8',etapa:'cerrar',paso:15,
@@ -5708,8 +5720,8 @@ function datoModulo(m){
   S.fincas.forEach(function(x){ if(parcelasDe(x.id).length)cf++;
    var rr=recomendaciones(x); if(rr.length&&rr[0][0]!=='Sostener el manejo')cn+=rr.length; });
   return [String(cn),(cn===1?'observación de manejo':'observaciones de manejo')+' en '+plural(cf,'finca leída','fincas leídas'), cf>0];}
- if(m.id==='ods'){var dd=odsDeclarables();
-  return [dd.n+' de 10',(dd.n===1?'objetivo declarable':'objetivos declarables'), dd.n>0];}
+ if(m.id==='ods'){var no=odshResumen();
+  return [no+' de '+ODSH.length,(no===1?'meta vinculada':'metas vinculadas'), no>0];}
  if(m.id==='con'){var iv=instrumentosVencidos().length, it=instrumentos().length, ct=resultadoControl();
   if(!it)return ['0','instrumentos comprobados', false];
   return [(it-iv)+' de '+it,'instrumentos al día'+(ct.individuos?(' · remedición '+(ct.aprueba?'aprobada':'no aprueba')):''), iv===0&&(!ct.individuos||ct.aprueba)];}
@@ -5778,7 +5790,7 @@ function compEfectivo(){
 /* Pantallas retiradas del menú para trabajar simple (08/11/2026): su función quedó en otra pantalla.
    Biblioteca de factores y documental → Factores de emisión; Inventario de fuentes, Carga masiva y Hoja de cálculo → Subir facturas y registros;
    Archivo y Evidencia → Centro de datos de sustentos; poda de sombra, ODS, diagnóstico, mitigación y auditorías → fuera del alcance de la huella de producto. */
-var MOD_OCULTOS=['res','apr','org','pry','lfe','bib','tal','pod','car','arc','evi','cal','ods','dia','mit','aui','iai'];
+var MOD_OCULTOS=['res','apr','org','pry','lfe','bib','tal','pod','car','arc','evi','cal','dia','mit','aui','iai'];
 function moduloVisible(id){ return MOD_OCULTOS.indexOf(id)<0&&moduloEnAlcance(id)&&(!COMP_MOD[id]||COMP_MOD[id]===compEfectivo()); }
 function selectorComponente(){
  if(!compDisponible('H')||!compDisponible('R'))return '';
@@ -25346,6 +25358,151 @@ var INF_GRUPOS={'3':'Alcance del estudio','4':'Datos del inventario','5':'Métod
 function fx(n,d){ return fmt(n,d==null?2:d); }
 function fechaLarga(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m)return ''; var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return (+m[3])+' de '+M[+m[2]-1]+' de '+m[1]; }
 /* Bloques: {h:'título'} {p:'texto'} {tabla:{c:[...],f:[[...]]}} {nota:'texto'} */
+
+/* ==========================================================================
+   Figuras del informe: SVG autónomos (colores y letra fijos, sin interacción),
+   los mismos datos de la Calculadora. En Word se insertan como imagen PNG.
+   ========================================================================== */
+var FIG_F='Arial, Helvetica, sans-serif';
+function figEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function figEscala(maxV){ maxV=Math.max(maxV,0.0001); var paso=Math.pow(10,Math.floor(Math.log10(maxV))); var top=Math.ceil(maxV/paso)*paso; if(top/paso<=2)paso/=2; top=Math.ceil(maxV/paso)*paso; return {top:top,paso:paso}; }
+function figMeses(){
+ var D=grafDatos(); if(!D.cats.length||!D.meses.length)return null;
+ var por=D.meses.map(function(m){ return D.cats.reduce(function(a,G){return a+grafValor(G,m);},0); });
+ var E=figEscala(Math.max.apply(null,por)), W=720, H=330, ml=52, mr=50, mt=20, mb=78, cw=W-ml-mr, ch=H-mt-mb, n=D.meses.length, gap=cw/n, bw=Math.min(40,gap*0.62);
+ var y=function(v){return mt+ch-v/E.top*ch;};
+ var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" font-family="'+FIG_F+'"><rect width="'+W+'" height="'+H+'" fill="#ffffff"/>';
+ for(var g=0;g<=E.top+1e-9;g+=E.paso){ var yy=y(g).toFixed(1); o+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+yy+'" y2="'+yy+'" stroke="#dde3e0" stroke-dasharray="3 3"/><text x="'+(ml-8)+'" y="'+yy+'" dy="4" text-anchor="end" font-size="11" fill="#5e6d66">'+fmt(g,g<1?2:(g<10?1:0))+'</text>'; }
+ o+='<text transform="translate(14,'+(mt+ch/2)+') rotate(-90)" text-anchor="middle" font-size="11" fill="#5e6d66">t CO₂e</text>';
+ var tot=por.reduce(function(a,b){return a+b;},0), acu=0, pts=[];
+ D.meses.forEach(function(m,j){
+  var x=ml+gap*j+(gap-bw)/2, base=mt+ch;
+  D.cats.forEach(function(G){ var v=grafValor(G,m); if(!(v>0))return; var h=v/E.top*ch; base-=h; o+='<rect x="'+x.toFixed(1)+'" y="'+base.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(h,0.6).toFixed(1)+'" fill="'+G.col+'"'+(m==='__sin'?' fill-opacity="0.55"':'')+'/>'; });
+  if(por[j]>0)o+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base-5).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#33413a">'+fmt(por[j],por[j]<10?2:1)+'</text>';
+  o+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(mt+ch+16)+'" text-anchor="middle" font-size="10.5" fill="#33413a">'+figEsc(grafEtq(m))+'</text>';
+  acu+=por[j]; pts.push([ml+gap*j+gap/2, mt+ch-(tot>0?acu/tot:0)*ch]);
+ });
+ if(pts.length>1){ o+='<polyline points="'+pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ')+'" fill="none" stroke="#6CAF44" stroke-width="2.2" stroke-linejoin="round"/>'+pts.map(function(p){return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="#fff" stroke="#6CAF44" stroke-width="2"/>';}).join('');
+  [0,50,100].forEach(function(pc){ o+='<text x="'+(W-mr+8)+'" y="'+(mt+ch-pc/100*ch).toFixed(1)+'" dy="4" font-size="10.5" fill="#1C6B43">'+pc+' %</text>'; }); }
+ o+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+(mt+ch)+'" y2="'+(mt+ch)+'" stroke="#9aa8a2"/>';
+ /* leyenda */
+ var lx=ml, ly=H-30;
+ D.cats.concat([{nom:'Acumulado del período (eje derecho)',acu:true}]).forEach(function(G){ var w=Math.min(250,26+G.nom.length*6.1); if(lx+w>W-10){ lx=ml; ly+=18; }
+  o+=(G.acu?'<line x1="'+lx+'" x2="'+(lx+14)+'" y1="'+(ly-4)+'" y2="'+(ly-4)+'" stroke="#6CAF44" stroke-width="2.4"/>':'<rect x="'+lx+'" y="'+(ly-10)+'" width="11" height="11" rx="2" fill="'+G.col+'"/>')+'<text x="'+(lx+18)+'" y="'+ly+'" font-size="10.5" fill="#33413a">'+figEsc(G.nom)+'</text>'; lx+=w; });
+ o+='</svg>';
+ var MS=D.meses, filas=MS.map(function(m,j){ return [grafEtq(m)].concat(D.cats.map(function(G){ var v=grafValor(G,m); return v>0?fx(v,3):'—'; })).concat([fx(por[j],3)]); });
+ filas.push(['Total'].concat(D.cats.map(function(G){return fx(G.tot,3);})).concat([fx(tot,3)]));
+ return {svg:o,w:W,h:H,titulo:'Emisiones del sistema por mes y por categoría de fuente (t CO₂e)',
+  nota:'Fuente: Calculadora de ARRAIGO, con las facturas y registros confirmados. Cada factura se suma en su mes de referencia (electricidad: '+REGLA_MES_TXT[reglasMes().elec]+'; combustibles y demás: '+REGLA_MES_TXT[reglasMes().otros]+'). Las toneladas de cada fuente se reparten por mes en proporción a sus cantidades.'+(D.sin>0.0005?' «Sin mes» agrupa las cantidades anotadas sin factura o fuera de los meses de reporte.':''),
+  tabla:{c:['Mes'].concat(D.cats.map(function(G){return G.nom;})).concat(['Total del mes']),f:filas}};
+}
+function figCategorias(){
+ var D=grafDatos(); if(!D.cats.length)return null;
+ var W=720, fh=34, mt=16, ml=230, mr=120, H=mt+D.cats.length*fh+24, cw=W-ml-mr, maxV=D.cats[0].tot;
+ var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" font-family="'+FIG_F+'"><rect width="'+W+'" height="'+H+'" fill="#ffffff"/>';
+ D.cats.forEach(function(G,i){ var yy=mt+i*fh, w=Math.max(2,G.tot/maxV*cw), pc=D.tot>0?G.tot/D.tot*100:0;
+  o+='<text x="'+(ml-12)+'" y="'+(yy+fh/2+4)+'" text-anchor="end" font-size="12" fill="#14211b">'+figEsc(G.nom)+'</text>'+
+   '<rect x="'+ml+'" y="'+(yy+7)+'" width="'+cw+'" height="'+(fh-14)+'" rx="4" fill="#eef2ef"/>'+
+   '<rect x="'+ml+'" y="'+(yy+7)+'" width="'+w.toFixed(1)+'" height="'+(fh-14)+'" rx="4" fill="'+G.col+'"/>'+
+   '<text x="'+(ml+cw+10)+'" y="'+(yy+fh/2+4)+'" font-size="12" font-weight="700" fill="#14211b">'+fmt(G.tot,2)+'</text><text x="'+(W-8)+'" y="'+(yy+fh/2+4)+'" text-anchor="end" font-size="11.5" fill="#5e6d66">'+fmt(pc,1)+' %</text>'; });
+ o+='<text x="'+(ml+cw+10)+'" y="'+(H-6)+'" font-size="10.5" fill="#5e6d66">t CO₂e · % del total</text></svg>';
+ return {svg:o,w:W,h:H,titulo:'Emisiones del sistema por categoría de fuente',
+  nota:'Total del sistema en el período: '+fx(D.tot,3)+' t CO₂e, antes de la asignación al café oro. Fuente: Calculadora de ARRAIGO.',
+  tabla:{c:['Categoría','t CO₂e','% del total'],f:D.cats.map(function(G){ return [G.nom,fx(G.tot,3),fx(D.tot>0?G.tot/D.tot*100:0,1)]; }).concat([['Total',fx(D.tot,3),'100,0']])}};
+}
+function figEtapas(){
+ var D; try{ D=calcDatos(); }catch(e){ return null; } if(!D||!D.R||!(D.tot>0))return null;
+ var L=D.etapas.filter(function(e){return e.kgU>0;}); if(!L.length)return null;
+ var W=720, fh=36, mt=48, ml=250, mr=130, H=mt+L.length*fh+20, cw=W-ml-mr, maxV=Math.max.apply(null,L.map(function(e){return e.kgU;}));
+ var o='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" font-family="'+FIG_F+'"><rect width="'+W+'" height="'+H+'" fill="#ffffff"/>';
+ var x0=ml; o+='<text x="'+ml+'" y="16" font-size="11" fill="#5e6d66">Composición del resultado</text>';
+ L.forEach(function(e){ var w=e.pct/100*cw; o+='<rect x="'+x0.toFixed(1)+'" y="22" width="'+Math.max(w,0.8).toFixed(1)+'" height="12" fill="'+(CALC_COL[e.t]||'#888')+'"/>'; x0+=w; });
+ L.forEach(function(e,i){ var yy=mt+i*fh, w=Math.max(2,e.kgU/maxV*cw);
+  o+='<text x="'+(ml-12)+'" y="'+(yy+fh/2+4)+'" text-anchor="end" font-size="12" fill="#14211b">'+figEsc(e.t)+'</text>'+
+   '<rect x="'+ml+'" y="'+(yy+8)+'" width="'+w.toFixed(1)+'" height="'+(fh-16)+'" rx="4" fill="'+(CALC_COL[e.t]||'#888')+'"/>'+
+   '<text x="'+(ml+w+8).toFixed(1)+'" y="'+(yy+fh/2+4)+'" font-size="12" font-weight="700" fill="#14211b">'+fmt(e.kgU,2)+'</text><text x="'+(W-8)+'" y="'+(yy+fh/2+4)+'" text-anchor="end" font-size="11.5" fill="#5e6d66">'+fmt(e.pct,1)+' %</text>'; });
+ o+='</svg>';
+ return {svg:o,w:W,h:H,titulo:'Huella de carbono por etapa del ciclo de vida: kg CO₂e por '+D.pr.nom+' puesto en '+D.de.nom,
+  nota:'Resultado: '+fx(D.R.porU,2)+' kg CO₂e por '+D.pr.nom+' ('+fx(D.R.tot,3)+' kg CO₂e por kg de café oro). Fuente: Calculadora de ARRAIGO.',
+  tabla:{c:['Etapa','kg CO₂e por unidad','kg CO₂e por kg','%'],f:L.map(function(e){ return [e.t,fx(e.kgU,3),fx(e.kg,4),fx(e.pct,1)]; })}};
+}
+/* SVG → PNG para Word */
+function figPng(f){
+ return new Promise(function(ok){
+  try{ var im=new Image(), k=2; im.onload=function(){ var c=document.createElement('canvas'); c.width=f.w*k; c.height=f.h*k; var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height);
+    c.toBlob(function(b){ if(!b){ok(null);return;} b.arrayBuffer().then(function(ab){ ok(new Uint8Array(ab)); c.width=c.height=0; }); },'image/png'); };
+   im.onerror=function(){ok(null);}; im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(f.svg); }catch(e){ ok(null); }
+ });
+}
+/* ==========================================================================
+   MOD-ODS · Vinculación con los Objetivos de Desarrollo Sostenible
+   Para el estudio de huella de producto: un objetivo se vincula solo cuando
+   su indicador tiene dato del período en ARRAIGO o lo escribe la organización
+   con su fuente. No es requisito de ISO 14067 ni declaración de neutralidad.
+   ========================================================================== */
+var ODSH=[
+ {id:'o13_2',ods:13,meta:'13.2',tit:'Incorporar medidas relativas al cambio climático en las políticas, estrategias y planes',ind:'Huella de carbono del producto cuantificada según ISO 14067',auto:'huella'},
+ {id:'o12_6',ods:12,meta:'12.6',tit:'Alentar a las empresas a adoptar prácticas sostenibles e incorporar información sobre sostenibilidad en sus informes',ind:'Informe del estudio de huella de carbono del producto, con sus requisitos atendidos',auto:'informe'},
+ {id:'o7_3',ods:7,meta:'7.3',tit:'Duplicar la tasa mundial de mejora de la eficiencia energética',ind:'Consumo de electricidad por kilogramo de café oro',auto:'electricidad'},
+ {id:'o12_2',ods:12,meta:'12.2',tit:'Lograr la gestión sostenible y el uso eficiente de los recursos naturales',ind:'Consumo de combustibles fósiles por tonelada de café oro',auto:'combustible'},
+ {id:'o8_4',ods:8,meta:'8.4',tit:'Mejorar la eficiencia de los recursos en el consumo y la producción y desvincular el crecimiento económico de la degradación ambiental',ind:'Intensidad de emisiones del sistema por tonelada de café oro',auto:'intensidad'},
+ {id:'o2_4',ods:2,meta:'2.4',tit:'Asegurar la sostenibilidad de los sistemas de producción de alimentos y aplicar prácticas agrícolas resilientes',ind:'Emisiones de la etapa agrícola por kilogramo de café oro',auto:'agricola'},
+ {id:'o12_5',ods:12,meta:'12.5',tit:'Reducir considerablemente la generación de desechos mediante prevención, reducción, reciclado y reutilización',ind:'Pulpa y otros subproductos del beneficiado con cantidad registrada',auto:'residuos'},
+ {id:'o6_3',ods:6,meta:'6.3',tit:'Mejorar la calidad del agua reduciendo la contaminación y el vertimiento de aguas residuales sin tratar',ind:'Aguas mieles con cantidad y tratamiento registrados',auto:'aguas'}
+];
+var ODSH_COL={2:'#DDA63A',6:'#26BDE2',7:'#FCC30B',8:'#A21942',12:'#BF8B2E',13:'#3F7E44'};
+function odshFilasCat(re){ var E=calcEstructura(), L=[]; Object.keys(E).forEach(function(a){ Object.keys(E[a].cats).forEach(function(k){ var C=E[a].cats[k]; C.filas.forEach(function(f){ if(f.q>0&&re(C,f))L.push(f); }); }); }); return L; }
+function odshAuto(clave,S7){
+ var kg=0; try{ kg=presentacionesCalc().kgTot||0; }catch(e){}
+ var tkg=kg/1000;
+ if(clave==='huella'){ var HP=huellaProducto(); var D=null; try{ D=calcDatos(); }catch(e){}
+  if(D&&D.R&&D.R.porU>0)return fx(D.R.porU,2)+' kg CO₂e por '+D.pr.nom+' puesto en '+D.de.nom+' ('+fx(D.R.tot,3)+' kg CO₂e por kg de café oro)';
+  return HP&&HP.porU>0?(fx(HP.porU,2)+' kg CO₂e por '+HP.unidad):''; }
+ if(clave==='informe'){ if(!S7)return 'Informe '+pv('inf_codigo',infCodDef())+', versión '+pv('inf_version','1.0'); var req=INF_REQ.filter(function(r){ var x=S7.filter(function(s){return s.id===r[2];})[0]; return x&&x.est==='cumple'; }).length;
+  return 'Informe '+pv('inf_codigo',infCodDef())+', versión '+pv('inf_version','1.0')+': '+req+' de '+INF_REQ.length+' requisitos de información de ISO 14067 atendidos'; }
+ if(clave==='electricidad'){ var e=0; odshFilasCat(function(C,f){return capUniLinea(f.l)==='kWh';}).forEach(function(f){e+=f.q;}); if(!(e>0)||!(kg>0))return '';
+  return fx(e/kg,3)+' kWh por kg de café oro ('+fx(e,0)+' kWh en el período)'; }
+ if(clave==='combustible'){ var l=0; odshFilasCat(function(C,f){return C.nom==='Combustibles'&&capUniLinea(f.l)==='L';}).forEach(function(f){l+=f.q;}); if(!(l>0)||!(tkg>0))return '';
+  return fx(l/tkg,1)+' litros por tonelada de café oro ('+fx(l,0)+' litros en el período)'; }
+ if(clave==='intensidad'){ var D2=grafDatos(); if(!(D2.tot>0)||!(tkg>0))return ''; return fx(D2.tot/tkg,3)+' t CO₂e por tonelada de café oro (sistema completo, antes de la asignación)'; }
+ if(clave==='agricola'){ var D3=null; try{ D3=calcDatos(); }catch(e){} var et=D3&&D3.etapas.filter(function(x){return x.t==='Producción agrícola en las fincas';})[0]; if(!et||!(et.kg>0))return '';
+  return fx(et.kg,4)+' kg CO₂e por kg de café oro ('+fx(et.pct,1)+' % de la huella)'; }
+ if(clave==='residuos'||clave==='aguas'){ var L=odshFilasCat(function(C,f){ var t=(f.l.et||'').toLowerCase(); return C.nom.indexOf('Residuos')===0&&(clave==='aguas'?/agua/.test(t):!/agua/.test(t)); });
+  return L.map(function(f){return f.l.et+': '+fx(f.q,2)+' '+f.l.un;}).join('; '); }
+ return '';
+}
+function odshEstado(f,S7){
+ var E=((S.prod||{}).odsH||{})[f.id]||{}, auto=odshAuto(f.auto,S7), val=auto||String(E.valor||'').trim();
+ var est=E.estado||(val?'aplica':'sin');
+ if(est==='aplica'&&!val)est='sin';
+ return {val:val,auto:!!auto,est:est,nota:String(E.nota||''),fuente:auto?'Calculadora de ARRAIGO':(String(E.fuente||'')||'Dato de la organización')};
+}
+function odshResumen(S7){ var n=0; ODSH.forEach(function(f){ if(odshEstado(f,S7).est==='aplica')n++; }); return n; }
+function vistaODS(){
+ var S7=infSecciones(), ed=puedeEditar(), n=odshResumen(S7);
+ var h=cabModulo('ods','<p class="vista-sub">La vinculación del estudio de huella de carbono del producto con los Objetivos de Desarrollo Sostenible. Un objetivo se vincula solo cuando su indicador tiene dato del período: el que calcula ARRAIGO con las facturas confirmadas o el que la organización escribe con su fuente. Lo vinculado pasa al informe como anexo.</p>');
+ h+='<dl class="cifras">'+tarjetaCifra('Vinculados',n+' de '+ODSH.length,'con indicador del período')+
+  tarjetaCifra('Calculados por ARRAIGO',String(ODSH.filter(function(f){return odshEstado(f,S7).auto;}).length),'desde la Calculadora')+
+  tarjetaCifra('No aplican',String(ODSH.filter(function(f){return odshEstado(f,S7).est==='no';}).length),'con su justificación')+'</dl>';
+ h+='<div class="odsh">';
+ ODSH.forEach(function(f){ var e=odshEstado(f,S7);
+  h+='<article class="odsh-f odsh-'+e.est+'"><div class="odsh-num" style="background:'+(ODSH_COL[f.ods]||'#3F7E44')+'"><b>'+f.ods+'</b><small>ODS</small></div><div class="odsh-c">'+
+   '<div class="odsh-meta">Meta '+esc(f.meta)+'</div><div class="odsh-tit">'+esc(f.tit)+'</div><div class="odsh-ind">Indicador: '+esc(f.ind)+'</div>'+
+   (e.auto?'<div class="odsh-val"><span class="odsh-et">Calculado</span>'+esc(e.val)+'</div>':
+    '<div class="campo"><label>Valor del período, con su unidad y fuente</label><input type="text" data-odsh-v="'+f.id+'" value="'+esc(((S.prod||{}).odsH||{})[f.id]&&S.prod.odsH[f.id].valor||'')+'"'+(ed?'':' disabled')+' placeholder="Sin dato del período en ARRAIGO"></div>')+
+   '<div class="odsh-pie"><label>Estado <select data-odsh-e="'+f.id+'"'+(ed?'':' disabled')+'>'+
+    [['aplica','Se vincula'],['no','No aplica'],['sin','Sin dato del período']].map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===e.est?' selected':'')+(o[0]==='aplica'&&!e.val?' disabled':'')+'>'+o[1]+'</option>'; }).join('')+'</select></label>'+
+    '<input type="text" class="odsh-nota" data-odsh-n="'+f.id+'" value="'+esc(e.nota)+'"'+(ed?'':' disabled')+' placeholder="'+(e.est==='no'?'Por qué no aplica (obligatorio)':'Comentario o evidencia adicional')+'"></div>'+
+  '</div></article>'; });
+ h+='</div><div class="aviso"><b>Reglas de la vinculación.</b> Sin dato del período el objetivo no se vincula, aunque tenga afinidad temática. Cada vinculación nombra la meta, no solo el número del objetivo. La vinculación es información complementaria: no forma parte de los requisitos de ISO 14067, no compensa emisiones y no constituye una declaración de neutralidad.</div>';
+ return h;
+}
+document.addEventListener('change',function(ev){ var t=ev.target; if(!t.dataset)return; var id=t.dataset.odshE||t.dataset.odshN||t.dataset.odshV; if(!id)return;
+ S.prod=S.prod||{}; S.prod.odsH=S.prod.odsH||{}; var E=S.prod.odsH[id]=S.prod.odsH[id]||{};
+ if(t.dataset.odshE){ var antes=E.estado||''; E.estado=t.value; anotar('dato','ODS · meta '+id.slice(1).replace('_','.'),antes,t.value,E.nota||''); }
+ if(t.dataset.odshN)E.nota=t.value.slice(0,400);
+ if(t.dataset.odshV)E.valor=t.value.slice(0,300);
+ marcar('gestion/declaraciones'); guardarLocal(); pintar(); try{ sincronizar(true); }catch(e){} });
 function infSecciones(){
  var D=infDatos(), P=D.P, HP=D.HP, u=HP.unidad, org=D.org, S7=[];
  var ok=function(c){return c?'cumple':'falta';};
@@ -25479,8 +25636,15 @@ function infSecciones(){
   {p:pv('rev_tipo',HCP_OPC.rev[2])===HCP_OPC.rev[2]?('El estudio se somete a verificación por tercera parte independiente'+(pv('rev_organismo')?(' a cargo de '+pv('rev_organismo')):'')+'. Hasta que concluya, el resultado es la medición propia de la organización.'):(pv('rev_tipo')+'. El resultado es la medición propia de la organización.')},
   {p:'El estudio se elaboró siguiendo los requisitos de ISO 14067:2018 aplicables a una huella de carbono '+(parcial?'parcial ':'')+'de producto. El anexo A presenta, requisito por requisito, el apartado del informe que lo atiende.'}
  ]);
+ /* figuras desde la Calculadora */
+ var porId={}; S7.forEach(function(x){porId[x.id]=x;});
+ var fE=null, fC=null, fM=null; try{ fE=figEtapas(); }catch(e){} try{ fC=figCategorias(); }catch(e){} try{ fM=figMeses(); }catch(e){}
+ if(porId.res&&fE)porId.res.b.push({fig:fE});
+ if(porId.etp&&fC){ porId.etp.b.push({p:'La figura siguiente presenta las emisiones del sistema estudiado agrupadas por categoría de fuente, antes de la asignación al café oro. Permite identificar las fuentes que concentran la huella y orientar las medidas de reducción.'}); porId.etp.b.push({fig:fC}); }
+ if(porId.etp&&fM){ porId.etp.b.push({p:'La distribución mensual muestra cómo se acumularon las emisiones a lo largo del período y en qué meses se concentró la actividad. Cada factura se ubica en su mes de referencia según la regla declarada en la nota de la figura.'}); porId.etp.b.push({fig:fM}); }
+ if(porId.per)porId.per.b.push({p:'Para la distribución mensual, cada factura se asigna a un mes de referencia: en electricidad, el '+REGLA_MES_TXT[reglasMes().elec]+'; en combustibles y demás insumos, el '+REGLA_MES_TXT[reglasMes().otros]+'. Cada registro conserva el mes del archivo, el del período facturado y el de la fecha impresa, de modo que la asignación puede verificarse factura por factura.'});
  /* redacción propia por apartado */
- S7.forEach(function(s){ var t=String(pv('inf_'+s.id)||'').trim(); if(t){ var tablas=s.b.filter(function(x){return x&&(x.tabla||x.nota);}); s.b=t.split(/\n{2,}/).map(function(p){return {p:p.trim()};}).concat(tablas); s.propia=true; } s.b=s.b.filter(Boolean); });
+ S7.forEach(function(s){ var t=String(pv('inf_'+s.id)||'').trim(); if(t){ var tablas=s.b.filter(function(x){return x&&(x.tabla||x.nota||x.fig);}); s.b=t.split(/\n{2,}/).map(function(p){return {p:p.trim()};}).concat(tablas); s.propia=true; } s.b=s.b.filter(Boolean); });
  return S7;
 }
 var INF_REQ=[
@@ -25492,6 +25656,15 @@ var INF_REQ=[
  ['7.3 n)','Juicios de valor','jui'],['7.3 o)','Alcance y exclusiones','lim'],['7.3 p)','Etapas del ciclo de vida','eta'],['7.3 q)','Escenarios alternativos de uso y fin de vida','eta'],
  ['7.3 r)','Período representado','per'],['7.3 s)','PCR u otros requisitos','pcr'],['7.3 t)','Seguimiento del desempeño','seg']
 ];
+function infNumerarFiguras(L){ var n=0; L.forEach(function(s){ (s.b||[]).forEach(function(x){ if(x&&x.fig)x.fig.num=++n; }); }); return L; }
+function infAnexoODS(S7){
+ var F=ODSH.map(function(f){ var e=odshEstado(f,S7); return [ 'ODS '+f.ods+' · meta '+f.meta, f.ind, e.est==='aplica'?e.val:'—', e.est==='aplica'?e.fuente:'—', e.est==='aplica'?'Se vincula':(e.est==='no'?('No aplica'+(e.nota?(': '+e.nota):'')):'Sin dato del período') ]; });
+ var n=F.filter(function(r){return r[4]==='Se vincula';}).length;
+ return {id:'anC',num:'Anexo C',t:'Vinculación con los Objetivos de Desarrollo Sostenible',cl:'información complementaria',est:'cumple',b:[
+  {p:'Este anexo vincula los resultados del estudio con las metas de los Objetivos de Desarrollo Sostenible de la Agenda 2030. Se vinculan '+n+' de '+ODSH.length+' metas evaluadas; una meta se vincula solo cuando su indicador tiene dato del período, calculado con las facturas y registros confirmados o aportado por la organización con su fuente.'},
+  {tabla:{c:['Objetivo y meta','Indicador','Valor del período','Fuente','Estado'],f:F}},
+  {nota:'La vinculación es información complementaria. No forma parte de los requisitos de ISO 14067:2018, no compensa emisiones y no constituye una declaración de neutralidad de carbono.'}]};
+}
 function infAnexos(S7){
  var D=infDatos(), est={}; S7.forEach(function(s){est[s.id]=s;});
  return [
@@ -25499,10 +25672,11 @@ function infAnexos(S7){
    b:[{tabla:{c:['Requisito','Contenido','Apartado','Estado'],f:INF_REQ.map(function(r){ var s=est[r[2]]; return [r[0],r[1],s?s.num:'—',s&&s.est==='cumple'?'Atendido':'Por completar']; })}}]},
   {id:'anB',num:'Anexo B',t:'Inventario de datos de actividad',cl:'7.3 d) y j)',est:'cumple',
    b:[{tabla:{c:['Fuente','Ámbito','Cantidad','Unidad','Factor','t CO₂e','Archivos de respaldo'],f:D.filas.map(function(x){ return [x.l.et,x.amb,fx(x.q,2),x.l.un,fx(factor(x.l,x.cat,x.fid),4),fx(x.t+(x.t2||0),3),String(nEvidenciaLinea(x.l,x.cat,x.fid))]; })}}]}
- ];
+ ].concat([infAnexoODS(S7)]);
 }
 function infHtmlBloques(b){
  return b.map(function(x){
+  if(x&&x.fig){ var F=x.fig; return '<figure class="inf-fig">'+F.svg.replace('<svg ','<svg class="inf-fig-svg" ')+'<figcaption><b>Figura '+(F.num||'')+'.</b> '+esc(F.titulo)+'</figcaption>'+(F.nota?'<p class="inf-nota">'+esc(F.nota)+'</p>':'')+'</figure>'+(F.tabla?infHtmlBloques([{tabla:F.tabla}]):''); }
   if(x.p!=null)return '<p>'+esc(x.p)+'</p>';
   if(x.nota)return '<p class="inf-nota">'+esc(x.nota)+'</p>';
   if(x.tabla)return x.tabla.f.length?('<div class="tabla-caja"><table class="hoja inf-tabla"><thead><tr>'+x.tabla.c.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
@@ -25512,7 +25686,7 @@ function infHtmlBloques(b){
 }
 var INF={abierto:''};
 function vistaInforme(){
- var S7=infSecciones(), AN=infAnexos(S7), ed=puedeEditar();
+ var S7=infSecciones(), AN=infAnexos(S7), ed=puedeEditar(); infNumerarFiguras(S7.concat(AN));
  var falt=S7.filter(function(s){return s.est!=='cumple';});
  var req=INF_REQ.filter(function(r){ var s=S7.filter(function(x){return x.id===r[2];})[0]; return s&&s.est==='cumple'; }).length;
  var h=cabModulo('inf','<p class="vista-sub">El informe del estudio de la huella de carbono del producto, ordenado según los requisitos de información de ISO 14067:2018 (apartados 7.2 y 7.3). Se arma solo con el perfil de la organización, la definición del estudio, los datos de actividad y el cálculo. Cada apartado admite una redacción propia.</p>');
@@ -25550,10 +25724,11 @@ function infTitulo(){ return {t:'Informe del estudio de la huella de carbono del
  per:pv('per_inicio')?('Período del '+fechaLarga(pv('per_inicio'))+' al '+fechaLarga(pv('per_fin'))):('Ciclo '+(S.perfil.ciclo||'')),
  cod:pv('inf_codigo',infCodDef()),ver:pv('inf_version','1.0'),fec:pv('inf_fecha')?fechaLarga(pv('inf_fecha')):''}; }
 function infPdf(){
- var S7=infSecciones(), AN=infAnexos(S7), T=infTitulo();
+ var S7=infSecciones(), AN=infAnexos(S7), T=infTitulo(); infNumerarFiguras(S7.concat(AN));
  var css='body{font-family:Georgia,"Times New Roman",serif;color:#1c2421;font-size:11pt;line-height:1.5;margin:0}main{max-width:780px;margin:0 auto;padding:32px}'+
   'h1{font-size:20pt;margin:0 0 6px}h2{font-size:14pt;margin:24px 0 8px;border-bottom:1px solid #9aa;padding-bottom:3px;page-break-after:avoid;color:#15513a}h3{font-size:11.5pt;margin:16px 0 6px;page-break-after:avoid}.cl{font:9pt Arial,sans-serif;color:#566}'+
   'table{border-collapse:collapse;width:100%;margin:8px 0;font:9.5pt Arial,sans-serif}th,td{border:1px solid #9aa;padding:4px 6px;text-align:left;vertical-align:top}th{background:#e8eeec}td.n{text-align:right}'+
+  'figure{margin:14px 0;page-break-inside:avoid}figure svg{width:100%;height:auto;display:block}figcaption{font:9.5pt Arial,sans-serif;margin-top:6px;color:#1c2421}'+
   '.portada{min-height:85vh;display:flex;flex-direction:column;justify-content:center;page-break-after:always}.ctl td{border:none;padding:2px 8px 2px 0}.inf-nota{font-size:9pt;color:#566}@page{margin:22mm 18mm}';
  var h='<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(T.cod+' '+T.t)+'</title><style>'+css+'</style></head><body><main>'+
   '<div class="portada"><p class="cl">ISO 14067:2018</p><h1>'+esc(T.t)+'</h1><p style="font-size:14pt">'+esc(T.p)+'</p><p>'+esc(T.o)+'<br>'+esc(T.per)+'</p>'+
@@ -25566,8 +25741,9 @@ function infPdf(){
  var w=window.open(URL.createObjectURL(new Blob([h],{type:'text/html'})),'_blank'); if(!w)msg('Permita las ventanas emergentes para imprimir el informe');
 }
 /* Word (.docx) armado aquí mismo: OOXML mínimo con estilos de título, párrafo y tabla */
-function infWord(){
- var S7=infSecciones(), AN=infAnexos(S7), T=infTitulo();
+async function infWord(){
+ var S7=infSecciones(), AN=infAnexos(S7), T=infTitulo(); infNumerarFiguras(S7.concat(AN));
+ var IMGS=[];
  var x=function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
  var par=function(t,est,extra){ return '<w:p><w:pPr>'+(est?'<w:pStyle w:val="'+est+'"/>':'')+(extra||'')+'</w:pPr><w:r><w:t xml:space="preserve">'+x(t)+'</w:t></w:r></w:p>'; };
  var tab=function(T_){ var w=Math.floor(9000/T_.c.length);
@@ -25581,8 +25757,18 @@ function infWord(){
   var g=String(s.num).split('.')[0];
   if(s.num.indexOf('.')>0&&INF_GRUPOS[g]&&!gw[g]){ gw[g]=1; cuerpo+=par(g+'. '+INF_GRUPOS[g],'Heading1'); }
   cuerpo+=par(s.num+'. '+s.t,s.id.indexOf('an')===0||/^\d+$/.test(s.num)?'Heading1':'Heading2')+par('Requisito de ISO 14067:2018: '+(/ y /.test(s.cl)?'apartados ':'apartado ')+s.cl+'.','Nota');
-  s.b.forEach(function(b){ if(b.p!=null)cuerpo+=par(b.p,null); else if(b.nota)cuerpo+=par(b.nota,'Nota'); else if(b.tabla&&b.tabla.f.length)cuerpo+=tab(b.tabla); });
+  s.b.forEach(function(b){ if(b.p!=null)cuerpo+=par(b.p,null); else if(b.nota)cuerpo+=par(b.nota,'Nota'); else if(b.tabla&&b.tabla.f.length)cuerpo+=tab(b.tabla);
+   else if(b.fig){ var k=IMGS.length+1; IMGS.push(b.fig); cuerpo+='@@FIG'+k+'@@'+par('Figura '+b.fig.num+'. '+b.fig.titulo,'Leyenda')+(b.fig.nota?par(b.fig.nota,'Nota'):'')+(b.fig.tabla?tab(b.fig.tabla):''); } });
  });
+ var relImg='', medias=[];
+ for(var fi=0;fi<IMGS.length;fi++){ var F=IMGS[fi], png=await figPng(F), k=fi+1;
+  if(!png){ cuerpo=cuerpo.replace('@@FIG'+k+'@@',''); continue; }
+  medias.push({nombre:'word/media/fig'+k+'.png',datos:png}); relImg+='<Relationship Id="rIdF'+k+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/fig'+k+'.png"/>';
+  var cx=5943600, cy=Math.round(cx*F.h/F.w);
+  cuerpo=cuerpo.replace('@@FIG'+k+'@@','<w:p><w:pPr><w:keepNext/><w:jc w:val="center"/><w:spacing w:before="120" w:after="60"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:docPr id="'+k+'" name="Figura '+k+'"/>'+
+   '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="'+k+'" name="fig'+k+'.png"/><pic:cNvPicPr/></pic:nvPicPr>'+
+   '<pic:blipFill><a:blip r:embed="rIdF'+k+'" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>');
+ }
  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+cuerpo+
   '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1418" w:right="1276" w:bottom="1418" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>';
  var est='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
@@ -25592,18 +25778,19 @@ function infWord(){
   '<w:style w:type="paragraph" w:styleId="Subtitulo"><w:name w:val="Subtítulo"/><w:pPr><w:jc w:val="left"/></w:pPr><w:rPr><w:color w:val="566663"/><w:sz w:val="26"/></w:rPr></w:style>'+
   '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:jc w:val="left"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="15513A"/><w:sz w:val="28"/></w:rPr></w:style>'+
   '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="80"/><w:jc w:val="left"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:sz w:val="24"/></w:rPr></w:style>'+
+  '<w:style w:type="paragraph" w:styleId="Leyenda"><w:name w:val="caption"/><w:pPr><w:jc w:val="center"/><w:spacing w:after="60"/></w:pPr><w:rPr><w:b/><w:sz w:val="19"/><w:color w:val="15513A"/></w:rPr></w:style>'+
   '<w:style w:type="paragraph" w:styleId="Nota"><w:name w:val="Nota"/><w:rPr><w:i/><w:color w:val="566663"/><w:sz w:val="18"/></w:rPr></w:style>'+
   '<w:style w:type="paragraph" w:styleId="Tabla"><w:name w:val="Texto de tabla"/><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr><w:rPr><w:sz w:val="18"/></w:rPr></w:style>'+
   '<w:style w:type="table" w:styleId="TablaInforme"><w:name w:val="Tabla del informe"/><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:color="9AAAA6"/><w:left w:val="single" w:sz="4" w:color="9AAAA6"/><w:bottom w:val="single" w:sz="4" w:color="9AAAA6"/><w:right w:val="single" w:sz="4" w:color="9AAAA6"/><w:insideH w:val="single" w:sz="4" w:color="9AAAA6"/><w:insideV w:val="single" w:sz="4" w:color="9AAAA6"/></w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>'+
   '</w:styles>';
  var te=new TextEncoder();
  var zip=armarZip([
-  {nombre:'[Content_Types].xml',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>')},
+  {nombre:'[Content_Types].xml',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>')},
   {nombre:'_rels/.rels',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')},
-  {nombre:'word/_rels/document.xml.rels',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>')},
+  {nombre:'word/_rels/document.xml.rels',datos:te.encode('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+relImg+'</Relationships>')},
   {nombre:'word/document.xml',datos:te.encode(doc)},
   {nombre:'word/styles.xml',datos:te.encode(est)}
- ]);
+ ].concat(medias));
  var blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
  var nom=cdsNomSeguro(T.cod+'-v'+T.ver+'-informe-huella-ISO14067')+'.docx';
  (async function(){
