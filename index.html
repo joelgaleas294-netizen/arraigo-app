@@ -1796,6 +1796,7 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-nf{display:block;font-size:11px;color:var(--ink-3,#6b7a76)}
 .calc-susp td{background:#fbefee}
 .calc-facts{margin:10px 0 0}.calc-facts summary{cursor:pointer;font-size:14px;padding:6px 0}
+.cero-tarjeta{border-color:#e3b9b6}.cero-tarjeta h3{color:#9b2c2c}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -24125,6 +24126,7 @@ function vistaCentroDatos(){
   tarjetaCifra('Solo en este equipo',String(local),assets?(local?'se suben al sincronizar':'todos en la base central'):'sin base central conectada')+'</dl>';
  if(CL.grupo!=='da'&&!CDS.clVisto){ CL.grupo='da'; CDS.clVisto=true; }
  h+=tarjetaCarpetasLibres();
+ h+=tarjetaCero();
  if(sin)h+='<div class="aviso"><b>'+sin+' fuente'+(sin===1?'':'s')+' con dato y sin evidencia recuperable.</b> Según el protocolo, ese dato no se puede cuantificar hasta tener su sustento.</div>';
  if(alt)h+='<div class="aviso"><b>'+alt+' archivo'+(alt===1?'':'s')+' con un sello distinto al guardado.</b> El archivo cambió después de registrarse; revise antes de entregar.</div>';
  /* conciliación */
@@ -25722,7 +25724,7 @@ function vistaCalculadora(){
   '<div><span class="calc-et">Potenciales de calentamiento</span><b>'+esc(serieDeclarada())+'</b> a 100 años</div>'+
   '<div><span class="calc-et">Límite del sistema</span><b>De la finca al puerto de destino</b></div></div>';
  h+='<p class="calc-nota">El CO₂ biogénico de la combustión de biomasa se informa por separado y no se suma a la huella. Las presentaciones, sus materiales de empaque y las rutas se editan en «Estudio de huella ISO 14067».</p>';
- h+='<div class="acciones"><button type="button" data-vista="hcp">Editar presentaciones y rutas</button><button type="button" data-vista="inf">Ver el informe</button></div>';
+ h+='<div class="acciones"><button type="button" data-vista="hcp">Editar presentaciones y rutas</button><button type="button" data-vista="inf">Ver el informe</button><button type="button" class="peligro" data-cero-todo="1">Empezar de cero los datos de actividad</button></div>';
  return h+'</div>';
 }
 document.addEventListener('click',function(ev){
@@ -25809,6 +25811,54 @@ function calcCero(C){
    marcar(x.f.cat==='org'?'beneficio/actual':('insumos/'+x.fid)); anotar('dato','Dato de actividad puesto en cero para recargar sus facturas · '+x.f.l.et,fmt(x.v,2),'0',''); });
   marcar('captura/registros'); guardarLocal(); pintar(); msg('Categoría en cero: vuelva a cargar sus facturas');
  });
+}
+
+/* Empezar de cero los datos de actividad: borra facturas, registros, archivos de respaldo de las fuentes,
+   carpetas de datos de actividad y la lista de pendientes, y deja en cero las cantidades. Conserva el perfil,
+   el estudio, las fincas, los factores y sus documentos. Antes descarga un respaldo completo. */
+function esArchivoDA(ref){
+ if(ref.indexOf('linea:')===0)return true;
+ if(ref.indexOf('cdoc:')!==0)return false;
+ var id=ref.slice(5); return ((S.archivo&&S.archivo.libres)||[]).some(function(r){ return r.id===id&&r.grupo==='da'; });
+}
+function cuentaDatosActividad(){
+ var regs=registros().length, arch=adjuntosTodos().filter(function(x){ return esArchivoDA(x.ref); }).length, cant=0;
+ var cnt=function(st){ if(st&&st.valores)Object.keys(st.valores).forEach(function(k){ if(nv(st.valores[k])>0)cant++; }); };
+ cnt(S.beneficio); Object.keys(S.insumos||{}).forEach(function(k){ cnt(S.insumos[k]); });
+ return {regs:regs,arch:arch,cant:cant,cola:capCola().length};
+}
+async function empezarDeCero(){
+ if(!puedeEditar()){ msg('Se necesita acceso de edición'); return; }
+ if(cicloCerrado()){ msg('El ciclo está cerrado y congelado'); return; }
+ var K=cuentaDatosActividad();
+ if(!K.regs&&!K.arch&&!K.cant&&!K.cola){ msg('No hay datos de actividad cargados'); return; }
+ var ok=await pedir({titulo:'Empezar de cero los datos de actividad',peligro:true,verificar:'BORRAR',motivo:'Por qué se empieza de cero',
+  texto:['Se borran <b>'+K.regs+' renglones de facturas y registros</b>, <b>'+K.arch+' archivos de respaldo</b> de las fuentes y de las carpetas de datos de actividad, <b>'+K.cola+' documentos pendientes</b>, y quedan en cero <b>'+K.cant+' cantidades</b> de fincas, beneficio y exportación.',
+   'Se conservan el perfil de la organización, el estudio de huella, las fincas, los factores de emisión y sus documentos, y la bitácora.',
+   'Antes de borrar se descarga un respaldo completo del proyecto.'],ok:'Borrar y empezar de cero'});
+ if(!ok)return;
+ var motivo=(typeof ok==='string')?ok:'';
+ if(!await respaldoAntesDeVaciar()){ msg('No se borró nada'); return; }
+ var ids=[];
+ adjuntosTodos().forEach(function(x){ if(esArchivoDA(x.ref)){ var c=contenedor(x.ref); if(c){ c.obj.adjuntos=(c.obj.adjuntos||[]).filter(function(a){return a.id!==x.a.id;}); marcar(c.ruta); } ids.push(x.a.id); } });
+ ids.forEach(function(id){ try{ archivoBorrar(id); }catch(e){} });
+ var cero=function(st){ if(st&&st.valores)Object.keys(st.valores).forEach(function(k){ if(nv(st.valores[k])>0)st.valores[k]='0'; }); if(st)st.uLitros=true; };
+ cero(S.beneficio); marcar('beneficio/actual');
+ Object.keys(S.insumos||{}).forEach(function(k){ cero(S.insumos[k]); marcar('insumos/'+k); });
+ S.registros=[]; S.capBase={};
+ capQuitarDeCola(capCola().slice());
+ try{ localStorage.removeItem(capColaClave()); }catch(e){}
+ anotar('vaciado','Datos de actividad: empezar de cero',K.regs+' registros, '+K.arch+' archivos, '+K.cant+' cantidades','0',motivo||'sin motivo declarado');
+ marcar('captura/registros'); marcar('gestion/archivo'); marcar('bitacora/registro');
+ tocaEstado(); guardarLocal(); pintar(); pintarNav(); try{ sincronizar(true); }catch(e){}
+ msg('Datos de actividad en cero. Ya puede volver a subir las facturas y registros');
+}
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-cero-todo]'); if(b)empezarDeCero(); });
+function tarjetaCero(){
+ if(!puedeEditar())return '';
+ var K=cuentaDatosActividad(); if(!K.regs&&!K.arch&&!K.cant&&!K.cola)return '';
+ return '<div class="tarjeta cero-tarjeta"><h3>Empezar de cero</h3><div class="cuerpo"><p>Borra todas las facturas, registros y archivos de datos de actividad, y deja las cantidades en cero para volver a subir los datos. Se conservan el perfil, el estudio, las fincas y los factores. Antes se descarga un respaldo.</p>'+
+  '<button type="button" class="peligro" data-cero-todo="1">Borrar los datos de actividad y empezar de cero</button></div></div>';
 }
 
 /* Tamaño máximo por archivo (08/11/2026: de 20-25 MB a 200 MB). Los archivos se guardan en el equipo
