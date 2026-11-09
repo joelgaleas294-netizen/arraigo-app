@@ -23523,7 +23523,7 @@ function capDuplicado(hash,proveedor,numero,pagina,fecha){
  var norm=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');};
  var p=norm(proveedor), n=norm(numero);
  return registros().filter(function(x){
-  if(x.estado==='anulado')return false;
+  if(x.estado==='anulado'||x.estado==='pendiente')return false;
   if(hash&&x.hash===hash&&(x.pagina||0)===(pagina||0))return true;
   if(!(n&&p&&norm(x.numero)===n&&norm(x.proveedor)===p))return false;
   if(fecha&&x.fecha&&String(fecha).slice(0,10)!==String(x.fecha).slice(0,10))return false;
@@ -23603,7 +23603,8 @@ async function capLeerLista(nuevos){
     if(!Q.url&&Q.pagina&&M.imgs&&M.imgs[0])Q.url=URL.createObjectURL(M.imgs[0]);
     if(r){ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; }
     if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero,0,Q.datos.fecha);
-    if(Q.pagina&&!Q.dup)Q.dup=capCola().filter(function(x){ return x!==Q&&x.pagina&&x.datos.numero&&x.datos.numero===Q.datos.numero&&x.datos.proveedor===Q.datos.proveedor&&(!x.datos.fecha||!Q.datos.fecha||x.datos.fecha===Q.datos.fecha); })[0]?{numero:Q.datos.numero,fecha:Q.datos.fecha||'s/f',lineaNom:'en otra página de este mismo PDF'}:null;
+    if(Q.pagina&&!Q.dup){ var otra=capCola().filter(function(x){ return x!==Q&&x.pagina&&x.estado!=='leyendo'&&x.datos.numero&&x.datos.numero===Q.datos.numero&&x.datos.proveedor===Q.datos.proveedor&&x.datos.fecha&&Q.datos.fecha&&x.datos.fecha===Q.datos.fecha; })[0];
+     Q.dup=otra?{numero:Q.datos.numero,fecha:Q.datos.fecha,lineaNom:(otra.hash===Q.hash?'en la página '+otra.pagina+' de este mismo PDF':'en «'+((otra.file&&otra.file.name)||otra.nombre)+'», página '+otra.pagina)}:null; }
    }catch(e){
     var c=(e&&e.code)||'';
     Q.error=(c==='rate_limited')?'Demasiadas lecturas seguidas; espere un momento o anote a mano.':('No se pudo leer ('+((e&&e.message)||'error')+'). Anote los datos a mano.');
@@ -23621,6 +23622,41 @@ async function capLeerLista(nuevos){
 }
 /* La lista de documentos por registrar se guarda en este equipo: si la aplicación se cierra o se actualiza
    a mitad de la lectura, lo leído no se pierde y lo pendiente se vuelve a leer al abrirla. */
+
+/* Registrar todas: lo que está completo entra al inventario; lo que no tiene cantidad o tiene avisos queda
+   registrado como «pendiente de cantidad», con su original guardado en el Centro de datos y en la bitácora.
+   No se inventa ninguna cifra: lo pendiente suma cero hasta que se complete con una nueva lectura. */
+async function capRegistrarPendiente(Q){
+ if(!Q||Q.estado==='leyendo'||Q.dup)return false;
+ var d=Q.datos, it=(d.items||[]).filter(function(x){return x.linea;})[0]||(d.items||[])[0]||{}, ahora=new Date().toISOString(), quien=quienEdita();
+ var l=it.linea?capLinea(Q.cat,it.linea):null, ref;
+ if(l)ref=refLinea(l,Q.cat,Q.fid||null);
+ else { var c=clCarpetaDeLinea({id:'',et:(Q.nombre||'')+' '+(it.desc||'')}); if(!/^\d\d$/.test(c||''))c='10'; ref='cdoc:da-'+c; }
+ var adj=Q.file?await capGuardarOriginal(ref,Q.file,Q.hash,Q.metHash):'';
+ var pr=capSinLectura(Q)?['No se leyó ninguna cantidad']:capProblemas(Q);
+ var reg={id:uid('reg'),fecha:d.fecha||'',mes:mesCercano(normMes(d.mes),d.fecha,3),numero:d.numero||'',proveedor:d.proveedor||'',cat:Q.cat||'org',fid:Q.fid||'',
+  linea:l?l.id:'',lineaNom:l?l.et:'Sin fuente asignada',desc:it.desc||'',cantidad:isFinite(it.cant)?it.cant:0,unidad:it.uni||'',conversion:0,convAuto:false,
+  cantidadLinea:0,unidadLinea:l?l.un:'',importe:isFinite(it.importe)?it.importe:null,adjuntoId:adj||'',archivo:Q.nombre||'',pagina:Q.pagina||0,hash:Q.hash||'',metHash:Q.metHash||'',
+  origen:Q.origen||'',confianza:'',por:quien,cuando:ahora,nota:'Pendiente de cantidad: '+(pr[0]||'revisar'),estado:'pendiente'};
+ registros().push(reg);
+ anotar('dato','Captura pendiente de cantidad · '+reg.lineaNom,'','0',(Q.nombre||'documento')+': '+(pr[0]||'revisar')+'. Queda registrado sin sumar al inventario hasta completarlo.');
+ Q.quitado=true; CAP.cola=capCola().filter(function(x){return x!==Q;});
+ return true;
+}
+async function capRegistrarTodas(){
+ var L=capCola().filter(function(Q){return Q.estado==='revisar'&&!Q.dup;}), n=0, p=0, lee=capCola().filter(function(Q){return Q.estado==='leyendo';}).length, dup=capCola().filter(function(Q){return Q.dup;}).length;
+ if(!L.length){ msg(lee?'Todavía hay '+lee+' hojas en lectura: espere a que terminen':'No hay documentos por registrar'); return; }
+ var ok=await pedir({titulo:'Registrar todas las facturas leídas',texto:['Se registran <b>'+L.length+' documentos</b>. Los completos entran al inventario con su cantidad. Los que no tienen cantidad o tienen avisos quedan registrados como <b>pendientes de cantidad</b>: su original se guarda en el Centro de datos y no suman nada hasta completarlos.',
+   (lee?('Quedan '+lee+' hojas en lectura: se registran cuando terminen, con este mismo botón.'):''),(dup?(dup+' duplicadas no se registran.'):'')].filter(Boolean),ok:'Registrar todas'});
+ if(!ok)return;
+ for(var i=0;i<L.length;i++){ var Q=L[i];
+  if(!capSinLectura(Q)&&!capProblemas(Q).length){ if(await capConfirmar(Q,true)){ n++; continue; } }
+  if(await capRegistrarPendiente(Q))p++;
+ }
+ CAP.marcados={}; capColaGuardar(); marcar('captura/registros'); guardarLocal(); pintar(); try{ sincronizar(true); }catch(e){}
+ msg(n+' registradas con su cantidad'+(p?(' · '+p+' registradas como pendientes de cantidad'):'')+(lee?(' · '+lee+' aún en lectura'):''));
+}
+function capPendientes(){ return registros().filter(function(r){return r.estado==='pendiente';}); }
 /* Hoja que no dio datos: falló la lectura o no se leyó ninguna cantidad */
 function capSinLectura(Q){ return !!Q.error||!Q.datos.items.some(function(x){ return isFinite(x.cant)&&x.cant>0; }); }
 function capColaClave(){ return 'arraigo-cola-'+(PRY||'sin-proyecto'); }
@@ -23718,6 +23754,7 @@ async function capConfirmar(P0,silencio){
    ', lectura '+(P.origen==='ia'?'asistida y confirmada':'manual')+(P.hash?(', sello '+P.hash.slice(0,16)):', sin archivo de respaldo'));
   tocadas[ref]=true;
  }
+ if(P.hash)registros().forEach(function(x){ if(x.estado==='pendiente'&&x.hash===P.hash&&(x.pagina||0)===(P.pagina||0)){ x.estado='anulado'; x.motivoAnula='Completada con una nueva lectura'; x.anuladoEn=ahora; x.anuladoPor=quien; } });
  Object.keys(tocadas).forEach(capRecalcular);
  marcar('captura/registros'); guardarLocal();
  if(P.url)URL.revokeObjectURL(P.url);
@@ -23837,7 +23874,8 @@ function vistaCaptura(){
     '<button type="button" data-cap="vaciar">🗑 Vaciar la lista</button>'+
     '<button type="button" data-cap="sel-todos">'+(Object.keys(CAP.marcados||{}).length>=COLA.length?'☐ Quitar la selección':'☑ Seleccionar todos ('+COLA.length+')')+'</button>'+
     (COLA.filter(function(Q){return Q.estado==='revisar'&&capSinLectura(Q);}).length?'<button type="button" data-cap="releer-sin">↻ Volver a leer las hojas sin datos ('+COLA.filter(function(Q){return Q.estado==='revisar'&&capSinLectura(Q);}).length+')</button>':'')+
-    (listos?'<button type="button" class="primario" data-cap="listos">✓ Confirmar todos los listos ('+listos+')</button>':'')+
+    '<button type="button" class="primario" data-cap="todas">✓ Registrar todas ('+COLA.filter(function(Q){return Q.estado==='revisar'&&!Q.dup;}).length+')</button>'+
+    (listos?'<button type="button" data-cap="listos">✓ Confirmar todos los listos ('+listos+')</button>':'')+
     (Object.keys(CAP.marcados||{}).length?'<button type="button" data-cap="quitar-sel">🗑 Quitar seleccionados ('+Object.keys(CAP.marcados).length+')</button><button type="button" class="cap-conf-sel" data-cap="confirmar-sel">✓ Confirmar seleccionados ('+COLA.filter(function(Q){return CAP.marcados[Q.id]&&Q.estado==='revisar';}).length+' leídos)</button>':'<span class="muted" style="align-self:center">Marque varios documentos para quitarlos o confirmarlos juntos.</span>')+'</div>'):'';
   h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo">'+acc+'<ul class="cap-cola">'+
    COLA.map(function(Q){
@@ -23854,6 +23892,13 @@ function vistaCaptura(){
    }).join('')+'</ul>'+
    (listos>1?'<div class="acciones"><button type="button" class="primario" data-cap="listos">Registrar los '+listos+' documentos listos</button><span class="muted">cada uno ya fue leído y no tiene avisos; revise antes los que dicen «Revisar»</span></div>':'')+
    '</div></div>';
+ }
+ var PEN=capPendientes();
+ if(PEN.length){
+  h+='<div class="tarjeta"><h3>Registradas pendientes de cantidad · '+PEN.length+'</h3><div class="cuerpo"><p class="muted">Están registradas y su original está guardado en el Centro de datos, pero no suman al inventario porque no se leyó la cantidad o les falta un dato. Para completarlas, vuelva a subir el mismo archivo: las hojas ya completas salen como duplicadas y las pendientes se pueden confirmar; al confirmarlas, el pendiente se cierra solo.</p>'+
+   '<div class="tabla-caja"><table><thead><tr><th>Archivo</th><th>Hoja</th><th>Fecha</th><th>Proveedor</th><th>Fuente</th><th>Motivo</th></tr></thead><tbody>'+
+   PEN.slice(0,300).map(function(r){ return '<tr><td>'+esc(r.archivo)+'</td><td>'+(r.pagina||'')+'</td><td>'+esc(r.fecha||'')+'</td><td>'+esc(r.proveedor||'')+'</td><td>'+esc(r.lineaNom||'')+'</td><td>'+esc(String(r.nota||'').replace(/^Pendiente de cantidad: /,''))+'</td></tr>'; }).join('')+
+   '</tbody></table></div></div></div>';
  }
  if(P&&P.estado==='leyendo')h+='<div class="tarjeta"><div class="cuerpo"><p class="cap-leyendo">Leyendo «'+esc(P.nombre)+'»…</p></div></div>';
 
@@ -23950,7 +23995,7 @@ function vistaCaptura(){
    var f=S.fincas.filter(function(z){return z.id===x.fid;})[0];
    return '<tr'+(x.estado==='anulado'?' class="cap-anulado"':'')+'><td>'+esc(x.fecha)+'</td><td>'+esc(x.numero||'s/n')+'<div class="muted">'+esc(x.proveedor||'')+'</div></td>'+
     '<td>'+(x.cat==='org'?'Organización':esc((f&&f.codigo)||'Finca'))+'</td><td>'+esc(x.lineaNom)+'</td>'+
-    '<td class="n">'+fmt(x.cantidad,2)+' '+esc(x.unidad)+'</td><td class="n">'+fmt(x.cantidadLinea,2)+'<div class="muted">'+esc(x.unidadLinea)+'</div></td>'+
+    '<td class="n">'+(x.estado==='pendiente'?'<span class="falta">pendiente de cantidad</span>':(fmt(nv(x.cantidad),2)+' '+esc(x.unidad)))+'</td><td class="n">'+fmt(x.cantidadLinea,2)+'<div class="muted">'+esc(x.unidadLinea)+'</div></td>'+
     '<td>'+esc(x.por)+'<div class="muted">'+esc(String(x.cuando).slice(0,10))+' · '+(x.origen==='ia'?'lectura asistida':'manual')+'</div></td>'+
     '<td>'+(x.hash?'<code title="'+esc(x.metHash+' '+x.hash)+'">'+esc(x.hash.slice(0,10))+'</code>':'<span class="falta">sin respaldo</span>')+'</td>'+
     '<td>'+(x.estado==='anulado'?('<span class="etq">anulado</span><div class="muted">'+esc(x.motivoAnula||'')+'</div>'):(ed?'<button type="button" class="mini" data-cap="anular" data-id="'+esc(x.id)+'">Anular</button>'+(x.adjuntoId?' <button type="button" class="mini peligro" data-cl="eliminar" data-id="'+esc(x.adjuntoId)+'">Eliminar documento</button>':''):''))+'</td></tr>';
@@ -24000,6 +24045,7 @@ document.addEventListener('click',function(ev){
  else if(a==='descartar'){ if(CAP.pend)capQuitarDeCola([CAP.pend]); }
  else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
  else if(a==='ver'){ ev.preventDefault(); capVerHoja(capCola().filter(function(x){return x.id===b.dataset.id;})[0]); }
+ else if(a==='todas'){ capRegistrarTodas(); }
  else if(a==='releer-sin'){ var RL=capCola().filter(function(Q){return Q.estado==='revisar'&&capSinLectura(Q);});
   RL.forEach(function(Q){ Q.estado='leyendo'; Q.error=''; Q.datos={proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''}; });
   pintar(); msg(RL.length+' hojas se vuelven a leer'); capLeerLista(RL); }
@@ -25602,7 +25648,7 @@ function calcMeses(){
 }
 function mesNom(k){ return MES_C[+k.slice(5,7)-1]+' '+k.slice(2,4); }
 function calcMensual(l,cat){
- var m={}, n={}, tot=0, regs=[]; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat)return; var k=mesDeRegistro(r), v=nv(r.cantidadLinea)||0; m[k]=(m[k]||0)+v; n[k]=(n[k]||0)+1; tot+=v; regs.push(r); });
+ var m={}, n={}, tot=0, regs=[]; registros().forEach(function(r){ if(r.estado==='anulado'||r.estado==='pendiente'||r.linea!==l.id||r.cat!==cat)return; var k=mesDeRegistro(r), v=nv(r.cantidadLinea)||0; m[k]=(m[k]||0)+v; n[k]=(n[k]||0)+1; tot+=v; regs.push(r); });
  m.__n=n; m.__tot=tot; m.__regs=regs;
  return m;
 }
@@ -25794,7 +25840,7 @@ async function calcExcel(){
  var da=[cab], c0=5, cTot=c0+MS.length+1;
  function fila(amb,fz,l,cat,fid){
   var q=cantidad(l,cat,fid); if(!(q>0))return;
-  var M={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat||String(r.fid||'')!==String(fid||''))return; var k=mesDeRegistro(r); M[k]=(M[k]||0)+(nv(r.cantidadLinea)||0); });
+  var M={}; registros().forEach(function(r){ if(r.estado==='anulado'||r.estado==='pendiente'||r.linea!==l.id||r.cat!==cat||String(r.fid||'')!==String(fid||''))return; var k=mesDeRegistro(r); M[k]=(M[k]||0)+(nv(r.cantidadLinea)||0); });
   var sm=0; MS.forEach(function(k){ sm+=M[k]||0; });
   var R=da.length+1, cc=CL_GRUPOS.da.c.filter(function(x){return x[0]===clCarpetaDeLinea(l);})[0]||['','Otros'];
   var conv=conver(l,cat,fid), fac=factor(l,cat,fid), aj=ajusteCons(l)*ajusteDato(l,cat,fid), dir=esDirecta(l);
