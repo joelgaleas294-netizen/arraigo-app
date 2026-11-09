@@ -1798,6 +1798,7 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-facts{margin:10px 0 0}.calc-facts summary{cursor:pointer;font-size:14px;padding:6px 0}
 .cero-tarjeta{border-color:#e3b9b6}.cero-tarjeta h3{color:#9b2c2c}
 .cap-mes-it{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--tinta-2,#555);margin-top:4px}.cap-mes-it input{width:auto;padding:2px 6px;font-size:12px}
+.cap-motivo{display:block;font-size:12px;color:#9b2c2c;margin-top:2px}
 .calc-vacio{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:28px}
 @media (max-width:720px){.calc-fila{grid-template-columns:1fr 90px 60px;padding:12px}.calc-fila span:nth-child(3){display:none}.calc-dfila{grid-template-columns:1fr 90px}.calc-dfila span:nth-child(2),.calc-dfila span:nth-child(3){display:none}.calc-res{padding:20px}}
 
@@ -23591,7 +23592,14 @@ async function capLeerLista(nuevos){
   if(Q.quitado)return;
   if(capLector()){
    try{
-    var M=await capMaterial(Q), r=await capLeerConLector(M.imgs,M.texto,M.tipo);
+    var M=await capMaterial(Q), r=null;
+    for(var intento=0;;intento++){
+     try{ r=await capLeerConLector(M.imgs,M.texto,M.tipo); break; }
+     catch(e1){ var c1=(e1&&e1.code)||''; if(intento>=3||Q.quitado||!(c1==='rate_limited'||c1==='upstream'||c1==='invalid_json'||!c1))throw e1;
+      Q.espera='Límite de lecturas: se reintenta en '+(20*(intento+1))+' s'; if(vista==='cap')pintar();
+      await new Promise(function(ok){ setTimeout(ok,20000*(intento+1)); }); Q.espera=''; }
+    }
+    Q.error='';
     if(!Q.url&&Q.pagina&&M.imgs&&M.imgs[0])Q.url=URL.createObjectURL(M.imgs[0]);
     if(r){ Q.datos=r.datos; Q.cat=r.cat; Q.fid=r.fid; Q.fincaLeida=r.fincaLeida; Q.origen='ia'; }
     if(!Q.dup)Q.dup=capDuplicado('',Q.datos.proveedor,Q.datos.numero,0,Q.datos.fecha);
@@ -23613,6 +23621,8 @@ async function capLeerLista(nuevos){
 }
 /* La lista de documentos por registrar se guarda en este equipo: si la aplicación se cierra o se actualiza
    a mitad de la lectura, lo leído no se pierde y lo pendiente se vuelve a leer al abrirla. */
+/* Hoja que no dio datos: falló la lectura o no se leyó ninguna cantidad */
+function capSinLectura(Q){ return !!Q.error||!Q.datos.items.some(function(x){ return isFinite(x.cant)&&x.cant>0; }); }
 function capColaClave(){ return 'arraigo-cola-'+(PRY||'sin-proyecto'); }
 var CAP_GUARDA=null;
 function capColaGuardar(){
@@ -23826,6 +23836,7 @@ function vistaCaptura(){
     return '<button type="button" data-cap="quitar-archivo" data-hash="'+esc(k)+'">🗑 Quitar «'+esc(archivos[k].nombre)+'» completo ('+archivos[k].n+' páginas)</button>'; }).join('')+
     '<button type="button" data-cap="vaciar">🗑 Vaciar la lista</button>'+
     '<button type="button" data-cap="sel-todos">'+(Object.keys(CAP.marcados||{}).length>=COLA.length?'☐ Quitar la selección':'☑ Seleccionar todos ('+COLA.length+')')+'</button>'+
+    (COLA.filter(function(Q){return Q.estado==='revisar'&&capSinLectura(Q);}).length?'<button type="button" data-cap="releer-sin">↻ Volver a leer las hojas sin datos ('+COLA.filter(function(Q){return Q.estado==='revisar'&&capSinLectura(Q);}).length+')</button>':'')+
     (listos?'<button type="button" class="primario" data-cap="listos">✓ Confirmar todos los listos ('+listos+')</button>':'')+
     (Object.keys(CAP.marcados||{}).length?'<button type="button" data-cap="quitar-sel">🗑 Quitar seleccionados ('+Object.keys(CAP.marcados).length+')</button><button type="button" class="cap-conf-sel" data-cap="confirmar-sel">✓ Confirmar seleccionados ('+COLA.filter(function(Q){return CAP.marcados[Q.id]&&Q.estado==='revisar';}).length+' leídos)</button>':'<span class="muted" style="align-self:center">Marque varios documentos para quitarlos o confirmarlos juntos.</span>')+'</div>'):'';
   h+='<div class="tarjeta"><h3>Documentos por registrar · '+COLA.length+'</h3><div class="cuerpo">'+acc+'<ul class="cap-cola">'+
@@ -23836,7 +23847,8 @@ function vistaCaptura(){
     var est=Q.estado==='leyendo'?'<span class="cds-est cds-parcial">Leyendo</span>':pr.length?'<span class="cds-est cds-sin">Revisar</span>':'<span class="cds-est cds-conciliado">Listo</span>';
     var n=Q.datos.items.filter(function(x){return x.incluir&&x.linea;}).length;
     return '<li>'+marcaQ+'<button type="button" class="'+(Q===P?'sel':'')+'" data-cap="cola-sel" data-id="'+esc(Q.id)+'"><span class="cap-cola-n">'+esc(Q.nombre)+'</span>'+
-     '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+est+'</button>'+
+     '<span class="muted">'+esc(dest)+(n?(' · '+n+' renglón'+(n===1?'':'es')):'')+'</span>'+
+     (Q.espera?'<span class="cap-motivo">'+esc(Q.espera)+'</span>':(Q.estado==='revisar'&&capSinLectura(Q))?'<span class="cap-motivo">'+(Q.error?'No se pudo leer: vuelva a leerla':'No se leyó ninguna cantidad: vuelva a leerla o anótela a mano')+'</span>':(pr.length?'<span class="cap-motivo">'+esc(pr[0])+'</span>':''))+est+'</button>'+
      (Q.file&&!capEsHoja(Q.file)&&!capEsWord(Q.file)?'<button type="button" class="cap-ver" data-cap="ver" data-id="'+esc(Q.id)+'" title="Ver la hoja en grande">👁 Ver hoja</button>':'')+
      (ed?'<button type="button" class="cap-quitar" data-cap="quitar" data-id="'+esc(Q.id)+'" title="Quitar de la lista sin registrar">🗑 Quitar</button>':'')+'</li>';
    }).join('')+'</ul>'+
@@ -23988,6 +24000,9 @@ document.addEventListener('click',function(ev){
  else if(a==='descartar'){ if(CAP.pend)capQuitarDeCola([CAP.pend]); }
  else if(a==='cola-sel'){ capSel(capCola().filter(function(x){return x.id===b.dataset.id;})[0]||null); pintar(); var r=document.querySelector('.cap-rev'); if(r)r.scrollIntoView({behavior:'smooth',block:'start'}); }
  else if(a==='ver'){ ev.preventDefault(); capVerHoja(capCola().filter(function(x){return x.id===b.dataset.id;})[0]); }
+ else if(a==='releer-sin'){ var RL=capCola().filter(function(Q){return Q.estado==='revisar'&&capSinLectura(Q);});
+  RL.forEach(function(Q){ Q.estado='leyendo'; Q.error=''; Q.datos={proveedor:'',numero:'',fecha:'',items:[],ilegible:[],confianza:'',observacion:''}; });
+  pintar(); msg(RL.length+' hojas se vuelven a leer'); capLeerLista(RL); }
  else if(a==='sel-todos'){ var C0=capCola(); if(Object.keys(CAP.marcados||{}).length>=C0.length)CAP.marcados={}; else { CAP.marcados={}; C0.forEach(function(x){ CAP.marcados[x.id]=1; }); } pintar(); }
  else if(a==='confirmar-sel'){ (async function(){ var L=capCola().filter(function(x){return CAP.marcados&&CAP.marcados[x.id]&&x.estado==='revisar';}), n=0, mal=0;
    for(var i=0;i<L.length;i++){ if(await capConfirmar(L[i],true)){ n++; delete CAP.marcados[L[i].id]; } else mal++; }
