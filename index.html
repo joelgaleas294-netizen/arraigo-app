@@ -1786,6 +1786,20 @@ html body .calc-pills button[aria-pressed="true"]{background:#15513a!important;b
 .calc-sin{color:var(--ink-3,#6b7a76)}
 @media (max-width:720px){.calc-dfila5{grid-template-columns:1fr 90px}.calc-dfila5 span:nth-child(2),.calc-dfila5 span:nth-child(3),.calc-dfila5 span:nth-child(4){display:none}}
 .calc-per{font-size:14px;color:var(--ink-2,#3c4a46);margin:6px 0 10px}
+.calc:has(.calc-matriz){max-width:none}
+.fxl-base>summary{cursor:pointer;margin:12px 0 8px}.fxl-base .calc-mes td{white-space:normal}.fxl-base .calc-mes td:first-child{min-width:0;white-space:nowrap}.fxl-base .calc-mes td:last-child{white-space:nowrap}
+.calc-modo{margin:10px 0 12px}
+.calc-matriz-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 10px}.calc-matriz-bar .calc-per{flex:1;margin:0;font-size:13px}
+.calc-matriz-caja{overflow:auto;max-height:78vh;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.calc-matriz-caja:fullscreen{max-height:none;padding:10px;background:var(--surface,#fff)}
+.calc-matriz thead th{position:sticky;top:0;z-index:2;background:var(--surface,#fff);box-shadow:0 1px 0 var(--line)}
+.calc-matriz thead th:first-child{z-index:3}
+.calc-matriz tfoot td{position:sticky;bottom:0;background:#eef4ef;font-weight:700;z-index:1;box-shadow:0 -1px 0 var(--line)}
+.calc-matriz tfoot td:first-child{z-index:2}
+.calc-matriz tr.calc-mat-cat td{background:#e8f3ec;font-weight:700;color:#15513a}
+.calc-matriz tr.calc-mat-cat td:first-child{background:#e8f3ec}
+.calc-matriz td.calc-cero{color:var(--ink-3,#9aa5a0)}
+.calc-matriz{font-size:12.5px}.calc-matriz th,.calc-matriz td{padding:6px 7px}.calc-matriz td:first-child{min-width:220px;max-width:300px}.calc-matriz td:nth-child(2){white-space:normal;min-width:80px;max-width:120px;font-size:11.5px;color:var(--ink-3,#6b7a76)}.calc-matriz th{font-size:10.5px}
 .calc-mes-caja{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 .calc-mes{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
 .calc-mes th,.calc-mes td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
@@ -15490,6 +15504,7 @@ function vistaLineas(cat){
    ? 'Consumos de la organización en el período: beneficio, secado, energía, transporte interno y compras. Alimentan el inventario del ALC-2.'
    : 'Consumos y compras de la unidad productiva en el período. Alimentan las categorías 1 a 4 de su ficha de finca.')+'</p>');
  if(esOrg&&!puedeEditar())h+='<div class="aviso">Este módulo se captura en oficina. Con acceso de captura de campo puede consultarlo, pero no modificarlo.</div>';
+ if(!esOrg)h+=tarjetaBaseFincas();
  if(!esOrg){
   h+='<div class="tarjeta" style="max-width:420px"><div class="cuerpo"><div class="campo"><label for="filtro-finca2">Finca</label>'+
    '<select id="filtro-finca2" data-accion="filtro-finca">'+selFinca(sel.finca,true)+'</select></div></div></div>';
@@ -21922,6 +21937,7 @@ function aplicarCargaFincas(){
   if(r.produccion>0){ S.insumos[f.id]=S.insumos[f.id]||{}; S.insumos[f.id].produccion=String(r.produccion); marcar('insumos/'+f.id); }
   marcar('fincas/'+f.id);
  });
+ if(C.datosFinca){ var RD=aplicarDatosPorFinca(C.datosFinca,C.nombre); C.datosFinca=null; setTimeout(function(){ msg(RD.valores+' cantidades de datos de actividad cargadas en '+RD.fincas+' fincas'); },1600); }
  var sello=huella([C.nombre||'pegado',String(C.AF.filas.length),String(creadas),String(tocadas)].join('|'));
  var reg={id:uid('car'),clase:'fincas',linea:'__fincas__',lineaNom:'Padrón de fincas',cat:'finca',fid:'',
   archivo:C.nombre||'tabla pegada',fecha:new Date().toISOString(),quien:quienEdita(),
@@ -24694,18 +24710,64 @@ function fxlHojaFincas(){
  x+='<pageMargins left="0.4" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
  return x;
 }
+/* ---- Hoja «Datos por finca» de la plantilla oficial (formato ARR-PLT-FIN-02) ----
+   Una fila por finca y una columna por fuente de emisión de la finca. La fila 2 lleva el identificador técnico de cada
+   columna: así el formato es el mismo en toda organización donde se implemente, aunque cambien los títulos visibles.  */
+var FXL_FORMATO_ID='ARR-PLT-FIN-02';
+function fxlLineasFinca(){ return lineasDe('finca').filter(function(l){ return !esDirecta(l); }); }
+function fxlHojaDatos(){
+ var L=fxlLineasFinca(), N=500, cols=[['__codigo','Código de la finca *']].concat(L.map(function(l){ return [l.id,l.et+' ('+l.un+')']; }));
+ var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><tabColor rgb="FF1F6E8C"/></sheetPr>'+
+  '<sheetViews><sheetView workbookViewId="0"><pane xSplit="1" ySplit="2" topLeftCell="B3" activePane="bottomRight" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="18" customHeight="1"/>'+
+  '<cols><col min="1" max="1" width="20" customWidth="1"/>'+(L.length?'<col min="2" max="'+(L.length+1)+'" width="22" customWidth="1"/>':'')+'</cols><sheetData>';
+ x+='<row r="1" ht="54" customHeight="1">'+cols.map(function(c,i){ return fxlCelda(i,1,c[1],1); }).join('')+'</row>';
+ x+='<row r="2">'+cols.map(function(c,i){ return fxlCelda(i,2,i?c[0]:'ID técnico: no modificar',7); }).join('')+'</row>';
+ for(var r=3;r<=N+2;r++){ x+='<row r="'+r+'">'+cols.map(function(c,i){ return '<c r="'+fxlCol(i)+r+'" s="'+(i?4:2)+'"/>'; }).join('')+'</row>'; }
+ x+='</sheetData>';
+ if(L.length)x+='<dataValidations count="1"><dataValidation type="decimal" operator="greaterThanOrEqual" allowBlank="1" showErrorMessage="1" error="Escriba la cantidad del período, igual o mayor que cero, en la unidad del título." sqref="B3:'+fxlCol(L.length)+(N+2)+'"><formula1>0</formula1></dataValidation></dataValidations>';
+ return x+'<pageMargins left="0.4" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/></worksheet>';
+}
+/* Lee la hoja «Datos por finca» (texto separado por tabuladores): códigos de finca y cantidades por fuente */
+function fxlLeerDatos(tsv){
+ var filas=String(tsv||'').split(/\r?\n/).map(function(f){ return f.split('\t'); }); if(filas.length<3)return null;
+ var ids=filas[1].map(function(x){ return String(x||'').trim(); }), validas={}; fxlLineasFinca().forEach(function(l){ validas[l.id]=l; });
+ var cols=[]; ids.forEach(function(id,i){ if(i&&validas[id])cols.push({i:i,l:validas[id]}); });
+ if(!cols.length)return null;
+ var out=[], malos=0;
+ filas.slice(2).forEach(function(f){ var cod=String(f[0]||'').trim(); if(!cod)return; var v={}, n=0;
+  cols.forEach(function(c){ var t=String(f[c.i]||'').trim(); if(!t)return; var q=numDe(t); if(isFinite(q)&&q>=0){ v[c.l.id]=q; n++; } else malos++; });
+  if(n)out.push({codigo:cod,valores:v,n:n}); });
+ return {cols:cols.length,filas:out,malos:malos,ignoradas:ids.filter(function(id,i){ return i&&id&&!validas[id]; })};
+}
+/* Aplica las cantidades por finca a las fincas del proyecto (por código). Lo que no se encuentra se informa. */
+function aplicarDatosPorFinca(D,archivo){
+ var sinFinca=[], fincas=0, valores=0;
+ D.filas.forEach(function(r){
+  var f=null; S.fincas.forEach(function(x){ if(String(x.codigo||'').toUpperCase()===r.codigo.toUpperCase())f=x; });
+  if(!f){ sinFinca.push(r.codigo); return; }
+  var st=S.insumos[f.id]=S.insumos[f.id]||{}; st.valores=st.valores||{};
+  Object.keys(r.valores).forEach(function(id){ st.valores[id]=String(Math.round(r.valores[id]*1e6)/1e6); valores++; });
+  fincas++; marcar('insumos/'+f.id);
+ });
+ if(fincas)anotar('carga','Datos de actividad por finca cargados desde '+(archivo||'la plantilla'),'',valores+' cantidades en '+fincas+' fincas',
+  'Plantilla '+FXL_FORMATO_ID+(sinFinca.length?('; códigos sin finca en el proyecto: '+sinFinca.slice(0,10).join(', ')+(sinFinca.length>10?'…':'')):''));
+ guardarLocal();
+ return {fincas:fincas,valores:valores,sinFinca:sinFinca};
+}
 function fxlHojaInstrucciones(){
  var C=fxlCampos(), org=(S.perfil&&S.perfil.organizacion)||(pryActual()&&pryActual().empresa)||'';
  var filas=[], r=0, merges=[];
  var fila=function(celdas,ht){ r++; filas.push('<row r="'+r+'"'+(ht?(' ht="'+ht+'" customHeight="1"'):'')+'>'+celdas.map(function(c,i){return fxlCelda(i,r,c[0],c[1]);}).join('')+'</row>'); return r; };
  var a=fila([['Programa ARRAIGO · Plantilla de fincas y productores',6]],30); merges.push('A'+a+':E'+a);
- a=fila([['Huella de carbono de producto (ISO 14067)'+(org?(' · '+org):'')+' · versión del '+hoy(),7]]); merges.push('A'+a+':E'+a);
+ a=fila([['Huella de carbono de producto (ISO 14067)'+(org?(' · '+org):'')+' · formato '+FXL_FORMATO_ID+' · versión del '+hoy(),7]]); merges.push('A'+a+':E'+a);
  fila([['',0]]);
  a=fila([['Cómo usarla',11]],22); merges.push('A'+a+':E'+a);
  ['1. Pegue los datos de su base en la hoja «Fincas», una fila por finca, desde la fila 2. No cambie ni mueva los títulos.',
   '2. Solo el código de la finca es obligatorio. Si el código ya existe en ARRAIGO, la fila actualiza esa finca en lugar de crear otra.',
   '3. La ubicación va en latitud y longitud en grados decimales. ARRAIGO calcula solo las coordenadas UTM y la zona.',
-  '4. Guarde el archivo y súbalo en ARRAIGO: «Fincas y productores» → «Subir la plantilla llena». Nada se crea hasta que usted revisa y confirma.'].forEach(function(t){ var k=fila([[t,10]],30); merges.push('A'+k+':E'+k); });
+  '4. En la hoja «Datos por finca» anote, por cada finca, las cantidades del período de cada fuente (fertilizantes, combustibles, electricidad…) en la unidad del título. Deje en blanco lo que no aplica. No cambie la fila 2: es el identificador técnico de cada columna.',
+  '5. Use el mismo código de finca que en JJ Origen (código del productor o del lote): así las mismas columnas podrán llenarse después desde la app de campo JJ Origen Farm.',
+  '6. Guarde el archivo y súbalo en ARRAIGO, en «Emisiones de la finca» o en «Fincas y productores» → «Subir la plantilla llena». Nada se crea hasta que usted revisa y confirma.'].forEach(function(t){ var k=fila([[t,10]],30); merges.push('A'+k+':E'+k); });
  fila([['',0]]);
  a=fila([['Columnas de la hoja «Fincas»',11]],22); merges.push('A'+a+':E'+a);
  fila([['Columna',1],['Obligatoria',1],['Formato',1],['Ejemplo',1],['Qué escribir',1]],28);
@@ -24740,17 +24802,18 @@ function plantillaFincasXlsx(){
   '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
   '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
  var arch=[
-  {nombre:'[Content_Types].xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+  {nombre:'[Content_Types].xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
   {nombre:'_rels/.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
-  {nombre:'xl/workbook.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets><sheet name="Fincas" sheetId="1" r:id="rId1"/><sheet name="Instrucciones" sheetId="2" r:id="rId2"/></sheets><definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">Fincas!$1:$1</definedName></definedNames></workbook>'},
-  {nombre:'xl/_rels/workbook.xml.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+  {nombre:'xl/workbook.xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets><sheet name="Fincas" sheetId="1" r:id="rId1"/><sheet name="Datos por finca" sheetId="3" r:id="rId4"/><sheet name="Instrucciones" sheetId="2" r:id="rId2"/></sheets><definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">Fincas!$1:$1</definedName></definedNames></workbook>'},
+  {nombre:'xl/_rels/workbook.xml.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/></Relationships>'},
   {nombre:'xl/styles.xml',datos:estilos},
   {nombre:'xl/worksheets/sheet1.xml',datos:fxlHojaFincas()},
-  {nombre:'xl/worksheets/sheet2.xml',datos:fxlHojaInstrucciones()}];
+  {nombre:'xl/worksheets/sheet2.xml',datos:fxlHojaInstrucciones()},
+  {nombre:'xl/worksheets/sheet3.xml',datos:fxlHojaDatos()}];
  return armarZip(arch);
 }
 async function bajarPlantillaFincas(){
- var blob=new Blob([plantillaFincasXlsx()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), nom='ARRAIGO-plantilla-fincas.xlsx';
+ var blob=new Blob([plantillaFincasXlsx()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), nom='ARRAIGO-plantilla-fincas-'+FXL_FORMATO_ID+'.xlsx';
  try{ var dl=await usarCap('downloads'); if(dl){ await dl.save({filename:nom,data:blob}); msg('Plantilla descargada'); return; } }catch(e){ if(e&&e.code==='declined')return; }
  var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=nom; document.body.appendChild(a); a.click();
  setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },4000); msg('Plantilla descargada: péguele sus datos y súbala aquí');
@@ -24759,17 +24822,52 @@ function subirPlantillaFincas(fa){
  if(!puedeEditar()){ msg('Su perfil no puede crear fincas'); return; }
  msg('Abriendo '+fa.name+'…');
  leerArchivoCarga(fa).then(function(res){
-  var Cf=cfgCarga(), hs=res.hojas||[], k=0;
-  for(var i=0;i<hs.length;i++){ if(/finca/i.test(hs[i].nombre||'')){ k=i; break; } }
+  var Cf=cfgCarga(), hs=res.hojas||[], k=-1, kd=-1;
+  for(var i=0;i<hs.length;i++){ var nm=String(hs[i].nombre||'').trim(); if(/^datos por finca$/i.test(nm))kd=i; else if(k<0&&/^fincas$/i.test(nm))k=i; }
+  if(k<0)for(var j=0;j<hs.length;j++){ if(j!==kd&&/finca/i.test(hs[j].nombre||'')){ k=j; break; } }
+  if(k<0)k=0;
+  var D=kd>=0?fxlLeerDatos(hs[kd].tsv):null; Cf.datosFinca=(D&&D.filas.length)?D:null;
   Cf.hojas=hs; Cf.hoja=k; Cf.clase=res.clase; Cf.crudo=!!res.crudo; Cf.nombre=fa.name; Cf.A=null; Cf.paquete=null;
   Cf.cfg.clase='fincas';
   Cf.texto=(hs[k]&&hs[k].tsv)||'';
   Cf.T=leerTabla(Cf.texto); Cf.mapa=adivinarMapa(Cf.T.cab); Cf.mapaF=adivinarMapaFinca(Cf.T.cab); Cf.AF=null;
-  if(!Cf.T.filas.length){ msg('La hoja «Fincas» no tiene filas con datos'); return; }
+  if(!Cf.T.filas.length){
+   if(!Cf.datosFinca){ msg('La plantilla no tiene fincas ni datos por finca'); return; }
+   /* Solo datos de actividad para fincas que ya existen en el proyecto */
+   var Dd=Cf.datosFinca, enPry=Dd.filas.filter(function(r){ return !!S.fincas.find(function(x){ return String(x.codigo||'').toUpperCase()===r.codigo.toUpperCase(); }); }), existen=enPry.length;
+   if(!existen){ msg('Ninguno de los códigos de la hoja «Datos por finca» está en el proyecto: llene también la hoja «Fincas»'); return; }
+   pedir({titulo:'Cargar datos de actividad por finca',ok:'Cargar '+enPry.reduce(function(t,r){return t+r.n;},0)+' cantidades',
+    texto:['La hoja «Datos por finca» trae cantidades de <b>'+Dd.filas.length+'</b> finca'+(Dd.filas.length===1?'':'s')+' en '+Dd.cols+' fuentes. <b>'+existen+'</b> están en el proyecto'+(Dd.filas.length-existen?(' y <b>'+(Dd.filas.length-existen)+'</b> no (se omiten: créelas primero en la hoja «Fincas»)'):'')+'.',
+     'Las cantidades reemplazan las anotadas para esas fuentes en esas fincas. El cambio queda en la bitácora.'+(Dd.malos?(' '+Dd.malos+' celdas no tenían un número válido y se omiten.'):'')]}).then(function(si){
+    if(!si)return; var R=aplicarDatosPorFinca(Dd,fa.name); Cf.datosFinca=null; pintar();
+    msg(R.valores+' cantidades cargadas en '+R.fincas+' fincas'+(R.sinFinca.length?(' · '+R.sinFinca.length+' códigos sin finca'):'')); });
+   return;
+  }
   ir('car');
-  msg('Leídas '+Cf.T.filas.length+' fincas. Revise y confirme para crearlas.');
+  msg('Leídas '+Cf.T.filas.length+' fincas'+(Cf.datosFinca?(' y datos de actividad de '+Cf.datosFinca.filas.length):'')+'. Revise y confirme para crearlas.');
  }).catch(function(e){ msg((e&&e.message)||'No se pudo abrir el archivo'); });
 }
+/* Base de fincas en «Emisiones de la finca»: la plantilla oficial (fincas + datos por finca) y el avance de cada finca */
+function tarjetaBaseFincas(){
+ var L=fxlLineasFinca(), nF=S.fincas.length;
+ var h='<div class="tarjeta fxl"><h3>Base de fincas del proyecto · plantilla '+FXL_FORMATO_ID+'</h3><div class="cuerpo">'+
+  '<p style="margin-top:0">Cargue aquí la base de datos de sus fincas y sus cantidades del período con la plantilla oficial de ARRAIGO: el formato es el mismo en toda organización donde se implemente. Después trabaje finca por finca abajo. El código de la finca debe ser el de JJ Origen, para que más adelante la app de campo JJ Origen Farm alimente las mismas columnas.</p>'+
+  (puedeEditar()?('<div class="acciones"><button type="button" data-fxl="plantilla">⬇ Descargar la plantilla (Excel)</button>'+
+   '<label class="adj-boton primario"><input type="file" accept=".xlsx,.xls,.csv,.ods" data-fxl-subir="1" hidden>⬆ Subir la plantilla llena</label></div>'):'');
+ if(nF){
+  var filas=S.fincas.map(function(f){ var st=S.insumos[f.id]||{}, v=st.valores||{}, con=0, t=0;
+   L.forEach(function(l){ if(numDe(v[l.id])>0)con++; t+=(tco2Linea(l,'finca',f.id)||0)+(tco2Linea2(l,'finca',f.id)||0); });
+   return {f:f,con:con,t:t}; }).sort(function(a,b){ return String(a.f.codigo||'').localeCompare(String(b.f.codigo||''),'es',{numeric:true}); });
+  var conDatos=filas.filter(function(x){return x.con>0;}).length;
+  h+='<details class="fxl-base"'+(nF<=30?' open':'')+'><summary><b>'+nF+'</b> finca'+(nF===1?'':'s')+' en el proyecto · <b>'+conDatos+'</b> con datos de actividad</summary>'+
+   '<div class="calc-mes-caja" style="max-height:360px;overflow:auto"><table class="calc-mes"><thead><tr><th>Código</th><th>Productor</th><th>Comunidad</th><th class="n">Superficie, ha</th><th class="n">Fuentes con dato</th><th class="n">t CO₂e</th><th></th></tr></thead><tbody>'+
+   filas.map(function(x){ return '<tr'+(x.f.id===sel.finca?' style="background:#e8f3ec"':'')+'><td><b>'+esc(x.f.codigo||'—')+'</b></td><td>'+esc(x.f.productor||'')+'</td><td>'+esc(x.f.comunidad||'')+'</td><td class="n">'+(numDe(x.f.superficie)>0?fmt(numDe(x.f.superficie),2):'—')+'</td>'+
+    '<td class="n">'+x.con+' de '+L.length+'</td><td class="n">'+(x.t>0?fmt(x.t,3):'—')+'</td><td><button type="button" class="mini" data-fxl-abrir="'+esc(x.f.id)+'">Trabajar esta finca</button></td></tr>'; }).join('')+
+   '</tbody></table></div></details>';
+ } else h+='<div class="aviso">Todavía no hay fincas en el proyecto: descargue la plantilla, pegue su base y súbala.</div>';
+ return h+'</div></div>';
+}
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-fxl-abrir]'); if(!b)return; sel.finca=b.dataset.fxlAbrir; pintar(); setTimeout(function(){ var e=document.getElementById('filtro-finca2'); if(e)e.scrollIntoView({behavior:'smooth',block:'center'}); },60); });
 function tarjetaFincasExcel(){
  if(!puedeEditar())return '';
  return '<div class="tarjeta fxl"><h3>Crear fincas desde Excel</h3><div class="cuerpo">'+
@@ -26186,7 +26284,9 @@ function tarjetaEstructura(){
  var A=E[CALC.amb], cats=Object.keys(A.cats).sort().map(function(k){return A.cats[k];});
  var h=tarjetaGrafico()+'<h2 class="calc-h2">Datos de actividad por categoría</h2>'+
   '<div class="calc-pills calc-amb">'+ks.map(function(k){ return '<button type="button" data-calc-a="'+k+'" aria-pressed="'+(k===CALC.amb)+'">'+esc(E[k].t)+' <small>'+E[k].con+' de '+E[k].n+'</small></button>'; }).join('')+'</div>'+
-  '<div class="calc-tabla calc-estr">';
+  '<div class="calc-pills calc-modo"><button type="button" data-calc-m="cat" aria-pressed="'+(CALC.vistaM!=='mat')+'">Por categoría</button><button type="button" data-calc-m="mat" aria-pressed="'+(CALC.vistaM==='mat')+'">Matriz completa: todas las categorías y meses</button></div>';
+ if(CALC.vistaM==='mat')return h+tarjetaMatriz(A,cats);
+ h+='<div class="calc-tabla calc-estr">';
  cats.forEach(function(C){
   var ab=CALC.cat===CALC.amb+C.cod;
   h+='<button type="button" class="calc-fila calc-etapa calc-cat" data-calc-c="'+esc(CALC.amb+C.cod)+'" aria-expanded="'+ab+'"><span>'+C.ico+' '+esc(C.nom)+'<small>'+C.con+' de '+C.filas.length+' fuentes con dato</small></span>'+
@@ -26209,6 +26309,39 @@ function tarjetaEstructura(){
   }
  });
  h+='<div class="calc-fila calc-total"><span>Total '+esc(A.t.toLowerCase())+'</span><span>'+fmt(A.tot,3)+'</span><span>t CO₂e</span><span></span></div></div>';
+ return h;
+}
+/* Matriz completa de datos de actividad: todas las categorías y fuentes del ámbito, con todos los meses de reporte a la vez.
+   En «Cantidades» cada celda es la cantidad de la fuente en su mes (con el número de facturas); en «t CO₂e», las toneladas
+   de la fuente repartidas por mes en proporción a sus cantidades (el mismo criterio del gráfico y del informe).          */
+function tarjetaMatriz(A,cats){
+ var MS=calcMeses(), U=CALC.uni==='t'?'t':'q', nm=MS.length;
+ var h='<div class="calc-matriz-bar"><div class="calc-pills"><button type="button" data-calc-u="q" aria-pressed="'+(U==='q')+'">Cantidades</button><button type="button" data-calc-u="t" aria-pressed="'+(U==='t')+'">t CO₂e</button></div>'+
+  '<span class="calc-per">'+(nm?('Meses de reporte: <b>'+mesNom(MS[0])+' a '+mesNom(MS[nm-1])+'</b> ('+nm+' meses). '+tarjetaReglaMes()):'Todavía no hay facturas o registros con fecha: solo se muestran los totales del período.')+'</span>'+
+  '<button type="button" class="mini" data-calc-fs="1">⛶ Pantalla completa</button></div>';
+ h+='<div class="calc-matriz-caja" id="calc-matriz"><table class="calc-mes calc-matriz"><thead><tr><th>Categoría y fuente</th><th>Unidad</th>'+MS.map(function(k){return '<th class="n">'+mesNom(k)+'</th>';}).join('')+
+  (nm?'<th class="n">Fuera de esos meses</th><th class="n">Sin factura</th>':'')+'<th class="n">Total</th><th class="n">Factor</th><th class="n">t CO₂e</th><th>Respaldo</th></tr></thead><tbody>';
+ var totMes={}, totT=0;
+ cats.forEach(function(C){
+  var filas=C.filas.slice().sort(function(a,b){return b.t-a.t||b.q-a.q;}), sub={}, subT=0, cuerpo='';
+  filas.forEach(function(f){
+   var M=nm?calcMensual(f.l,f.cat):{}, sm=0, NN=M.__n||{}; MS.forEach(function(k){ sm+=M[k]||0; });
+   var fuera=Math.max(0,(M.__tot||0)-sm), resto=Math.max(0,f.q-(M.__tot||0)), tq=f.q>0?f.t/f.q:0;
+   MS.forEach(function(k){ var tt=(M[k]||0)*tq; sub[k]=(sub[k]||0)+tt; });
+   sub.__f=(sub.__f||0)+fuera*tq; sub.__r=(sub.__r||0)+resto*tq; subT+=f.t;
+   var celda=function(v,n){ if(!(v>0.00005))return '<td class="n calc-cero">·</td>'; return U==='t'?('<td class="n">'+fmt(v*tq,3)+'</td>'):('<td class="n">'+fmt(v,1)+(n?('<small class="calc-nf">'+n+' fact.</small>'):'')+'</td>'); };
+   cuerpo+='<tr class="'+(f.q>0?'':'calc-sin')+'"><td>'+esc(f.l.et)+'</td><td>'+esc(U==='t'?'t CO₂e':f.l.un)+'</td>'+MS.map(function(k){ return celda(M[k]||0,NN[k]); }).join('')+
+    (nm?(celda(fuera).replace('<td class="n">','<td class="n'+(fuera>0.0001?' falta':'')+'">')+celda(resto)):'')+
+    '<td class="n"><b>'+(f.q>0?(U==='t'?fmt(f.t,3):fmt(f.q,2)):'—')+'</b></td><td class="n" title="'+esc(fuenteDe(f.l))+'">'+(f.fac?(fmt(f.fac,4)+'<small class="calc-nf">kg CO₂e/'+esc(f.ut||'')+'</small>'):'—')+'</td><td class="n">'+(f.q>0?fmt(f.t,3):'—')+'</td>'+
+    '<td>'+(f.q>0?(f.ev?('✓ '+f.ev):'<b class="falta">sin archivo</b>'):'')+'</td></tr>';
+  });
+  MS.forEach(function(k){ totMes[k]=(totMes[k]||0)+(sub[k]||0); }); totMes.__f=(totMes.__f||0)+(sub.__f||0); totMes.__r=(totMes.__r||0)+(sub.__r||0); totT+=subT;
+  h+='<tr class="calc-mat-cat"><td>'+C.ico+' '+esc(C.nom)+' <small>'+C.con+' de '+C.filas.length+' con dato</small></td><td>t CO₂e</td>'+MS.map(function(k){ return '<td class="n">'+(sub[k]>0.00005?fmt(sub[k],3):'·')+'</td>'; }).join('')+
+   (nm?('<td class="n">'+(sub.__f>0.00005?fmt(sub.__f,3):'·')+'</td><td class="n">'+(sub.__r>0.00005?fmt(sub.__r,3):'·')+'</td>'):'')+'<td class="n"><b>'+fmt(subT,3)+'</b></td><td></td><td class="n"><b>'+fmt(subT,3)+'</b></td><td>'+(A.tot>0?fmt(subT/A.tot*100,1)+' %':'')+'</td></tr>'+cuerpo;
+ });
+ h+='</tbody><tfoot><tr><td>Total '+esc(A.t.toLowerCase())+'</td><td>t CO₂e</td>'+MS.map(function(k){ return '<td class="n">'+(totMes[k]>0.00005?fmt(totMes[k],3):'·')+'</td>'; }).join('')+
+  (nm?('<td class="n">'+fmt(totMes.__f||0,3)+'</td><td class="n">'+fmt(totMes.__r||0,3)+'</td>'):'')+'<td class="n">'+fmt(totT,3)+'</td><td></td><td class="n">'+fmt(totT,3)+'</td><td></td></tr></tfoot></table></div>';
+ h+='<p class="calc-nota">Las filas de categoría (fondo verde) suman las toneladas de sus fuentes en cada mes. «Fuera de esos meses»: facturas con fecha fuera del período de reporte. «Sin factura»: cantidad anotada sin factura registrada. Desplace la tabla hacia los lados y hacia abajo: la primera columna y los títulos quedan fijos.</p>';
  return h;
 }
 var CALC_COL={'Producción agrícola en las fincas':'#5b8c3a','Beneficiado y procesamiento':'#2f6f8f','Preparación para la exportación':'#8a6d3b','Empaque de la presentación':'#b5793a','Flete marítimo':'#5a5f9e'};
@@ -26289,7 +26422,10 @@ function vistaCalculadora(){
  return h+'</div>';
 }
 document.addEventListener('click',function(ev){
- var b=ev.target.closest&&ev.target.closest('[data-calc-p],[data-calc-d],[data-calc-e],[data-calc-a],[data-calc-c]'); if(!b)return;
+ var b=ev.target.closest&&ev.target.closest('[data-calc-p],[data-calc-d],[data-calc-e],[data-calc-a],[data-calc-c],[data-calc-m],[data-calc-u],[data-calc-fs]'); if(!b)return;
+ if(b.dataset.calcFs){ var mz=document.getElementById('calc-matriz'); if(document.fullscreenElement)document.exitFullscreen(); else if(mz&&mz.requestFullscreen)mz.requestFullscreen(); return; }
+ if(b.dataset.calcM)CALC.vistaM=b.dataset.calcM;
+ if(b.dataset.calcU)CALC.uni=b.dataset.calcU;
  if(b.dataset.calcA){ CALC.amb=b.dataset.calcA; CALC.cat=''; }
  if(b.dataset.calcC)CALC.cat=(CALC.cat===b.dataset.calcC)?'':b.dataset.calcC;
  if(b.dataset.calcP)CALC.pres=b.dataset.calcP;
