@@ -1933,7 +1933,7 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .sx-ei{font-weight:700}.sx-e-ok .sx-ei{color:#3b6d11}.sx-e-aviso .sx-ei{color:#ba7517}.sx-e-falta .sx-ei{color:#a32d2d}
 .sx-docs{margin-top:10px}.sx-docs h4{margin:0 0 4px}.sx-docs .mal{color:#a32d2d}
 .sx-chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 12px;font-size:13px}
-.sx-abierto td{background:#f6f6f0}.sx-okt{color:#3b6d11}.sx-ok td{opacity:.6}.sx-venc{border-color:#a32d2d!important;color:#a32d2d}
+.arc-mf td,.arc-mf th{padding:4px 5px}.arc-mf-vacio{background:#fcebeb;color:#a32d2d}.arc-mf-act{background:#e6f1fb}.sx-abierto td{background:#f6f6f0}.sx-okt{color:#3b6d11}.sx-ok td{opacity:.6}.sx-venc{border-color:#a32d2d!important;color:#a32d2d}
 button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;text-align:left}
 
 .ici-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.ici-fig{margin:6px 0 12px}.ici-fig figcaption{font-size:12.5px;color:#5f6b66;text-align:center;font-style:italic}
@@ -13671,6 +13671,7 @@ function vistaArchivo(){
   h+='</div>';
  });
  h+='</div>'+(cs?('<p class="pista" style="margin-top:8px">Carpeta abierta: <b>'+esc(cs+' · '+((carpetaArc(cs)||['',''])[1]))+'</b>. <button type="button" class="mini" data-accion="arc-ver" data-carpeta="'+esc(cs)+'">Ver todas</button></p>'):'')+'</div></div>';
+ h+=vistaArcMesFuente();
  /* --- traer archivos, enlazar Drive, buscar --- */
  h+='<div class="tarjeta"><div class="cuerpo">';
  if(ed){
@@ -27655,6 +27656,63 @@ function vistaPendientesEvid(){
  h+='</tbody></table></div></div></div>';
  return h;
 }
+/* ====== Evidencias agrupadas por mes y por fuente ======
+   Cada factura de la captura y cada documento del archivo se ubican en el mes
+   que cubren y en la fuente de emisión que sostienen. La celda vacía de una
+   fuente con emisiones es un mes sin respaldo. */
+var MESES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function mesDe(){ for(var i=0;i<arguments.length;i++){ var m=/(20\d{2})[-_\/.](0[1-9]|1[0-2])/.exec(String(arguments[i]||'')); if(m)return m[1]+'-'+m[2]; } return ''; }
+function mesesPeriodo(dat){
+ var a=mesDe(pv('per_inicio')), b=mesDe(pv('per_fin'));
+ if(!a||!b){ var ks=Object.keys(dat).filter(function(k){return k;}).sort(); a=a||ks[0]; b=b||ks[ks.length-1]; }
+ var out=[]; if(!a||!b)return out; var y=+a.slice(0,4), m=+a.slice(5,7), g=0;
+ while(g++<36){ var k=y+'-'+(m<10?'0':'')+m; out.push(k); if(k===b)break; m++; if(m>12){m=1;y++;} }
+ return out;
+}
+function arcMesFuente(){ return memo('arcmf',function(){
+ var X=sxDatos(), L=sxLineas(), celdas={}, meses={}, fuentes={};
+ function add(f,mes,it){ var k=f+'|'+(mes||''); (celdas[k]=celdas[k]||[]).push(it); meses[mes||'']=1; fuentes[f]=1; }
+ registros().forEach(function(r){ if(r.estado==='anulado')return; var mes=mesDe(r.mes,r.fecha,r.periodo); add(r.linea||'otros',mes,{tipo:'factura',r:r}); });
+ arcDocs().forEach(function(d){
+  var ls=d.lineas&&d.lineas.length?d.lineas:Object.keys(arcLineasDoc(d)).filter(function(k){return arcLineasDoc(d)[k]==='vinculado';});
+  var mes=mesDe(d.periodo,d.fecha,d.nombre,d.referencia,(d.drive||{}).nombre);
+  if(!ls.length){ var lc=Object.keys(arcLineasDoc(d)); ls=lc.length===1?lc:['otros']; }
+  ls.forEach(function(f){ add(f,mes,{tipo:'documento',d:d}); });
+ });
+ var orden=X.filas.map(function(r){return r.id;});
+ Object.keys(fuentes).forEach(function(f){ if(orden.indexOf(f)<0&&f!=='otros')orden.push(f); });
+ if(fuentes.otros)orden.push('otros');
+ var ms=mesesPeriodo(meses);
+ return {celdas:celdas,meses:ms,sinMes:!!meses[''],orden:orden,nom:function(f){ return f==='otros'?'Sin fuente asignada':((L[f]&&L[f].l.et)||f); },
+  t:function(f){ var r=X.filas.filter(function(x){return x.id===f;})[0]; return r?r.t:0; }};
+}); }
+function vistaArcMesFuente(){
+ var M=arcMesFuente(), cs=sel.arcMF||'';
+ if(!M.orden.length)return '';
+ var cols=M.meses.concat(M.sinMes?['']:[]);
+ var h='<div class="tarjeta" id="arc-mf"><h3>Evidencias por mes y por fuente</h3><div class="cuerpo">'+
+  '<p class="pista">Cada número es la cantidad de facturas y documentos de esa fuente en ese mes. En rojo, los meses sin ninguna evidencia de una fuente que sí tiene emisiones. Toque un número para ver los archivos.</p>'+
+  '<div class="cx-tabla"><table class="tabla sx-tab arc-mf"><thead><tr><th>Fuente</th><th class="n">t CO₂e</th>'+
+  cols.map(function(m){ return '<th class="n">'+(m?(MESES_C[+m.slice(5,7)-1]+'<br><small>'+m.slice(0,4)+'</small>'):'sin<br><small>mes</small>')+'</th>'; }).join('')+'<th class="n">Total</th></tr></thead><tbody>';
+ M.orden.forEach(function(f){
+  var t=M.t(f), tot=0;
+  var celdas=cols.map(function(m){ var L=M.celdas[f+'|'+m]||[]; tot+=L.length; var k=f+'|'+m, act=cs===k;
+   if(!L.length){ var mal=t>0&&m&&f!=='otros'; return '<td class="n'+(mal?' arc-mf-vacio':'')+'">'+(mal?'0':'·')+'</td>'; }
+   return '<td class="n'+(act?' arc-mf-act':'')+'"><button type="button" class="enlace" data-sx="arc-mf" data-k="'+esc(k)+'">'+L.length+'</button></td>'; }).join('');
+  h+='<tr><td>'+esc(M.nom(f))+'</td><td class="n">'+(t>0?fmt(t,1):'—')+'</td>'+celdas+'<td class="n"><b>'+tot+'</b></td></tr>';
+ });
+ h+='</tbody></table></div>';
+ if(cs&&M.celdas[cs]){
+  var p=cs.split('|'), Lc=M.celdas[cs];
+  h+='<h4 style="margin:12px 0 6px">'+esc(M.nom(p[0]))+' · '+(p[1]?(MESES_C[+p[1].slice(5,7)-1]+' '+p[1].slice(0,4)):'sin mes')+' <small>'+plural(Lc.length,'archivo','archivos')+'</small> <button type="button" class="mini" data-sx="arc-mf" data-k="">Cerrar</button></h4>'+
+   '<table class="tabla sx-tab"><thead><tr><th>Tipo</th><th>Fecha</th><th>Número o nombre</th><th>Proveedor o emisor</th><th class="n">Cantidad</th><th>Archivo</th></tr></thead><tbody>'+
+   Lc.map(function(it){ if(it.tipo==='factura'){ var r=it.r; return '<tr><td>Factura</td><td>'+esc(r.fecha||'—')+'</td><td>'+esc(r.numero||'s/n')+'</td><td>'+esc(r.proveedor||'—')+'</td><td class="n">'+fmt(numDe(r.cantidadLinea)||0,2)+' '+esc(r.unidadLinea||'')+'</td><td>'+esc(String(r.archivo||'').slice(0,80))+'</td></tr>'; }
+    var d=it.d, u=driveUrl(d); return '<tr><td>Documento</td><td>'+esc(d.fecha||d.periodo||'—')+'</td><td>'+esc(d.nombre||'')+'</td><td>'+esc(d.emisor||'—')+'</td><td class="n">—</td><td>'+(u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">Abrir en Drive</a>':esc(d.carpeta))+'</td></tr>'; }).join('')+'</tbody></table>';
+ }
+ return h+'</div></div>';
+}
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-sx="arc-mf"]'); if(!b)return; sel.arcMF=b.dataset.k||''; pintar(); setTimeout(function(){ var e=$('arc-mf'); if(e)e.scrollIntoView({block:'start'}); },30); });
+
 function vistaCoberturaArc(){
  var X=sxDatos(), conDoc=0, conFac=0;
  X.filas.forEach(function(r){ if(r.nDocs>0||r.nFact>0)conDoc+=r.t; if(r.docFactor)conFac+=r.t; });
