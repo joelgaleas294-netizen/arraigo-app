@@ -2639,7 +2639,7 @@ async function subirLocalACentral(){
  if(PRY&&!S.demo&&!v['p:'+PRY]&&hayDatos()){
   ['org/perfil','beneficio/actual','ods/declaracion','bitacora/registro','nc/registro','gestion/declaraciones',
    'gestion/muestreo','gestion/cargas','gestion/archivo','gestion/nivel3','gestion/cultivo','gestion/cohortes','gestion/control',
-   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo','captura/registros'].forEach(function(r){pendientes[r]=true;});
+   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo','gestion/factores','captura/registros'].forEach(function(r){pendientes[r]=true;});
   S.fincas.forEach(function(x){ pendientes['fincas/'+x.id]=true; pendientes['insumos/'+x.id]=true; });
   S.parcelas.forEach(function(x){ pendientes['parcelas/'+x.id]=true; });
   S.podas.forEach(function(x){ pendientes['podas/'+x.id]=true; });
@@ -5595,8 +5595,8 @@ var MODULOS=[
   des:'El directorio de empresas y su gente. Todo proyecto nace de aquí.'},
  {id:'pry',scol:'s3',codigo:'MOD-PRY',nom:'Proyectos y ciclos',col:'m3',etapa:'preparar',paso:2,
   des:'El ciclo de una organización. Aquí se abre, se cierra y se entrega.'},
- {id:'pai',scol:'s1',codigo:'MOD-PAI',nom:'Factores de emisión por país',col:'m1',etapa:'preparar',paso:3,
-  des:'Qué factor usa cada país de origen, de dónde sale y de qué año es.'},
+ {id:'pai',scol:'s1',codigo:'MOD-PAI',nom:'Factores de emisión del proyecto',col:'m1',etapa:'preparar',paso:3,
+  des:'Los factores de emisión de este proyecto: cada proyecto tiene los suyos, con su fuente, su año y su nivel, según el país de origen.'},
  {id:'lfe',scol:'s1',codigo:'MOD-LFE',nom:'Biblioteca de factores de emisión',col:'m1',etapa:'preparar',paso:3,
   des:'Los factores de cada renglón, cargados desde un documento con su fuente, año y nivel. Solo lo aprobado entra al cálculo.'},
  {id:'bib',scol:'s8',codigo:'MOD-BIB',nom:'Biblioteca documental',col:'m8',etapa:'preparar',paso:3,
@@ -6145,6 +6145,7 @@ function docDe(ruta){
  if(ruta==='gestion/calidad')return {calidad:calidades()};
  if(ruta==='gestion/transporte')return {transporte:transportes()};
  if(ruta==='gestion/recalculo')return {recalculo:recalculos()};
+ if(ruta==='gestion/factores')return S.factores?{factores:S.factores}:null;
  if(ruta==='ods/declaracion')return {ods:S.ods};
  if(ruta==='beneficio/actual')return {beneficio:S.beneficio};
  if(ruta==='captura/registros')return {registros:S.registros||[],capBase:S.capBase||{},_m:Date.now()};
@@ -6273,7 +6274,7 @@ async function cargarDeLaBase(){
   var GES=[['gestion/nivel3','n3'],['gestion/cultivo','cultivo'],['gestion/cohortes','cohortes'],
    ['gestion/control','control'],['gestion/instrumentos','instrumentos'],['gestion/medidores','medidores'],
    ['gestion/calidad','calidad'],['gestion/transporte','transporte'],['gestion/recalculo','recalculo'],
-   ['gestion/muestreo','muestreo'],['gestion/cargas','cargas']];
+   ['gestion/muestreo','muestreo'],['gestion/cargas','cargas'],['gestion/factores','factores']];
   for(var ig=0;ig<GES.length;ig++){
    try{
     var dg=await db.doc(dbr(GES[ig][0])).get();
@@ -6281,6 +6282,7 @@ async function cargarDeLaBase(){
     if(GES[ig][0]==='gestion/muestreo'&&dg&&dg.exists&&dg.data&&dg.data.proy)S.proy=dg.data.proy;
    }catch(e){}
   }
+  sembrarFactores(); _facDe=null; // proyecto sin factores propios: se siembra con los comunes de antes
   if(!S.fincas.length||S.demo)await migrarBaseAntigua();
   guardarLocal();
   return true;
@@ -8743,50 +8745,69 @@ function facPaisUsable(l,cod){
  return p;
 }
 function factoresFueraDeRango(cod){
- cod=cod||paisProyecto(); var out=[], t=FACPAIS[cod]||{};
+ factoresProyecto(); cod=cod||paisProyecto(); var out=[], t=FACPAIS[cod]||{};
  for(var id in t){ var y=numOpc(t[id]&&t[id].f), l=lineaDeId(id); if(isFinite(y)&&l&&!rangoFactor(l,y))out.push({l:l,f:y}); }
  return out;
 }
+/* Factores de emisión DEL PROYECTO: cada proyecto guarda los suyos (documento gestion/<proyecto>__factores),
+   sobre el catálogo base. Antes eran comunes a todos los proyectos (sistema/paises y este equipo): esos valores
+   solo se usan para sembrar, una vez, los proyectos que todavía no tienen factores propios. */
+var FAC_LEGADO=null, _facDe=null;
+function clonar(o){ return JSON.parse(JSON.stringify(o)); }
+function aplicarFactores(F){
+ FACPAIS=clonar(FACPAIS_BASE); ECUPAIS=clonar(ECUPAIS_BASE); REDPAIS=clonar(REDPAIS_BASE);
+ if(!F)return;
+ if(F.fac)fusionarFac(FACPAIS,F.fac);
+ if(F.ecu)for(var k2 in F.ecu)ECUPAIS[k2]=Object.assign(ECUPAIS[k2]||{},F.ecu[k2]);
+ if(F.red)for(var k3 in F.red)REDPAIS[k3]=Object.assign(REDPAIS[k3]||{},F.red[k3]);
+}
+/* Siembra con los factores comunes de antes un proyecto que aún no tiene los suyos (al cargarlo de la base, o sin base) */
+function sembrarFactores(){
+ if(!PRY||S.demo||(S.factores&&S.factores.fac)||!FAC_LEGADO)return false;
+ S.factores=Object.assign(clonar(FAC_LEGADO),{sembrado:new Date().toISOString()});
+ marcar('gestion/factores');
+ return true;
+}
+/* Mantiene FACPAIS, ECUPAIS y REDPAIS al día con el proyecto abierto */
+function factoresProyecto(){
+ if(_facDe&&_facDe.pry===PRY&&_facDe.obj===S.factores)return;
+ if(!db)sembrarFactores();
+ aplicarFactores(S.factores);
+ _facDe={pry:PRY,obj:S.factores};
+}
 function cargarPaises(){
- FACPAIS=JSON.parse(JSON.stringify(FACPAIS_BASE));
- ECUPAIS=JSON.parse(JSON.stringify(ECUPAIS_BASE));
- REDPAIS=JSON.parse(JSON.stringify(REDPAIS_BASE));
- try{
-  var t=localStorage.getItem(LP);
-  if(t){var o=JSON.parse(t);
-   if(o&&o.fac)fusionarFac(FACPAIS,o.fac);
-   if(o&&o.ecu)for(var k2 in o.ecu)ECUPAIS[k2]=Object.assign(ECUPAIS[k2]||{},o.ecu[k2]);
-   if(o&&o.red)for(var k3 in o.red)REDPAIS[k3]=Object.assign(REDPAIS[k3]||{},o.red[k3]);
-  }
- }catch(e){}
+ aplicarFactores(null);
+ try{ var t=localStorage.getItem(LP); if(t){ var o=JSON.parse(t); if(o&&o.fac)FAC_LEGADO={fac:o.fac,ecu:o.ecu||{},red:o.red||{}}; } }catch(e){}
+ _facDe=null;
 }
 function guardarPaises(){
- try{localStorage.setItem(LP,JSON.stringify({fac:FACPAIS,ecu:ECUPAIS,red:REDPAIS}));}catch(e){}
- if(db&&puedeEditarBase()){ try{ silenciar(db.doc('sistema/paises').set({fac:FACPAIS,ecu:ECUPAIS,red:REDPAIS,actualizado:new Date().toISOString()})); }catch(e){} }
+ /* lo editado queda solo en el proyecto abierto */
+ S.factores={fac:FACPAIS,ecu:ECUPAIS,red:REDPAIS,actualizado:new Date().toISOString()};
+ _facDe={pry:PRY,obj:S.factores};
+ marcar('gestion/factores');
 }
 async function paisesDeLaBase(){
  if(!db)return;
  try{
   var d=await db.doc('sistema/paises').get();
-  if(d&&d.exists&&d.data&&d.data.fac){
-   FACPAIS=JSON.parse(JSON.stringify(FACPAIS_BASE)); fusionarFac(FACPAIS,d.data.fac);
-   for(var k2 in (d.data.ecu||{}))ECUPAIS[k2]=Object.assign(ECUPAIS[k2]||{},d.data.ecu[k2]);
-   for(var k3 in (d.data.red||{}))REDPAIS[k3]=Object.assign(REDPAIS[k3]||{},d.data.red[k3]);
-   try{localStorage.setItem(LP,JSON.stringify({fac:FACPAIS,ecu:ECUPAIS,red:REDPAIS}));}catch(e){}
-  }
+  if(d&&d.exists&&d.data&&d.data.fac)FAC_LEGADO={fac:d.data.fac,ecu:d.data.ecu||{},red:d.data.red||{}};
  }catch(e){}
+ _facDe=null;
 }
 function facPaisDe(id,cod){
+ factoresProyecto();
  cod=cod||paisProyecto();
  var t=FACPAIS[cod]||{};
  return t[id]||null;
 }
-function redPais(cod){ cod=cod||paisProyecto(); return REDPAIS[cod]||{variante:'pendiente',nota:''}; }
+function redPais(cod){ factoresProyecto(); cod=cod||paisProyecto(); return REDPAIS[cod]||{variante:'pendiente',nota:''}; }
 function ecuPais(cod){
+ factoresProyecto();
  cod=cod||paisProyecto();
  return ECUPAIS[cod]||ECUPAIS_BASE.HN;
 }
 function nivelesPais(cod){
+ factoresProyecto();
  var n={nacional:0,regional:0,defecto:0};
  lineasUnicas().forEach(function(x){
   var p=facPaisDe(x.l.id,cod);
@@ -12378,7 +12399,7 @@ function factoresDelPais(cod){
 }
 function avisosFactores(cod){
  var out=[];
- var tt=FACPAIS[cod||paisProyecto()]||{};
+ factoresProyecto(); var tt=FACPAIS[cod||paisProyecto()]||{};
  for(var idd in tt){ if(tt[idd]&&tt[idd].fDescartado!=null){ var ll=lineaDeId(idd); if(ll)out.push({tipo:'rango',l:ll,txt:'la tabla guardada tenía '+fmt(tt[idd].fDescartado,4)+' para '+ll.et+', un valor imposible para su unidad, y se usa el de la base del programa, '+fmt(tt[idd].f,4)}); } }
  factoresFueraDeRango(cod).forEach(function(r){ out.push({tipo:'rango',l:r.l,txt:'el factor de '+r.l.et+' vale '+fmt(r.f,4)+', fuera del rango posible para su unidad, y no se está usando'}); });
  factoresDelPais(cod).forEach(function(r){
@@ -18718,7 +18739,7 @@ function vistaAjustes(){
   ajuFila('Potenciales de calentamiento',A.gwp,!!A.gwp)+
   ajuFila('Umbral de cuantificación',fmt(A.umbral,1)+' cm de diámetro')+
   ajuFila('Modelo de altura',A.modelo)+
-  '<div class="acciones" style="margin-top:12px">'+ajuIr('cfg','Abrir la configuración del cálculo')+ajuIr('pai','Factores por país')+'</div>');
+  '<div class="acciones" style="margin-top:12px">'+ajuIr('cfg','Abrir la configuración del cálculo')+ajuIr('pai','Factores de emisión del proyecto')+'</div>');
 
  /* --- 5 · los datos --- */
  h+=ajuSec('Los datos y el respaldo',
@@ -26839,7 +26860,9 @@ document.addEventListener('input',function(ev){
   marcar('gestion/declaraciones'); limpiarMemo(); if(t.dataset.talc==='estado'){ pintar(); pintarNav(); }
   return;}
  if(t.dataset.pf){
-  if(!puedeEditar()){msg('Los factores de país los cambia quien tiene acceso de edición');return;}
+  if(!puedeEditar()){msg('Los factores del proyecto los cambia quien tiene acceso de edición');return;}
+  if(!PRY){msg('Abra un proyecto: cada proyecto tiene sus propios factores de emisión');return;}
+  factoresProyecto();
   var cp=t.dataset.pais, idp=t.dataset.lineaId;
   FACPAIS[cp]=FACPAIS[cp]||{};
   FACPAIS[cp][idp]=FACPAIS[cp][idp]||{};
@@ -26854,10 +26877,12 @@ document.addEventListener('input',function(ev){
   return;}
  if(t.dataset.red){
   if(!puedeEditar())return;
+  if(!PRY)return; factoresProyecto();
   var cr=t.dataset.pais; REDPAIS[cr]=REDPAIS[cr]||{};
   REDPAIS[cr][t.dataset.red]=t.value; guardarPaises(); return;}
  if(t.dataset.ecu&&t.dataset.pais){
   if(!puedeEditar())return;
+  if(!PRY)return; factoresProyecto();
   var ce=t.dataset.pais;
   ECUPAIS[ce]=ECUPAIS[ce]||{};
   ECUPAIS[ce][t.dataset.ecu]=(['a','b','rs','fc'].indexOf(t.dataset.ecu)>=0)?nv(t.value):t.value;
