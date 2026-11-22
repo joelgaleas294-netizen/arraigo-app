@@ -3946,13 +3946,13 @@ function proxyAutorizado(l){ var a=proxyAut()[l.id]; return (a&&a.fecha)?a:null;
 function autorizarProxy(l,razon){
  var a={fecha:hoy(),quien:quienEdita(),razon:String(razon||''),fuente:origenFactor(l).fuente};
  proxyAut()[l.id]=a;
- marcar('gestion/factores');
+ marcar('gestion/factores'); marcar('org/perfil'); /* la autorización vive en el perfil */
  anotar('dato','Proxy de otra jurisdicción autorizado: '+l.et,'',a.razon,'');
  return a;
 }
 function retirarProxy(l){
  delete proxyAut()[l.id];
- marcar('gestion/factores');
+ marcar('gestion/factores'); marcar('org/perfil');
  anotar('dato','Autorización de proxy retirada: '+l.et,'','','');
 }
 /* El juicio: qué factor entra al cálculo y con qué nombre. */
