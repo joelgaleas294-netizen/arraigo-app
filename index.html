@@ -4974,6 +4974,14 @@ function co2Biogenico(){ return memo('bio',function(){
   var t=R[k]*FE_BIOGEN[k].f; tot+=t;
   filas.push({k:k,et:FE_BIOGEN[k].et,masa:R[k],f:FE_BIOGEN[k].f,t:t,or:FE_BIOGEN[k].or});
  });
+ /* CO₂ del compostaje: el carbono de la materia orgánica que se pierde en las
+    pilas sale como CO₂ biogénico. El IPCC no da un valor por defecto: el
+    proyecto lo declara desde su balance de masa (t de CO₂ por t que entra).   */
+ var BC=(S.perfil&&S.perfil.co2BiogCompost)||null, fc=BC?numOpc(BC.f):NaN;
+ if(isFinite(fc)&&fc>0){
+  var mc=0; LINEAS_TODAS().forEach(function(x){ if(/^compostaje/.test(x.l.id))mc+=cantidad(x.l,x.cat,x.fid)*conver(x.l,x.cat,x.fid); });
+  if(mc>0){ var tc=mc*fc; tot+=tc; filas.push({k:'compost',et:'Compostaje (pérdida de materia orgánica)',masa:mc,f:fc,t:tc,or:String(BC.fuente||'Balance de masa declarado por el proyecto')}); }
+ }
  return {filas:filas,total:tot};
 });}
 function bloqueBiogenico(){
