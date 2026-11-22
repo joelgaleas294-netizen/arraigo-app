@@ -1909,6 +1909,7 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .cap-ambito{margin-bottom:8px;max-width:520px}.cap-ambito select{width:100%}
 </style>
 <style id="cx-estilos">
+.arc-arbol{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}.arc-grupo{border:1px solid var(--borde,#d9d4c7);border-radius:10px;padding:8px}.arc-gt{font-weight:700;font-size:.85rem;margin-bottom:6px}.arc-c{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:transparent;border:0;border-radius:6px;padding:5px 6px;font-size:.85rem;cursor:pointer}.arc-c:hover{background:rgba(0,0,0,.05)}.arc-c.activo{background:var(--m8,#e6efe9);font-weight:700}.arc-c b{font-variant-numeric:tabular-nums;opacity:.75}
 .cx .cx-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 18px}
 .cx .cx-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
 .cx .cx-tile span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
@@ -5668,8 +5669,8 @@ var MODULOS=[
   des:'Traer de una hoja de cálculo o de un paquete de facturas lo que ya está contado.'},
  {id:'con',scol:'s4',codigo:'MOD-CON',nom:'Control de la medición',col:'m4',etapa:'cerrar',paso:11,
   des:'Instrumentos comprobados, medidores autorizados y la remedición de control del ciclo.'},
- {id:'arc',scol:'s8',codigo:'MOD-ARC',nom:'Archivo del proyecto',col:'m8',etapa:'revisar',paso:11,
-  des:'El depósito documental del ciclo, en catorce carpetas. Cada documento entra con su origen y su destino declarados, y queda donde un verificador lo pueda encontrar sin preguntar.'},
+ {id:'arc',scol:'s8',codigo:'MOD-ARC',nom:'Archivo de evidencias del proyecto',col:'m8',etapa:'revisar',paso:11,
+  des:'El expediente del estudio en la misma estructura de carpetas que el Drive: facturas, registros, procedimientos, factores y la memoria de cálculo. Cada documento con su copia (adjunta o en Drive), su origen y su destino.'},
  {id:'evi',scol:'s7',codigo:'MOD-EVI',nom:'Evidencia documental',col:'m7',etapa:'revisar',paso:11,
   des:'Fotografías y documentos de respaldo, con su fecha, su autor y su coordenada.'},
  {id:'cal',scol:'s8',codigo:'MOD-CAL',nom:'Hoja de cálculo',col:'m8',etapa:'revisar',paso:12,
@@ -13087,24 +13088,72 @@ function hayMuestreoOrg(){
    origen y su destino, y queda archivado donde corresponde. Lo que aquí se
    guarda no sustituye la evidencia anclada a cada renglón: la completa, con
    los documentos que no cuelgan de un dato sino del proyecto entero. */
+/* Estructura del archivo de evidencias: la misma del expediente en Drive
+   (carpeta «Huella de Carbono de Producto»), ordenada por el estudio ISO 14067. */
 var CARPETAS_ARC=[
- ['01','Constitución y alcance','Interno','Acta de alcance y alta del ciclo'],
- ['02','Jurídicos y confidencialidad','Partes firmantes','Expediente del ciclo'],
- ['03','Certificaciones de admisión','Organismo certificador','Prerrequisitos del programa'],
- ['04','Energía y combustibles','Proveedor','Categorías 1 y 2 del inventario'],
- ['05','Insumos agrícolas','Proveedor y finca','Categoría 1, suelos y fertilización'],
- ['06','Proceso y beneficiado','Interno','Categoría 1, proceso'],
- ['07','Transporte','Transportista','Categoría 3, transporte'],
- ['08','Producción y ventas','Interno y comprador','Huella de producto y contratos'],
- ['09','Estrato de sombra','Campo','Remociones y catálogo alométrico'],
- ['10','Factores y metodología','Autoridad y programa','Factores de emisión y ecuaciones'],
- ['11','Formación y capacitación','Programa','Capacidad instalada'],
- ['12','Salidas y entregas','Programa','Entrega al cliente y al verificador'],
- ['13','Auditoría y verificación','Auditor y verificador','Conformidad del ciclo'],
- ['14','Correspondencia y otros','Varios','Expediente del ciclo']
+ ['00','Gobierno del estudio','Interno y partes firmantes','Contrato, confidencialidad, comité, lista maestra y procedimientos'],
+ ['01','Definición del estudio','Interno','Objetivo, unidad declarada, límites del sistema, producción y exportaciones (ISO 14067, 6.3)'],
+ ['02.1','Etapa agrícola (fincas)','Productores, técnicos y laboratorio','Compost, fertilizantes, combustibles de finca, bitácoras y análisis de suelo'],
+ ['02.2.1','Combustibles del beneficio y la planta','Proveedor de combustible','Diésel de vehículos y maquinaria, diésel de la planta generadora y gasolina'],
+ ['02.2.2','Electricidad','Distribuidora eléctrica','Consumo eléctrico del período, en kWh'],
+ ['02.2.3','Gas licuado (GLP)','Proveedor de gas','Consumo de GLP del período'],
+ ['02.2.4','Aceites, refrigerantes y otros consumos','Proveedor','Lubricantes, recargas de refrigerante y otros consumos de planta'],
+ ['02.2.5','Aguas mieles, pulpa y residuos','Interno','Generación y tratamiento de aguas mieles, pulpa y residuos'],
+ ['02.3','Empaque y materiales','Proveedor','Sacos, bolsas y materiales de empaque'],
+ ['02.4','Transporte terrestre y marítimo','Transportista y naviera','Fletes, distancias, embarques y conocimientos de embarque'],
+ ['02.5','Exclusiones y criterio de corte','Interno','Justificación de lo que no se cuantifica'],
+ ['03','Factores de emisión y GWP','Autoridad nacional e IPCC','Fuente, año, unidad y ámbito de cada factor'],
+ ['04','Cálculo','ARRAIGO','Memoria de cálculo y exportaciones de la Calculadora'],
+ ['05','Informe del estudio','Programa','Informe ISO 14067 y sus anexos'],
+ ['06','Verificación externa','Auditor y verificador','Auditorías internas, certificaciones y solicitud al verificador'],
+ ['07','Mejora continua y plan de reducción','Interno','Plan de monitoreo, política y reportes de descarbonización'],
+ ['08','Fuera del alcance de la huella','Varios','EUDR, censo de árboles y remociones: referencia, no se suman a la huella'],
+ ['99','Para retirar','Varios','Duplicados, vacíos y archivos de terceros pendientes de eliminar']
 ];
+/* Carpetas de la versión anterior (catorce) a la estructura del estudio */
+var ARC_MIGRA={'01':'00','02':'00','03':'06','04':'02.2.1','05':'02.1','06':'02.2.5','07':'02.4','08':'01','09':'08','10':'03','11':'00','12':'05','13':'06','14':'00'};
+var ARC_GRUPOS=[['00','Gobierno'],['01','Definición'],['02','Inventario por etapa'],['03','Factores'],['04','Cálculo'],['05','Informe'],['06','Verificación'],['07','Mejora continua'],['08','Fuera del alcance'],['99','Para retirar']];
+/* A qué carpeta del archivo va una factura registrada en la captura */
+function arcCarpetaDeLinea(l,cat){
+ if(cat==='finca')return '02.1';
+ var c=clCarpetaDeLinea(l), t=((l&&l.id)||'')+' '+((l&&l.et)||'');
+ if(c==='02'&&/glp|gas lp|propano/i.test(t))return '02.2.3';
+ return {'01':'02.2.2','02':'02.2.1','03':'02.2.5','04':'02.1','05':'02.1','06':'02.3','07':'02.4','08':'02.4','09':'01'}[c]||'02.2.4';
+}
+/* Un enlace de Google Drive: de él sale el identificador del archivo */
+function driveId(u){ var m=String(u||'').match(/\/d\/([A-Za-z0-9_-]{10,})|[?&]id=([A-Za-z0-9_-]{10,})|^([A-Za-z0-9_-]{25,})$/); return m?(m[1]||m[2]||m[3]):''; }
+function driveUrl(d){ var id=(d&&d.drive&&d.drive.id)||''; return id?('https://drive.google.com/file/d/'+id+'/view'):''; }
+function arcTieneCopia(d){ return !!(((d.adjuntos||[]).length)||(d.drive&&d.drive.id)); }
+/* Importa un índice de documentos: [{carpeta,nombre,drive|url,fecha,emisor,periodo,nota}]. No repite lo que ya está. */
+function arcImportarIndice(L){
+ var D=arcDocs(), ya={}, n=0, rep=0;
+ D.forEach(function(d){ if(d.drive&&d.drive.id)ya[d.drive.id]=1; });
+ (L||[]).forEach(function(x){
+  var id=driveId(x.drive||x.url||''); if(id&&ya[id]){rep++;return;}
+  var c=carpetaArc(x.carpeta)?String(x.carpeta):'00', d=arcNuevo(c);
+  d.nombre=String(x.nombre||'').slice(0,200); d.fecha=String(x.fecha||''); d.emisor=String(x.emisor||''); d.periodo=String(x.periodo||''); d.nota=String(x.nota||'');
+  d.referencia=String(x.referencia||x.nombre||'');
+  if(id){ d.drive={id:id,nombre:String(x.archivo||x.nombre||''),mime:String(x.mime||''),bytes:+x.bytes||0}; ya[id]=1; }
+  if(x.estado&&ESTADOS_ARC.indexOf(x.estado)>=0)d.estado=x.estado;
+  D.push(d); n++;
+ });
+ if(n){ marcar('gestion/archivo'); guardarLocal(); }
+ return {nuevos:n,repetidos:rep};
+}
+/* Líneas «carpeta; nombre; enlace; fecha» o solo enlaces */
+function arcLeerLineas(txt,carpDef){
+ return String(txt||'').split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean).map(function(x){
+  var p=x.split(/\s*[;\t|]\s*/);
+  if(p.length===1)return {carpeta:carpDef,nombre:'Documento de Drive',url:p[0]};
+  var u=p.filter(function(z){return driveId(z);})[0]||'', o=p.filter(function(z){return z!==u;});
+  var c=carpetaArc(o[0])?o.shift():carpDef;
+  return {carpeta:c,nombre:o[0]||'Documento de Drive',url:u,fecha:o[1]||'',emisor:o[2]||''};
+ });
+}
 var ESTADOS_ARC=['vigente','caducado','pendiente','sustituido'];
-function arcEstado(){ S.archivo=S.archivo||{}; S.archivo.docs=S.archivo.docs||[]; return S.archivo; }
+function arcEstado(){ S.archivo=S.archivo||{}; S.archivo.docs=S.archivo.docs||[];
+ if(!(S.archivo.v>=2)){ S.archivo.docs.forEach(function(d){ var k=String(d.carpeta||''); if(ARC_MIGRA[k])d.carpeta=ARC_MIGRA[k]; else if(!carpetaArc(k))d.carpeta='00'; }); S.archivo.v=2; if(S.archivo.docs.length&&typeof marcar==='function')try{marcar('gestion/archivo');}catch(e){} }
+ return S.archivo; }
 function arcDocs(){ return arcEstado().docs; }
 function arcDe(id){ var L=arcDocs(); for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i]; return null; }
 function carpetaArc(c){ for(var i=0;i<CARPETAS_ARC.length;i++)if(CARPETAS_ARC[i][0]===String(c))return CARPETAS_ARC[i]; return null; }
@@ -13118,7 +13167,7 @@ function arcPorCarpeta(){
  var m={};
  CARPETAS_ARC.forEach(function(c){ m[c[0]]={c:c,docs:[],adj:0}; });
  arcDocs().forEach(function(d){
-  var k=String(d.carpeta||'14'); if(!m[k])k='14';
+  var k=String(d.carpeta||'00'); if(!m[k])k='00';
   m[k].docs.push(d); m[k].adj+=((d.adjuntos||[]).length);
  });
  return m;
@@ -13127,7 +13176,7 @@ function arcResumen(){
  var D=arcDocs(), conAdj=0, sinAdj=0, caducados=0, pend=0, bytes=0, carpUsadas={};
  D.forEach(function(d){
   var n=(d.adjuntos||[]).length;
-  if(n)conAdj++; else sinAdj++;
+  if(arcTieneCopia(d))conAdj++; else sinAdj++;
   if(d.estado==='caducado')caducados++;
   if(d.estado==='pendiente')pend++;
   (d.adjuntos||[]).forEach(function(a){ bytes+=(a.bytes||0); });
@@ -13162,7 +13211,7 @@ function avisoRef(d){
  return 'Esta es la carpeta '+c+' y la referencia no abre con «'+c+'-». El nombre del archivo del expediente se construye así: '+c+'-aaaammdd-EMISOR-descripcion.pdf';
 }
 function fichaArcDoc(d){
- var C=carpetaArc(d.carpeta)||CARPETAS_ARC[13];
+ var C=carpetaArc(d.carpeta)||CARPETAS_ARC[0];
  var adj=(d.adjuntos||[]);
  var h='<div class="tarjeta" style="margin-bottom:12px">';
  h+='<div class="campos">'+
@@ -13194,9 +13243,11 @@ function fichaArcDoc(d){
     '</li>';
   });
   h+='</ul>';
- } else {
-  h+='<p class="lin-nota">Sin archivo adjunto. El documento consta en el índice pero su copia no está en el expediente.</p>';
+ } else if(!(d.drive&&d.drive.id)){
+  h+='<p class="lin-nota">Sin archivo adjunto ni enlace. El documento consta en el índice pero su copia no está en el expediente.</p>';
  }
+ if(d.drive&&d.drive.id)h+='<p class="lin-nota"><b>Copia en Google Drive.</b> <a href="'+esc(driveUrl(d))+'" target="_blank" rel="noopener">Abrir '+esc(d.drive.nombre||d.nombre||'el archivo')+'</a>'+(d.drive.bytes?(' · '+esc(pesoArc(d.drive.bytes))):'')+'</p>';
+ h+='<div class="campo"><label>Enlace en Google Drive</label><input type="text" data-arc-drive="'+esc(d.id)+'" value="'+esc(driveUrl(d))+'" placeholder="pegue el enlace del archivo en Drive"'+(puedeEditar()?'':' disabled')+'></div>';
  if(puedeEditar()){
   h+='<div class="acciones">'+
    '<label class="adj-boton"><input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" data-adj="arcdoc:'+esc(d.id)+'" data-tipo="documento" hidden>Adjuntar archivo</label>'+
@@ -13279,23 +13330,27 @@ async function lecPdfAImagenes(blob,maxPag){
 
 /* --- qué se le pide a cada carpeta --- */
 var LEC_PIDE={
- '01':'el objeto del acta o del acuerdo y las partes',
- '02':'las partes firmantes, la vigencia y el objeto',
- '03':'el organismo que certifica, la norma o esquema, el alcance y la fecha de vencimiento',
- '04':'el consumo del período con su unidad exacta (kWh, galones, litros), la lectura anterior y la actual si aparecen, y el monto',
- '05':'el producto, la cantidad con su unidad (quintales, kilogramos, litros, sacos), la fórmula o grado del fertilizante si aparece, y el monto',
- '06':'el volumen procesado, y el agua, la energía o el combustible si aparecen',
- '07':'el origen, el destino, la distancia, el tipo de vehículo, el combustible y la cantidad transportada',
- '08':'el producto, la cantidad entregada con su unidad, el lote y el comprador',
- '09':'el código de la parcela, el estrato, las especies y las medidas registradas',
- '10':'la fuente del factor, su valor, su unidad, su año y el ámbito al que aplica',
- '11':'el tema, la fecha, la duración y el número de participantes',
- '12':'el destinatario, el objeto de la entrega y su fecha',
- '13':'el auditor o verificador, el alcance, los hallazgos y su fecha',
- '14':'el asunto y las fechas que aparezcan'
+ '00':'el objeto del documento, las partes firmantes, la vigencia y la fecha',
+ '01':'el producto, la cantidad producida o exportada con su unidad, el período y el destino',
+ '02.1':'el producto, la cantidad con su unidad (quintales, kilogramos, litros, sacos), la fórmula o grado del fertilizante si aparece, la finca y el monto',
+ '02.2.1':'el combustible, la cantidad con su unidad exacta (litros o galones), el vehículo o equipo si aparece, el número de factura y el monto',
+ '02.2.2':'el consumo del período en kWh, la lectura anterior y la actual si aparecen, el número de cuenta y el monto',
+ '02.2.3':'la cantidad de gas con su unidad (galones, libras o kilogramos), el número de comprobante y el monto',
+ '02.2.4':'el producto (aceite, refrigerante u otro), la cantidad con su unidad, el equipo y el monto',
+ '02.2.5':'el volumen de aguas mieles o de pulpa, el tratamiento y el período',
+ '02.3':'el material, la cantidad con su unidad, el peso por unidad si aparece y el monto',
+ '02.4':'el origen, el destino, la distancia, el tipo de vehículo o buque, el combustible y la cantidad transportada',
+ '02.5':'la fuente excluida y la justificación',
+ '03':'la fuente del factor, su valor, su unidad, su año y el ámbito al que aplica',
+ '04':'el período, las fuentes y los totales del cálculo',
+ '05':'el título, la versión, la fecha y el alcance del informe',
+ '06':'el auditor o verificador, el alcance, los hallazgos y su fecha',
+ '07':'el compromiso o la medida, la meta, el responsable y la fecha',
+ '08':'el asunto, el área y las fechas que aparezcan',
+ '99':'el asunto y las fechas que aparezcan'
 };
 function lecPrompt(d){
- var C=carpetaArc(d.carpeta)||CARPETAS_ARC[13];
+ var C=carpetaArc(d.carpeta)||CARPETAS_ARC[0];
  return 'Lea el documento de las imágenes. Es evidencia de respaldo de un inventario de gases de efecto invernadero, '+
  'archivado en la carpeta '+C[0]+', '+C[1]+'.\n\n'+
  'Devuelva SOLO un objeto JSON con esta forma exacta:\n'+
@@ -13430,7 +13485,7 @@ async function arcAgregarArchivos(files,carpeta){
  for(var i=0;i<files.length;i++){
   var f=files[i];
   try{
-   var d=arcNuevo(carpeta||sel.arcCarpeta||'14');
+   var d=arcNuevo(carpeta||sel.arcCarpeta||'00');
    d.nombre=String(f.name||'').replace(/\.[A-Za-z0-9]{1,5}$/,'');
    d.fecha=hoy();
    arcDocs().push(d);
@@ -13452,52 +13507,89 @@ function arcFiltrados(){
   return t.indexOf(q)>=0;
  });
 }
+/* Facturas registradas en la captura, agrupadas en la carpeta del archivo a la que pertenecen */
+function arcFacturasCaptura(){
+ var m={};
+ registros().forEach(function(r){ if(r.estado==='anulado')return; var l=capLinea(r.cat,r.linea); if(!l)return;
+  var c=arcCarpetaDeLinea(l,r.cat); (m[c]=m[c]||[]).push({r:r,l:l}); });
+ Object.keys(m).forEach(function(c){ m[c].sort(function(a,b){return String(a.r.fecha||'').localeCompare(String(b.r.fecha||''));}); });
+ return m;
+}
+function arcTablaFacturas(L){
+ var arch={}; L.forEach(function(x){ var k=x.r.archivo||'(sin archivo)'; arch[k]=(arch[k]||0)+1; });
+ var h='<p class="lin-nota"><b>'+plural(L.length,'factura registrada','facturas registradas')+'</b> en «Subir facturas y registros», de '+plural(Object.keys(arch).length,'archivo','archivos')+'. Se listan aquí sin guardarse dos veces: la copia es la misma que sostiene el dato de actividad.</p>';
+ h+='<div class="calc-mes-caja"><table class="calc-mes"><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th>Fuente</th><th class="n">Cantidad</th><th>Unidad</th><th>Archivo</th></tr></thead><tbody>'+
+  L.slice(0,400).map(function(x){ var r=x.r; return '<tr><td>'+esc(r.fecha||'sin fecha')+'</td><td>'+esc(r.numero||'s/n')+'</td><td>'+esc(r.proveedor||'')+'</td><td>'+esc(r.lineaNom||x.l.et)+'</td><td class="n">'+fmt(r.cantidadLinea,2)+'</td><td>'+esc(r.unidadLinea||'')+'</td><td>'+esc(r.archivo||'')+'</td></tr>'; }).join('')+
+  '</tbody></table></div>';
+ if(L.length>400)h+='<p class="pista">Se muestran las primeras 400.</p>';
+ return h;
+}
 function vistaArchivo(){
- var ed=puedeEditar(), R=arcResumen(), M=arcPorCarpeta();
- var h=cabModulo('arc','<p class="vista-sub">Los papeles del proyecto, en un solo sitio y buscables. Lo que cuelga de un renglón de datos sigue en la evidencia de ese renglón; aquí va lo que pertenece al proyecto entero: contratos, actas, certificaciones, fuentes de los factores y constancias.</p>');
+ var ed=puedeEditar(), R=arcResumen(), M=arcPorCarpeta(), F=arcFacturasCaptura();
+ var nFac=Object.keys(F).reduce(function(a,c){return a+F[c].length;},0);
+ var cs=String(sel.arcCarpeta||'');
+ var h=cabModulo('arc','<p class="vista-sub">El expediente del estudio, con la misma estructura de carpetas que el Drive del proyecto. Cada documento tiene su copia adjunta o enlazada en Drive; las facturas que sostienen los datos de actividad aparecen solas en su carpeta.</p>');
  h+='<dl class="cifras">'+
-  tarjetaCifra('Documentos',String(R.total),'en el archivo del proyecto')+
-  tarjetaCifra('Con su copia',String(R.conAdj),R.sinAdj?(R.sinAdj+' constan en el índice y no tienen archivo'):'ninguno sin archivo')+
+  tarjetaCifra('Documentos',String(R.total),'en el índice del archivo')+
+  tarjetaCifra('Con su copia',String(R.conAdj),R.sinAdj?(R.sinAdj+' sin archivo ni enlace'):'ninguno sin copia')+
+  tarjetaCifra('Facturas de la captura',String(nFac),'unidas a su dato de actividad')+
   '</dl>';
  if(R.caducados||R.pendientes){
   h+='<p class="aviso">'+esc(String(R.caducados))+' documento'+(R.caducados===1?'':'s')+' marcado'+(R.caducados===1?'':'s')+
    ' como caducado y '+esc(String(R.pendientes))+' como pendiente. Un documento caducado dentro del ciclo es un hallazgo de auditoría.</p>';
  }
- /* --- traer archivos, buscar y filtrar --- */
+ /* --- las carpetas, como en el Drive --- */
+ h+='<div class="tarjeta"><h3>Carpetas del estudio</h3><div class="cuerpo"><div class="arc-arbol">';
+ ARC_GRUPOS.forEach(function(g){
+  var hijas=CARPETAS_ARC.filter(function(c){ return c[0]===g[0]||c[0].indexOf(g[0]+'.')===0; });
+  h+='<div class="arc-grupo"><div class="arc-gt">'+esc(g[0]+' · '+g[1])+'</div>';
+  hijas.forEach(function(c){
+   var n=M[c[0]].docs.length, nf=(F[c[0]]||[]).length;
+   h+='<button type="button" class="arc-c'+(cs===c[0]?' activo':'')+'" data-accion="arc-ver" data-carpeta="'+esc(c[0])+'"><span>'+esc((c[0].length>2?c[0]+' ':'')+c[1])+'</span><b>'+(n+nf)+'</b></button>';
+  });
+  h+='</div>';
+ });
+ h+='</div>'+(cs?('<p class="pista" style="margin-top:8px">Carpeta abierta: <b>'+esc(cs+' · '+((carpetaArc(cs)||['',''])[1]))+'</b>. <button type="button" class="mini" data-accion="arc-ver" data-carpeta="'+esc(cs)+'">Ver todas</button></p>'):'')+'</div></div>';
+ /* --- traer archivos, enlazar Drive, buscar --- */
  h+='<div class="tarjeta"><div class="cuerpo">';
  if(ed){
   h+='<div class="acciones">'+
-   '<label class="adj-boton primario"><input type="file" multiple data-arc-archivos="1" hidden>'+
-   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5H7a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5Z"/><path d="M13.5 3.5v5h5"/></svg>Traer archivos</label>'+
-   '<button type="button" data-accion="arc-nuevo" data-carpeta="'+esc(sel.arcCarpeta||'14')+'">Anotar un documento sin archivo</button>'+
+   '<label class="adj-boton primario"><input type="file" multiple data-arc-archivos="1" hidden>Subir archivos'+(cs?(' a '+esc(cs)):'')+'</label>'+
+   '<button type="button" data-accion="arc-nuevo" data-carpeta="'+esc(cs||'00')+'">Anotar un documento sin archivo</button>'+
    '<button type="button" data-vista="car">Traer un ZIP con todo el compendio</button>'+
    '</div>'+
-   '<p class="pista" style="margin-top:8px">Elija uno o varios archivos y la aplicación crea un documento por cada uno, con el nombre del archivo y la copia ya adjunta. Después puede corregir la carpeta y completar el emisor y la fecha.</p>';
+   '<details style="margin-top:10px"><summary><b>Vincular documentos que ya están en Google Drive</b></summary>'+
+   '<p class="pista">Pegue un enlace por línea. Para indicar carpeta y nombre: <code>02.2.1; 2025-03_DIESEL_Facturas; enlace</code>. Sin carpeta, van a '+esc(cs||'00')+'. No se copia el archivo: queda el enlace, y un enlace ya registrado no se repite.</p>'+
+   '<textarea id="arc-drive-txt" rows="5" style="width:100%" placeholder="https://drive.google.com/file/d/…/view"></textarea>'+
+   '<div class="acciones"><button type="button" class="primario" data-accion="arc-drive-vincular" data-carpeta="'+esc(cs||'00')+'">Vincular</button></div></details>';
  }
  h+='<div class="campos" style="margin-top:12px">'+
   '<div class="campo ancho"><label for="arc-q">Buscar</label>'+
   '<input id="arc-q" type="search" data-arc-buscar="1" value="'+esc(sel.arcBuscar||'')+'" placeholder="nombre, emisor, referencia o nombre del archivo"></div>'+
-  '<div class="campo"><label for="arc-c">Carpeta</label><select id="arc-c" data-arc-carpeta="1">'+
-   '<option value="">Todas las carpetas</option>'+
-   CARPETAS_ARC.map(function(c){
-    var m=M[c[0]];
-    return '<option value="'+esc(c[0])+'"'+(String(sel.arcCarpeta||'')===c[0]?' selected':'')+'>'+
-      esc(c[0]+' · '+c[1])+(m&&m.docs.length?(' ('+m.docs.length+')'):'')+'</option>';
-   }).join('')+'</select></div>'+
   '</div>';
  h+='</div></div>';
+ /* --- lo que es propio de la carpeta abierta --- */
+ if(cs==='04'){
+  h+='<div class="tarjeta"><h3>Memoria de cálculo</h3><div class="cuerpo"><p>El cálculo oficial del estudio se hace en la Calculadora de ARRAIGO, fuente por fuente, con su factor, su porqué y el respaldo de facturas. La exportación a Excel sirve como copia para el expediente.</p>'+
+   '<div class="acciones"><button type="button" class="primario" data-vista="calc">Abrir la Calculadora</button></div></div></div>';
+ }
+ if(cs&&F[cs]&&F[cs].length){
+  h+='<div class="tarjeta"><h3>Facturas registradas · '+esc(cs+' '+((carpetaArc(cs)||['',''])[1]))+'</h3><div class="cuerpo">'+arcTablaFacturas(F[cs])+'</div></div>';
+ } else if(!cs&&nFac){
+  h+='<p class="pista">Las '+nFac+' facturas registradas en la captura aparecen dentro de su carpeta (02.1 a 02.4). Abra una carpeta para verlas.</p>';
+ }
  /* --- la lista --- */
  var L=arcFiltrados();
  h+='<h3>'+esc(L.length===arcDocs().length?'Los documentos del archivo':(L.length+' de '+arcDocs().length+' documentos'))+'</h3>';
  if(!L.length){
   h+='<p class="rep-p">'+(arcDocs().length
-    ? 'Ningún documento coincide con lo que busca. Borre el texto o elija «Todas las carpetas».'
-    : 'El archivo del proyecto todavía no tiene documentos. Use «Traer archivos» y arrástrelos aquí: no hace falta llenar nada antes.')+'</p>';
+    ? 'Ningún documento coincide con lo que busca en esta carpeta. Borre el texto o vuelva a «Ver todas».'
+    : 'El archivo del proyecto todavía no tiene documentos. Suba archivos o vincule los que ya están en Drive.')+'</p>';
  } else {
   L.forEach(function(d){ h+=fichaArcDoc(d); });
  }
  /* --- lo que antes ocupaba la pantalla, ahora plegado --- */
- h+='<details class="ayuda" style="margin-top:18px"><summary class="ayuda-bt"><span class="ayuda-ico" aria-hidden="true"></span><span>Las catorce carpetas y qué exige el protocolo</span></summary><div class="ayuda-cu">';
+ h+='<details class="ayuda" style="margin-top:18px"><summary class="ayuda-bt"><span class="ayuda-ico" aria-hidden="true"></span><span>Las carpetas del estudio y qué exige el protocolo</span></summary><div class="ayuda-cu">';
  h+='<p class="rep-p">Cada carpeta tiene un origen típico y un destino declarado. El destino dice para qué sirve el documento dentro del cálculo o del expediente, y es lo que permite que un verificador vaya directo a lo que busca.</p>';
  h+='<table class="tabla"><thead><tr><th>Carpeta</th><th>Origen típico</th><th>Destino</th><th>Documentos</th><th>Adjuntos</th></tr></thead><tbody>';
  CARPETAS_ARC.forEach(function(c){
@@ -22249,24 +22341,27 @@ function bytesDelZip(Z,e){
    carpeta en «Facturas de energía» ya dijo de qué se trata. El orden importa:
    gana la primera regla que case, de modo que lo más específico va primero. */
 var CLASIF_ZIP=[
- ['09',/arbol|arboles|inventario forestal|parcela|sombra|\bdap\b|dendro|especie|censo|muestreo|levantamiento|alometr/],
- ['13',/auditor|verificaci|hallazgo|no conformidad|inspeccion|dictamen/],
- ['11',/capacitacion|formacion|taller|curso|asistencia|participante|diploma|induccion/],
- ['03',/certificad|certificacion|organico|rainforest|fairtrade|comercio justo|\b4c\b|\butz\b/],
- ['10',/factor de emision|factores|\bipcc\b|metodolog|ecuacion|densidad de la madera|protocolo|\biso\b|\bnorma\b|\bgwp\b/],
- ['04',/electricidad|energia|\benee\b|\bkwh\b|recibo de luz|combustible|diesel|disel|gasolina|gasolinera|\bglp\b|gas licuado|puma|texaco/],
- ['05',/fertiliz|\burea\b|abono|agroservicio|insumo|plaguicida|fungicida|herbicida|\bcal\b|compost|gallinaza|semilla|vivero/],
- ['06',/beneficio|beneficiado|despulp|secado|patio|guardiola|aguas mieles|pulpa|mucilago/],
- ['07',/transporte|flete|acarreo|acopio|viaje|naviera|puerto|camion/],
- ['08',/venta|liquidacion|produccion|quintal|exportacion|comprador|embarque|precio|cosecha/],
- ['02',/contrato|convenio|confidencial|acuerdo|consentimiento|juridic|poder notarial|escritura/],
- ['01',/alcance|\bacta\b|constitucion|limite organizacional|alta del ciclo|periodo base/],
- ['12',/entrega|remision|\bsalida\b|informe final|reporte final/],
+ ['08',/arbol|arboles|inventario forestal|parcela|sombra|\bdap\b|dendro|especie|censo|muestreo|levantamiento|alometr|eudr|deforest|poligono|\bkml\b/],
+ ['06',/auditor|verificaci|hallazgo|no conformidad|inspeccion|dictamen|certificad|certificacion|rainforest|fairtrade|comercio justo|\b4c\b|\butz\b/],
+ ['03',/factor de emision|factores|\bipcc\b|\bgwp\b|potencial de calentamiento/],
+ ['02.2.2',/electricidad|energia electrica|\benee\b|\bkwh\b|recibo de luz/],
+ ['02.2.3',/\bglp\b|gas licuado|gas lpg|\bgas\b|propano/],
+ ['02.2.1',/combustible|diesel|disel|gasolina|gasolinera|puma|texaco|uno\b|planta generadora|generador/],
+ ['02.2.4',/aceite|lubricante|refrigerante|r-?404|r-?22|r-?134/],
+ ['02.2.5',/aguas? miel|pulpa|mucilago|residuo|desecho|vertido/],
+ ['02.1',/fertiliz|\burea\b|abono|agroservicio|insumo|plaguicida|fungicida|herbicida|\bcal\b|compost|gallinaza|semilla|vivero|fhia|suelo|finca|productor|bitacora|cosecha/],
+ ['02.3',/empaque|saco|bolsa|yute|grainpro|envase/],
+ ['02.4',/transporte|flete|acarreo|acopio|viaje|naviera|puerto|camion|embarque|\bbl\b|conocimiento de embarque/],
+ ['01',/venta|produccion|quintal|exportacion|comprador|precio|balance de masa|rendimiento|alcance|unidad declarada|limite/],
+ ['07',/mejora|reduccion|descarboniz|monitoreo|plan de accion/],
+ ['05',/informe final|reporte final|informe iso|informe de huella/],
+ ['04',/calculadora|calculo|memoria de calculo/],
+ ['00',/contrato|convenio|confidencial|acuerdo|consentimiento|juridic|poder notarial|escritura|\bacta\b|comite|procedimiento|instructivo|lista maestra|norma|\biso\b|protocolo/]
 ];
 function carpetaDeRuta(ruta){
  var k=claveTxt(ruta);
  for(var i=0;i<CLASIF_ZIP.length;i++) if(CLASIF_ZIP[i][1].test(k))return CLASIF_ZIP[i][0];
- return '14';
+ return '00';
 }
 function claseArchivoZip(n){
  var e=extDe(n);
@@ -27197,6 +27292,9 @@ document.addEventListener('input',function(ev){
  if(t.dataset.aporte){ var lo=loteDe(sel.lote); if(lo){ ponAporte(lo,t.dataset.aporte,t.value); pintarLote(); } return;}
  if(t.dataset.mapafinca){ sel.mapaFinca=t.value||null; pintar(); return;}
  if(t.dataset.bibpais){ sel.bibPais=(t.value==='__todos')?'':t.value; pintar(); return;}
+ if(t.dataset.arcDrive){ if(!puedeEditar())return; var dDv=arcDe(t.dataset.arcDrive); if(dDv){ var idDv=driveId(t.value), antDv=(dDv.drive&&dDv.drive.id)||'';
+   if(!String(t.value).trim()){ delete dDv.drive; } else if(!idDv){ msg('Ese enlace no parece de Google Drive: copie el enlace con «Compartir → Copiar enlace»'); return; } else { dDv.drive=Object.assign({},dDv.drive||{},{id:idDv}); }
+   marcar('gestion/archivo'); anotar('dato','Archivo · '+(dDv.nombre||'documento')+' · enlace de Drive',antDv,idDv||''); guardarLocal(); pintar(); } return;}
  if(t.dataset.arcD){
   var dA=arcDe(t.dataset.arcD);
   if(dA){
@@ -27449,7 +27547,7 @@ document.addEventListener('change',function(ev){
   var fa2=[].slice.call(t.files||[]);
   if(fa2.length){
    msg('Trayendo '+fa2.length+' archivo'+(fa2.length===1?'':'s')+'…');
-   arcAgregarArchivos(fa2,sel.arcCarpeta||'14').then(function(r){
+   arcAgregarArchivos(fa2,sel.arcCarpeta||'00').then(function(r){
     pintar(); pintarNav();
     msg(r.n+' documento'+(r.n===1?'':'s')+' en el archivo'+(r.mal.length?(' · '+r.mal.length+' no se pudieron: '+r.mal[0]):''));
    });
@@ -28060,11 +28158,14 @@ document.addEventListener('click',function(ev){
   return;}
  if(a==='pais-volver'){ sel.paisVer=null; pintar(); return;}
  if(a==='arc-nuevo'){ if(!puedeEditar())return;
-  var nd=arcNuevo(b.dataset.carpeta||'14');
+  var nd=arcNuevo(b.dataset.carpeta||'00');
   arcDocs().push(nd); sel.arcCarpeta=nd.carpeta;
   marcar('gestion/archivo'); guardarLocal(); pintar();
   msg('Documento agregado a la carpeta '+nd.carpeta+'. Complete su nombre, su origen y su destino.');
   return;}
+ if(a==='arc-drive-vincular'){ if(!puedeEditar())return; var tx=document.getElementById('arc-drive-txt'); var Lv=arcLeerLineas(tx&&tx.value,b.dataset.carpeta||'00').filter(function(x){return driveId(x.url);});
+  if(!Lv.length){ msg('No se reconoció ningún enlace de Google Drive'); return; }
+  var rv=arcImportarIndice(Lv); anotar('dato','Archivo · documentos vinculados desde Drive','',String(rv.nuevos)); pintar(); msg(rv.nuevos+' documento'+(rv.nuevos===1?'':'s')+' vinculado'+(rv.nuevos===1?'':'s')+(rv.repetidos?(' · '+rv.repetidos+' ya estaban'):'')); return;}
  if(a==='arc-leer'){ if(!puedeEditar())return; lecLeer(b.dataset.id); return;}
  if(a==='arc-lec-usar'){ if(!puedeEditar())return; lecAplicar(b.dataset.id,b.dataset.campo); return;}
  if(a==='arc-lec-todo'){ if(!puedeEditar())return; lecAplicarTodo(b.dataset.id); return;}
@@ -29083,6 +29184,7 @@ window.__nucleo=(function(){ var O={
  lecPrompt:function(d){return lecPrompt(d);},
  lecAplicar:function(i,c){return lecAplicar(i,c);},
  arcDocs:function(){return arcDocs();},
+ arcImportarIndice:function(L){return arcImportarIndice(L);},
  arcDe:function(x){return arcDe(x);},
  arcResumen:function(){return arcResumen();},
  carpetasArc:function(){return CARPETAS_ARC;},
