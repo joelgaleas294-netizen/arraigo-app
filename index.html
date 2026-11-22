@@ -27141,7 +27141,7 @@ function cxTablaCalculo(dentro,fuera,totLim){
  var h='<div class="tg-wrap"><table class="tg tg-calc"><thead><tr><th>#</th><th>Fuente</th><th class="n">Cantidad</th><th class="n">× Conversión</th><th class="n">× Factor</th><th class="n">× Ajuste</th><th class="n">= t CO₂e</th><th class="n">%</th><th class="n">Acum.</th><th>Facturas</th></tr></thead><tbody>';
  h+=dentro.map(function(x,i){ return fila(x,i,true); }).join('');
  if(!dentro.length)h+='<tr><td colspan="10" class="tg-nota">Todavía no hay cantidades dentro del límite del sistema.</td></tr>';
- h+='</tbody><tfoot><tr><td></td><td colspan="5">Total dentro del límite del sistema</td><td class="n tg-res">'+fmt(totLim,3)+'</td><td class="n">100,0</td><td></td><td></td></tr></tfoot></table></div>';
+ h+='</tbody><tfoot><tr><td></td><td colspan="5">Total dentro del límite del sistema</td><td class="n tg-res">'+fmt(totLim,3)+'</td><td class="n">'+fmt(100,1)+'</td><td></td><td></td></tr></tfoot></table></div>';
  h+='<p class="tg-leyenda">t CO₂e = cantidad × conversión × factor ÷ 1 000 × ajuste. Toque una fila para ver sus facturas.</p>';
  if(fuera.length)h+='<details class="cx-det"><summary>Fuera del límite del sistema: no suman ('+fuera.length+')</summary><div class="tg-wrap"><table class="tg tg-calc"><tbody>'+fuera.map(function(x,i){ return fila(x,i,false); }).join('')+'</tbody></table></div></details>';
  return h;
@@ -27155,7 +27155,8 @@ function cxTablaHuella(totLim,D,HP){
   '<tr><td class="tg-num">2</td><td>Asignación al café oro</td><td class="n">×</td><td class="n">'+fmt(asig,1)+' %</td><td>'+esc((S.prod||{}).asignacion||'por masa')+'</td></tr>'+
   '<tr><td class="tg-num">3</td><td>Emisiones asignadas al café oro</td><td class="n">=</td><td class="n">'+fmt(tA,3)+'</td><td>t CO₂e</td></tr>'+
   '<tr><td class="tg-num">4</td><td>Café oro del período</td><td class="n">÷</td><td class="n">'+fmt(D.C.kgTot,0)+'</td><td>kg ('+fmt(HP.prod,2)+' '+esc(HP.unidad)+')</td></tr>'+
-  '<tr class="tg-total"><td class="tg-num">5</td><td><b>Huella hasta el puerto de embarque</b></td><td class="n">=</td><td class="n tg-res">'+fmt(D.C.kgTot>0?tA*1000/D.C.kgTot:0,4)+'</td><td>kg CO₂e por kg</td></tr></tbody></table></div>';
+  '<tr class="tg-total"><td class="tg-num">5</td><td><b>Huella promedio de todo el inventario</b></td><td class="n">=</td><td class="n tg-res">'+fmt(D.C.kgTot>0?tA*1000/D.C.kgTot:0,4)+'</td><td>kg CO₂e por kg</td></tr>'+
+  (D.C.res&&D.C.res.length?'<tr><td class="tg-num">6</td><td>Base hasta el puerto de embarque<br><small>sin flete marítimo ni empaque, que se suman por presentación y destino</small></td><td class="n">−</td><td class="n">'+fmt(D.C.res[0].base,4)+'</td><td>kg CO₂e por kg</td></tr>':'')+'</tbody></table></div>';
  if(D.C.res&&D.C.res.length){
   h+='<div class="tg-wrap"><table class="tg tg-pres"><thead><tr><th>Presentación</th><th>Destino</th><th class="n">Hasta embarque</th><th class="n">+ Empaque</th><th class="n">+ Flete</th><th class="n">= por kg</th><th class="n">× kg/unidad</th><th class="n">= por unidad</th></tr></thead><tbody>'+
    D.C.res.map(function(x){ var kgU=x.tot>0?x.porU/x.tot:0, sel=(D.pr&&x.pres.id===D.pr.id&&D.de&&x.dest.id===D.de.id);
@@ -27229,7 +27230,7 @@ function panelCategorias(cat,totCat){
  if(!(totCat>0))return h+'<div class="vacio">Todavía no hay consumos capturados.</div></div></div>';
  h+='<table class="tg"><thead><tr><th>Categoría</th><th>Descripción</th><th class="n">t CO₂e</th><th class="n">%</th><th></th></tr></thead><tbody>';
  CATS.forEach(function(c){ var p=cat[c.n]*100/totCat; h+='<tr'+(cat[c.n]>0?'':' class="tg-tenue"')+'><td>'+c.n+'</td><td>'+esc(c.t)+'</td><td class="n">'+fmt(cat[c.n],1)+'</td><td class="n">'+fmt(p,1)+'</td><td>'+tgBarra(p,'var(--m'+c.n+')')+'</td></tr>'; });
- return h+'</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">'+fmt(totCat,1)+'</td><td class="n">100,0</td><td></td></tr></tfoot></table></div></div>';
+ return h+'</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">'+fmt(totCat,1)+'</td><td class="n">'+fmt(100,1)+'</td><td></td></tr></tfoot></table></div></div>';
 }
 function panelCobertura(SU,A){
  var P=perAvance(), filas=[['Fuentes conciliadas con su evidencia',SU.pct,SU.con+' de '+SU.total,'cds'],['Perfil de la organización',P.pct,P.n+' de '+P.de,'per'],['Conformidad con la norma',A.R.aplicables?Math.round(A.R.conformidad):0,A.R.aplicables?(A.R.t.conforme+' de '+A.R.aplicables):'sin norma','ver']];
