@@ -27691,15 +27691,15 @@ function vistaArcMesFuente(){
  if(!M.orden.length)return '';
  var cols=M.meses.concat(M.sinMes?['']:[]);
  var h='<div class="tarjeta" id="arc-mf"><h3>Evidencias por mes y por fuente</h3><div class="cuerpo">'+
-  '<p class="pista">Cada número es la cantidad de facturas y documentos de esa fuente en ese mes. En rojo, los meses sin ninguna evidencia de una fuente que sí tiene emisiones. Toque un número para ver los archivos.</p>'+
+  '<p class="pista">Cada número es la cantidad de facturas y documentos de esa fuente en ese mes. En rojo, los meses sin ninguna evidencia de una fuente mensual que sí tiene emisiones; las fuentes que se respaldan con un registro del ciclo completo (compostaje, flete, empaque) no se marcan. Toque un número para ver los archivos.</p>'+
   '<div class="cx-tabla"><table class="tabla sx-tab arc-mf"><thead><tr><th>Fuente</th><th class="n">t CO₂e</th>'+
   cols.map(function(m){ return '<th class="n">'+(m?(MESES_C[+m.slice(5,7)-1]+'<br><small>'+m.slice(0,4)+'</small>'):'sin<br><small>mes</small>')+'</th>'; }).join('')+'<th class="n">Total</th></tr></thead><tbody>';
  M.orden.forEach(function(f){
-  var t=M.t(f), tot=0;
+  var t=M.t(f), tot=0, conMes=M.meses.filter(function(m){ return (M.celdas[f+'|'+m]||[]).length; }).length, anual=conMes>0&&conMes<=2;
   var celdas=cols.map(function(m){ var L=M.celdas[f+'|'+m]||[]; tot+=L.length; var k=f+'|'+m, act=cs===k;
-   if(!L.length){ var mal=t>0&&m&&f!=='otros'; return '<td class="n'+(mal?' arc-mf-vacio':'')+'">'+(mal?'0':'·')+'</td>'; }
+   if(!L.length){ var mal=t>0&&m&&f!=='otros'&&!anual; return '<td class="n'+(mal?' arc-mf-vacio':'')+'">'+(mal?'0':'·')+'</td>'; }
    return '<td class="n'+(act?' arc-mf-act':'')+'"><button type="button" class="enlace" data-sx="arc-mf" data-k="'+esc(k)+'">'+L.length+'</button></td>'; }).join('');
-  h+='<tr><td>'+esc(M.nom(f))+'</td><td class="n">'+(t>0?fmt(t,1):'—')+'</td>'+celdas+'<td class="n"><b>'+tot+'</b></td></tr>';
+  h+='<tr><td>'+esc(M.nom(f))+(anual?' <small class="pista">registro del ciclo</small>':'')+'</td><td class="n">'+(t>0?fmt(t,1):'—')+'</td>'+celdas+'<td class="n"><b>'+tot+'</b></td></tr>';
  });
  h+='</tbody></table></div>';
  if(cs&&M.celdas[cs]){
