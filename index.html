@@ -3802,8 +3802,12 @@ function lineasDeTodas(cat){
  var A=alcance();
  if(A==='alc1')return [];
  if(A==='alc3')return operaBeneficio()?ORG.concat(EXPO):EXPO;
- return ORG;
+ /* Un beneficio que también exporta lleva su café a puerto y lo embarca:
+    el transporte terrestre a puerto y el flete marítimo son parte de su
+    huella de producto «de la cuna al puerto de destino».                  */
+ return memo('org-alc2',function(){ return ORG.concat(EXPO.filter(function(l){ return LINEAS_EXPORTA[l.id]; })); });
 }
+var LINEAS_EXPORTA={km_puerto:1,tm_maritimo:1};
 /* Jerarquía de selección de factores, apartado M3.13 del PROT-01:
    nacional oficial vigente, luego regional publicado y representativo,
    y solo en último término el valor por defecto internacional con
@@ -29064,7 +29068,7 @@ function descargarCsv(cual){
   S.fincas.forEach(function(x){
    FINCA.forEach(function(l){var q=cantidad(l,'finca',x.id); if(!q)return;
     f.push(['Finca',x.codigo,l.cat,l.et,q,l.un,conver(l,'finca',x.id),l.unTec,factor(l,'finca',x.id),tco2Linea(l,'finca',x.id).toFixed(4),tco2Linea2(l,'finca',x.id).toFixed(4),l.cat2||'',l.tipo==='r'?'remocion':'emision',l.or]);});});
-  ORG.forEach(function(l){var q=cantidad(l,'org',null); if(!q)return;
+  lineasDeTodas('org').forEach(function(l){var q=cantidad(l,'org',null); if(!q)return;
    f.push(['Organizacion','',l.cat,l.et,q,l.un,conver(l,'org',null),l.unTec,factor(l,'org',null),tco2Linea(l,'org',null).toFixed(4),tco2Linea2(l,'org',null).toFixed(4),l.cat2||'',l.tipo==='r'?'remocion':'emision',l.or]);});
  }
  bajar('ARRAIGO-'+cual+'-'+String(c).replace(/[^\w-]/g,'-')+'.csv',aCsv(f));
