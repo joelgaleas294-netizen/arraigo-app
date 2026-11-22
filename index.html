@@ -1934,6 +1934,59 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .sx-docs{margin-top:10px}.sx-docs h4{margin:0 0 4px}.sx-docs .mal{color:#a32d2d}
 .sx-chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 12px;font-size:13px}
 .arc-mf td,.arc-mf th{padding:4px 5px}.arc-mf-vacio{background:#fcebeb;color:#a32d2d}.arc-mf-act{background:#e6f1fb}.sx-abierto td{background:#f6f6f0}.sx-okt{color:#3b6d11}.sx-ok td{opacity:.6}.sx-venc{border-color:#a32d2d!important;color:#a32d2d}
+/* Tablas de lectura (22/11/2026): calculadora y panel */
+.tg-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r,10px);background:var(--surface);margin:8px 0 6px}
+.tg-wrap.tg-alto{max-height:70vh;overflow:auto}
+table.tg{width:100%;border-collapse:collapse;font-size:var(--t-2,13px);font-variant-numeric:tabular-nums}
+.tg th,.tg td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.tg thead th{background:var(--surface-2);font-size:var(--t-0,11px);text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);font-weight:700;position:sticky;top:0;z-index:1;white-space:nowrap}
+.tg td.n,.tg th.n{text-align:right;white-space:nowrap}
+.tg tbody tr:nth-child(even)>td{background:#fafbf9}
+.tg tfoot td,.tg tr.tg-total td{font-weight:700;background:var(--surface-3);border-top:2px solid var(--line-fuerte)}
+.tg small{color:var(--ink-3);font-size:var(--t-0,11px)}
+.tg .tg-res{font-weight:700;color:var(--acento)}
+.tg .tg-num{color:var(--ink-3);white-space:nowrap;width:1%}
+.tg .tg-tenue,.tg tr.tg-tenue td{color:var(--ink-3)}
+.tg tr.tg-f{cursor:pointer}
+.tg tr.tg-f:hover>td{background:var(--acento-suave)}
+.tg tr.tg-ab>td{background:var(--acento-suave);border-bottom-color:transparent}
+.tg tr.tg-fuera td{color:var(--ink-3)}
+.tg tr.tg-sub>td{background:var(--surface-2)!important;padding:0 9px 12px}
+.tg-subw{border-left:3px solid var(--acento);padding-left:10px}
+table.tg-mini{font-size:12px;background:var(--surface)}
+table.tg-mini th,table.tg-mini td{padding:4px 7px}
+.tg tr.tg-pie td{background:var(--surface-2);font-size:12px;color:var(--ink-2)}
+.tg tr.tg-fila-mal td{background:#fcebeb!important}
+.tg tr.tg-nuevo td{background:#eef7e8!important}
+.tg tr.tg-sel td{background:var(--acento-suave)!important;font-weight:600}
+.tg tr.tg-aparte th,.tg tr.tg-aparte td{color:var(--ink-3);font-style:italic}
+.tg .tg-flecha{color:var(--acento);font-weight:700;text-align:center;width:1%}
+.tg-nota{color:var(--ink-3);font-style:italic;text-align:center}
+.tg-chip{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:var(--surface-3);color:var(--ink-2);white-space:nowrap}
+.tg-e-ok{background:#e3f1e7;color:#1c6b43}.tg-e-av{background:#faeeda;color:#86590f}.tg-e-mal{background:#fcebeb;color:#a32d2d}.tg-e-nuevo{background:#6caf44;color:#fff}
+.tg-mal{color:var(--grave);display:block}
+.tg-bar{display:inline-block;width:110px;height:8px;border-radius:4px;background:var(--surface-3);vertical-align:middle;overflow:hidden}
+.tg-bar i{display:block;height:100%;border-radius:4px}
+table.tg-kv th{font-weight:500;color:var(--ink-2);width:52%}
+table.tg-kv td{white-space:nowrap}
+.tg-leyenda{font-size:12px;color:var(--ink-3);margin:2px 0 14px}
+.tg-modos{display:flex;gap:6px;margin:18px 0 6px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:0}
+.tg-modos button{border:0;background:none;padding:9px 14px;font:inherit;font-weight:600;color:var(--ink-2);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;border-radius:0}
+.tg-modos button[aria-pressed=true]{color:var(--acento);border-bottom-color:var(--acento)}
+.tg-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:10px 0}
+.tg-cifras div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.tg-cifras dt{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)}
+.tg-cifras dd{margin:2px 0 0;font-size:20px;font-weight:700}
+.tg-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:8px 0}
+.tg-filtros label{display:flex;flex-direction:column;font-size:11px;color:var(--ink-3);gap:3px}
+.tg-filtros label.tg-chk{flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.tg-filtros select,.tg-filtros input[type=search]{font:inherit;font-size:13px;padding:5px 8px;min-width:200px}
+.cx-alerta .tg-mini{margin:6px 0}.cx-alerta .tg-mini td{background:#fff!important}.cx-alerta h3 small{font-weight:500;color:var(--ink-3);font-size:12px}
+.tg td.n small{white-space:normal;display:inline-block;max-width:120px;line-height:1.25}.cx-alerta .tg-chip{white-space:normal}.tg-calc td:nth-child(2){min-width:180px;max-width:260px}.tg-calc .cx-niv{font-size:10px;padding:0 5px}.tg-calc th,.tg-calc td{padding:7px 7px}.cx-alerta .tg td,.cx-alerta .tg th{white-space:normal!important}.tg-calc td:nth-child(2){min-width:150px!important}.tg-calc th,.tg-calc td{padding:7px 6px!important}.tg-calc thead th{letter-spacing:.02em}.tg-calc td{white-space:normal}.tg-calc td:nth-child(2) b{white-space:normal;overflow-wrap:anywhere}.tg .tg-pasos td.n{font-family:inherit}.tg-modos button[aria-pressed=true]{background:var(--acento)!important;color:#fff!important;border-color:var(--acento)!important}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
+.tg-est{font-weight:700;text-align:center;width:1%}
+.tg-est.ok{color:var(--ok)}.tg-est.aviso{color:var(--aviso)}.tg-est.falta{color:var(--grave)}
+.rejilla2 .tarjeta .cuerpo>.tg{margin-top:2px}
+@media (max-width:700px){.tg th,.tg td{padding:5px 6px}.tg-bar{width:60px}}
 button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;text-align:left}
 
 .ici-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.ici-fig{margin:6px 0 12px}.ici-fig figcaption{font-size:12.5px;color:#5f6b66;text-align:center;font-style:italic}
@@ -7535,26 +7588,9 @@ function vistaPortada(){
   (ncA.length?'<button type="button" class="mini" data-vista="aui">Ver los hallazgos</button>':'')+
   '</div>';
 
- /* ---- dos paneles ---- */
- h+='<div class="rejilla2">';
- h+='<div class="col"><div class="tarjeta"><h3>Emisiones por categoría de fuente (ISO 14064-1)</h3><div class="cuerpo">'+
-  (totCat>0
-   ? CATS.map(function(c){
-      return barraH('Categoría '+c.n,cat[c.n],maxCat,'var(--m'+c.n+')',c.t+' · '+fmt(cat[c.n]*100/totCat,1)+' %');
-     }).join('')
-   : '<div class="vacio">Todavía no hay consumos capturados.</div>')+
-  '<p class="pista" style="margin-top:10px">Las remociones no entran en estas barras: se informan aparte, porque la norma no admite restarlas de las emisiones.</p>'+
-  '</div></div></div>';
- h+='<div class="col"><div class="tarjeta"><h3>Cobertura del inventario</h3><div class="cuerpo">'+
-  medidor(SU.pct,'Fuentes conciliadas con su evidencia',SU.con+' de '+SU.total+' fuentes conciliadas')+
-  medidor(perAvance().pct,'Perfil de la organización',perAvance().n+' de '+perAvance().de+' apartados completos')+
-  medidor(A.R.aplicables?Math.round(A.R.conformidad):0,'Conformidad con la norma declarada',
-   A.R.aplicables?(A.R.t.conforme+' de '+A.R.aplicables+' criterios'):'sin norma declarada')+
-  '<div class="acciones"><button type="button" class="mini" data-vista="cds">Centro de datos</button>'+
-  '<button type="button" class="mini" data-vista="inf">Informe ISO 14067</button></div>'+
-  '</div></div></div>';
- h+='</div>';
-
+ /* ---- resultado y categorías, en tablas ---- */
+ h+='<div class="rejilla2"><div class="col">'+panelResultado(R)+'</div><div class="col">'+panelCategorias(cat,totCat)+'</div></div>';
+ h+='<div class="rejilla2"><div class="col">'+tarjetaSignifPanel()+'</div><div class="col">'+panelCobertura(SU,A)+'</div></div>';
  /* ---- serie de la empresa, si hay más de un ciclo ---- */
  var SER=(AUI_SNAPS===null&&db)?(cargarSnapsAui(),[]):snapsDeLaEmpresa();
  if(SER.length>1){
@@ -7571,7 +7607,7 @@ function vistaPortada(){
  }
 
  /* ---- cierre y lo que más pesa ---- */
- h+='<div class="rejilla2"><div class="col">'+tarjetaListaCierre()+'</div><div class="col">'+tarjetaSignifPanel()+'</div></div>';
+ h+=tarjetaListaCierre();
  /* ---- la ruta del estudio, con los mismos grupos que el menú ---- */
  h+='<h2 class="tit-seccion">La ruta del estudio</h2>';
  h+='<div class="etapas">';
@@ -26797,7 +26833,7 @@ function vistaCalculadora(){
  if(malos.length){
   CALC.catObj={nom:'todas las fuentes del proyecto',filas:X.todas};
   var nRep=0; X.filas.forEach(function(x){ nRep+=x.F.rep; });
-  h+='<div class="cx-alerta"><h3>Revise antes de declarar</h3><ul>'+
+  h+='<div class="cx-alerta"><h3>Revise antes de declarar <small>'+malos.length+' fuente'+(malos.length===1?'':'s')+'</small></h3><table class="tg tg-mini"><thead><tr><th>Fuente</th><th>Qué revisar</th></tr></thead><tbody>'+
    malos.slice(0,8).map(function(x){ var r=[];
     if(x.tSin>0.005)r.push(fmt(x.sinFact,2)+' '+esc(x.l.un)+' sin factura ('+fmt(x.tSin,2)+' t CO₂e)');
     if(x.F.rep)r.push(x.F.rep+' factura'+(x.F.rep===1?'':'s')+' repetida'+(x.F.rep===1?'':'s'));
@@ -26806,23 +26842,37 @@ function vistaCalculadora(){
     else if(x.adm.jur==='extranjera')r.push('factor de otra jurisdicción');
     if(/sin fuente publicada confirmada/i.test(x.adm.fuente||''))r.push('factor sin fuente confirmada');
     avisosFactor(x.adm).forEach(function(a){ r.push(a); });
-    return '<li><b>'+esc(x.l.et)+'</b>: '+r.join(' · ')+'</li>'; }).join('')+'</ul>'+
-   (sinFacturaNinguna.length?'<p class="small">Las fuentes sin ninguna factura registrada ('+sinFacturaNinguna.map(function(x){return esc(x.l.et);}).join(', ')+') no se tocan con los botones: corrija su cantidad en su módulo.</p>':'')+
+    return '<tr><td><b>'+esc(x.l.et)+'</b></td><td>'+r.map(function(t){return '<span class="tg-chip tg-e-av">'+t+'</span>';}).join(' ')+'</td></tr>'; }).join('')+'</tbody></table>'+
+   (sinFacturaNinguna.length?'<p class="tg-leyenda">Sin ninguna factura ('+sinFacturaNinguna.length+'): se corrigen en su módulo, no con estos botones.</p>':'')+
    (puedeEditar()?'<div class="acciones">'+(nRep?'<button type="button" class="mini" data-calc-rep="1">1 · Anular las '+nRep+' facturas repetidas</button>':'')+
     '<button type="button" class="mini" data-calc-solo="1">'+(nRep?'2 · ':'')+'Dejar cada fuente igual a la suma de sus facturas</button></div>':'')+'</div>';
  }
- /* 3 · fuente por fuente */
+ /* 3 · tres vistas de la cuenta */
  var dentro=X.filas.filter(function(x){return x.tLim>0;}), fuera=X.filas.filter(function(x){return !(x.tLim>0);});
- CALC.ambX=CALC.ambX||'';
- var ambs=Object.keys(CX_AMB).filter(function(k){ return dentro.some(function(x){return x.amb===k;}); });
- h+='<h2 class="calc-h2">Cálculo fuente por fuente</h2><p class="cx-guia">Ordenado por lo que aporta. Cada fuente se calcula así: <b>cantidad × conversión × factor ÷ 1 000 × ajuste = t CO₂e</b>.</p>';
- if(ambs.length>1)h+='<div class="calc-pills cx-pills"><button type="button" data-cx-amb="" aria-pressed="'+(!CALC.ambX)+'">Todas</button>'+ambs.map(function(k){ return '<button type="button" data-cx-amb="'+k+'" aria-pressed="'+(CALC.ambX===k)+'">'+CX_AMB[k]+'</button>'; }).join('')+'</div>';
- var vis=dentro.filter(function(x){ return !CALC.ambX||x.amb===CALC.ambX; });
- if(!vis.length)h+='<p class="calc-vacio">Todavía no hay cantidades anotadas dentro del límite del sistema. Se anotan en «Subir facturas y registros», «Emisiones de la finca» y «Emisiones del beneficio y la planta».</p>';
- h+=vis.map(function(x){ return cxTarjeta(x,totLim); }).join('');
- LIM.partes.filter(function(p){return p.id==='poda'||p.id==='cultivo';}).forEach(function(p){
-  h+='<article class="cx-f"><header><div><b>'+esc(p.et)+'</b><span>Fincas · Categoría 1</span></div><div class="cx-t">'+fmt(p.t,2)+'<small>t CO₂e · '+fmt(totLim>0?p.t/totLim*100:0,1)+' %</small></div></header><p class="cx-guia">Se calcula en su módulo con la masa retirada y su destino (lo que se quema emite; lo que vuelve al suelo, no).</p></article>'; });
- if(fuera.length)h+='<details class="cx-det"><summary>Fuera del límite del sistema · no suman a la huella ('+fuera.length+')</summary>'+fuera.map(function(x){ return cxTarjeta(x,totLim); }).join('')+'</details>';
+ CALC.modo=CALC.modo||'tabla';
+ h+='<div class="tg-modos" role="tablist">'+CALC_MODOS.map(function(m){ return '<button type="button" role="tab" data-calc-modo="'+m[0]+'" aria-pressed="'+(CALC.modo===m[0])+'">'+m[1]+'</button>'; }).join('')+'</div>';
+ if(CALC.modo==='datos'){
+  h+=cxTablaDatos(X);
+  h+='<div class="acciones"><button type="button" class="primario" data-vista="cap">Subir facturas y registros</button><button type="button" data-calc-xls="1">Exportar a Excel para el auditor</button></div>';
+  return h+'</div>';
+ }
+ if(CALC.modo==='tabla'){
+  h+=cxTablaCalculo(dentro,fuera,totLim);
+  LIM.partes.filter(function(p){return p.id==='poda'||p.id==='cultivo';}).forEach(function(p){ h+='<p class="tg-leyenda"><b>'+esc(p.et)+'</b>: '+fmt(p.t,2)+' t CO₂e, calculadas en su módulo de fincas.</p>'; });
+  h+=cxTablaHuella(totLim,D,HP);
+ } else {
+  var dentro=X.filas.filter(function(x){return x.tLim>0;}), fuera=X.filas.filter(function(x){return !(x.tLim>0);});
+  CALC.ambX=CALC.ambX||'';
+  var ambs=Object.keys(CX_AMB).filter(function(k){ return dentro.some(function(x){return x.amb===k;}); });
+  h+='<h2 class="calc-h2">Cálculo fuente por fuente</h2><p class="cx-guia">Ordenado por lo que aporta. Cada fuente se calcula así: <b>cantidad × conversión × factor ÷ 1 000 × ajuste = t CO₂e</b>.</p>';
+  if(ambs.length>1)h+='<div class="calc-pills cx-pills"><button type="button" data-cx-amb="" aria-pressed="'+(!CALC.ambX)+'">Todas</button>'+ambs.map(function(k){ return '<button type="button" data-cx-amb="'+k+'" aria-pressed="'+(CALC.ambX===k)+'">'+CX_AMB[k]+'</button>'; }).join('')+'</div>';
+  var vis=dentro.filter(function(x){ return !CALC.ambX||x.amb===CALC.ambX; });
+  if(!vis.length)h+='<p class="calc-vacio">Todavía no hay cantidades anotadas dentro del límite del sistema. Se anotan en «Subir facturas y registros», «Emisiones de la finca» y «Emisiones del beneficio y la planta».</p>';
+  h+=vis.map(function(x){ return cxTarjeta(x,totLim); }).join('');
+  LIM.partes.filter(function(p){return p.id==='poda'||p.id==='cultivo';}).forEach(function(p){
+   h+='<article class="cx-f"><header><div><b>'+esc(p.et)+'</b><span>Fincas · Categoría 1</span></div><div class="cx-t">'+fmt(p.t,2)+'<small>t CO₂e · '+fmt(totLim>0?p.t/totLim*100:0,1)+' %</small></div></header><p class="cx-guia">Se calcula en su módulo con la masa retirada y su destino (lo que se quema emite; lo que vuelve al suelo, no).</p></article>'; });
+  if(fuera.length)h+='<details class="cx-det"><summary>Fuera del límite del sistema · no suman a la huella ('+fuera.length+')</summary>'+fuera.map(function(x){ return cxTarjeta(x,totLim); }).join('')+'</details>';
+ }
  /* 4 · huella por presentación y destino */
  h+='<h2 class="calc-h2">Huella por presentación y destino</h2>';
  if(!(D.C.kgTot>0)){
@@ -27025,6 +27075,169 @@ function migrarLitros(){
  if(cr)marcar('captura/registros');
  }catch(e){}
 }
+/* ====== Calculadora en tabla (22/11/2026) ======
+   Tres vistas de la misma cuenta: la tabla de cálculo (una fila por fuente, con la operación en columnas y
+   sus facturas debajo), los datos cargados (cada factura o registro, del más reciente al más antiguo, con la
+   fuente a la que llega y lo que aporta) y las fichas por fuente de antes. */
+var CALC_MODOS=[['tabla','Tabla de cálculo'],['datos','Datos cargados'],['fichas','Fichas por fuente']];
+function cxIndice(X){ var m={}; X.filas.forEach(function(x){ m[x.l.id+'|'+x.cat]=x; }); return m; }
+function cxAporte(r,x){
+ if(!x||!(x.q>0))return {t:0,tl:0};
+ var q=numDe(r.cantidadLinea)||0, tt=x.t+x.t2, t=tt*q/x.q;
+ return {t:t,tl:tt>0?t*x.tLim/tt:0};
+}
+function cxEstadoReg(r,x,rep,PE){
+ if(r.estado==='pendiente')return ['pendiente de cantidad','tg-e-av'];
+ if(rep[r.id])return ['repetida: no suma','tg-e-mal'];
+ if(!x)return ['fuente sin cálculo','tg-e-av'];
+ var f=String(r.fecha||'').slice(0,10);
+ if(/^\d{4}-\d{2}-\d{2}$/.test(f)&&f>hoy())return ['fecha posterior a hoy','tg-e-mal'];
+ if(PE.ini&&PE.fin&&/^\d{4}-\d{2}-\d{2}$/.test(f)&&(f<PE.ini||f>PE.fin))return ['fuera del período','tg-e-av'];
+ if(!(x.tLim>0))return ['fuera del límite','tg-e-av'];
+ return ['suma al total','tg-e-ok'];
+}
+function cxRespaldo(x){
+ if(x.dir)return '<span class="tg-chip">valor directo</span>';
+ var p=x.q>0?Math.max(0,100-x.sinFact/x.q*100):0, h='<b>'+x.F.n+'</b> ';
+ h+='<span class="tg-chip '+(p>=99.5?'tg-e-ok':(p>=70?'tg-e-av':'tg-e-mal'))+'">'+fmt(p,0)+' %</span>';
+ if(x.sinFact>0.005)h+='<small class="tg-mal">'+fmt(x.tSin,2)+' t sin factura</small>';
+ if(x.F.rep)h+='<small class="tg-mal">'+x.F.rep+' repetida'+(x.F.rep===1?'':'s')+'</small>';
+ return h;
+}
+function cxSubFacturas(x,rep,PE){
+ var F=x.F, un=x.l.un, h='<tr class="tg-sub"><td></td><td colspan="9"><div class="tg-subw"><table class="tg tg-mini"><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th class="n">En la factura</th><th class="n">En la fuente ('+esc(un)+')</th><th class="n">t CO₂e</th><th>Archivo</th><th>Estado</th></tr></thead><tbody>';
+ F.lista.slice(0,400).forEach(function(r){ var a=cxAporte(r,x), e=cxEstadoReg(r,x,rep,PE);
+  h+='<tr><td>'+esc(String(r.fecha||'—').slice(0,10))+'</td><td>'+esc(r.numero||'—')+'</td><td>'+esc(String(r.proveedor||'—').slice(0,40))+'</td>'+
+   '<td class="n">'+fmt(numDe(r.cantidad)||0,2)+' <small>'+esc((CAP_UNI[r.unidad]||[0,0,r.unidad||''])[2]||'')+'</small></td>'+
+   '<td class="n">'+fmt(numDe(r.cantidadLinea)||0,3)+'</td><td class="n">'+fmt(a.t,4)+'</td>'+
+   '<td title="'+esc(r.archivo||'')+'">'+esc(String(r.archivo||'—').slice(0,34))+(r.pagina?' <small>p. '+esc(String(r.pagina))+'</small>':'')+'</td>'+
+   '<td><span class="tg-chip '+e[1]+'">'+e[0]+'</span></td></tr>'; });
+ if(F.lista.length>400)h+='<tr><td colspan="8" class="tg-nota">Se muestran 400 de '+F.lista.length+'. Todas están en «Datos cargados» y en el Excel para el auditor.</td></tr>';
+ if(!x.dir&&x.sinFact>0.005)h+='<tr class="tg-fila-mal"><td colspan="3"><b>Anotado sin factura</b></td><td class="n">—</td><td class="n">'+fmt(x.sinFact,3)+'</td><td class="n">'+fmt(x.tSin,4)+'</td><td>—</td><td><span class="tg-chip tg-e-mal">sin respaldo</span></td></tr>';
+ if(!F.lista.length&&!(x.sinFact>0.005))h+='<tr><td colspan="8" class="tg-nota">'+(x.dir?'Valor anotado directamente en t CO₂e.':'Sin facturas registradas.')+'</td></tr>';
+ h+='<tr class="tg-pie"><td colspan="4">Factor: '+esc(x.adm.fuente||x.l.or||'sin fuente declarada')+(x.adm.anio?(' · '+esc(String(x.adm.anio))):'')+'</td><td colspan="4" style="text-align:right"><button type="button" class="mini" data-vista="pai">Cambiar el factor</button> <button type="button" class="mini" data-vista="cap">Subir facturas</button></td></tr>';
+ return h+'</tbody></table></div></td></tr>';
+}
+function cxTablaCalculo(dentro,fuera,totLim){
+ var rep={}; try{ calcRepetidas({filas:cxFuentes().todas}).forEach(function(r){ rep[r.id]=1; }); }catch(e){}
+ var PE=cxPeriodo(), acum=0;
+ CALC.abiertas=CALC.abiertas||{};
+ var fila=function(x,i,enLim){
+  var l=x.l, k=l.id+'|'+x.cat, ab=!!CALC.abiertas[k], t=enLim?x.tLim:(x.t+x.t2), pct=totLim>0&&enLim?t/totLim*100:0; if(enLim)acum+=pct;
+  var niv=CX_NIV[(x.porque&&x.porque.niv)||'defecto']||CX_NIV.defecto, unF=x.dir?'t CO₂e':(l.unTec||l.un);
+  var h='<tr class="tg-f'+(ab?' tg-ab':'')+(enLim?'':' tg-fuera')+'" data-cxrow="'+esc(k)+'" tabindex="0" title="Ver de dónde sale la cantidad">'+
+   '<td class="tg-num">'+(ab?'▾':'▸')+' '+(i+1)+'</td>'+
+   '<td><b>'+esc(l.et)+'</b><br><small>'+CX_AMB[x.amb]+' · '+esc(cxNombreCat(l.cat).split(' · ')[0])+'</small></td>'+
+   '<td class="n">'+fmt(x.q,2)+'<br><small>'+esc(l.un)+'</small></td>'+
+   '<td class="n">'+(x.dir||x.conv==null||Math.abs(x.conv-1)<1e-9?'<span class="tg-tenue">1</span>':fmt(x.conv,4))+'</td>'+
+   '<td class="n">'+(x.dir?'<span class="tg-tenue">—</span>':fmt(x.f,4)+' <span class="cx-niv '+niv[1]+'" title="'+esc(niv[0])+'">'+niv[0].split(' · ')[0]+'</span><br><small>kg CO₂e/'+esc(String(unF).replace(/s$/,''))+'</small>')+'</td>'+
+   '<td class="n">'+(x.aj!=null&&Math.abs(x.aj-1)>1e-9?fmt(x.aj,3):'<span class="tg-tenue">1</span>')+'</td>'+
+   '<td class="n tg-res">'+fmt(t,3)+'</td>'+
+   '<td class="n">'+(enLim?fmt(pct,1):'—')+'</td><td class="n">'+(enLim?fmt(acum,1):'—')+'</td>'+
+   '<td>'+cxRespaldo(x)+'</td></tr>';
+  if(ab)h+=cxSubFacturas(x,rep,PE);
+  return h;
+ };
+ var h='<div class="tg-wrap"><table class="tg tg-calc"><thead><tr><th>#</th><th>Fuente</th><th class="n">Cantidad</th><th class="n">× Conversión</th><th class="n">× Factor</th><th class="n">× Ajuste</th><th class="n">= t CO₂e</th><th class="n">%</th><th class="n">Acum.</th><th>Facturas</th></tr></thead><tbody>';
+ h+=dentro.map(function(x,i){ return fila(x,i,true); }).join('');
+ if(!dentro.length)h+='<tr><td colspan="10" class="tg-nota">Todavía no hay cantidades dentro del límite del sistema.</td></tr>';
+ h+='</tbody><tfoot><tr><td></td><td colspan="5">Total dentro del límite del sistema</td><td class="n tg-res">'+fmt(totLim,3)+'</td><td class="n">100,0</td><td></td><td></td></tr></tfoot></table></div>';
+ h+='<p class="tg-leyenda">t CO₂e = cantidad × conversión × factor ÷ 1 000 × ajuste. Toque una fila para ver sus facturas.</p>';
+ if(fuera.length)h+='<details class="cx-det"><summary>Fuera del límite del sistema: no suman ('+fuera.length+')</summary><div class="tg-wrap"><table class="tg tg-calc"><tbody>'+fuera.map(function(x,i){ return fila(x,i,false); }).join('')+'</tbody></table></div></details>';
+ return h;
+}
+/* De las fuentes a la huella: los pasos con su valor */
+function cxTablaHuella(totLim,D,HP){
+ if(!(D.C&&D.C.kgTot>0))return '';
+ var asig=nv(D.C.asig)||0, tA=totLim*asig/100;
+ var h='<h2 class="calc-h2">De las fuentes a la huella</h2><div class="tg-wrap"><table class="tg tg-pasos"><thead><tr><th>Paso</th><th>Concepto</th><th class="n">Operación</th><th class="n">Valor</th><th>Unidad</th></tr></thead><tbody>'+
+  '<tr><td class="tg-num">1</td><td>Emisiones dentro del límite</td><td class="n">suma de la tabla</td><td class="n">'+fmt(totLim,3)+'</td><td>t CO₂e</td></tr>'+
+  '<tr><td class="tg-num">2</td><td>Asignación al café oro</td><td class="n">×</td><td class="n">'+fmt(asig,1)+' %</td><td>'+esc((S.prod||{}).asignacion||'por masa')+'</td></tr>'+
+  '<tr><td class="tg-num">3</td><td>Emisiones asignadas al café oro</td><td class="n">=</td><td class="n">'+fmt(tA,3)+'</td><td>t CO₂e</td></tr>'+
+  '<tr><td class="tg-num">4</td><td>Café oro del período</td><td class="n">÷</td><td class="n">'+fmt(D.C.kgTot,0)+'</td><td>kg ('+fmt(HP.prod,2)+' '+esc(HP.unidad)+')</td></tr>'+
+  '<tr class="tg-total"><td class="tg-num">5</td><td><b>Huella hasta el puerto de embarque</b></td><td class="n">=</td><td class="n tg-res">'+fmt(D.C.kgTot>0?tA*1000/D.C.kgTot:0,4)+'</td><td>kg CO₂e por kg</td></tr></tbody></table></div>';
+ if(D.C.res&&D.C.res.length){
+  h+='<div class="tg-wrap"><table class="tg tg-pres"><thead><tr><th>Presentación</th><th>Destino</th><th class="n">Hasta embarque</th><th class="n">+ Empaque</th><th class="n">+ Flete</th><th class="n">= por kg</th><th class="n">× kg/unidad</th><th class="n">= por unidad</th></tr></thead><tbody>'+
+   D.C.res.map(function(x){ var kgU=x.tot>0?x.porU/x.tot:0, sel=(D.pr&&x.pres.id===D.pr.id&&D.de&&x.dest.id===D.de.id);
+    return '<tr'+(sel?' class="tg-sel"':'')+'><td>'+esc(x.pres.nom)+'</td><td>'+esc(x.dest.nom)+'</td><td class="n">'+fmt(x.base,4)+'</td><td class="n">'+fmt(x.emp,4)+'</td><td class="n">'+fmt(x.flete,4)+'</td><td class="n">'+fmt(x.tot,4)+'</td><td class="n">'+fmt(kgU,0)+'</td><td class="n tg-res">'+fmt(x.porU,2)+'</td></tr>'; }).join('')+
+   '</tbody></table></div><p class="tg-leyenda">kg CO₂e por kg de café oro; la última columna, kg CO₂e por saco o por bolsa.</p>';
+ }
+ return h;
+}
+/* Datos cargados: cada factura o registro, del más reciente al más antiguo */
+function cxTablaDatos(X){
+ var I=cxIndice(X), rep={}, PE=cxPeriodo();
+ try{ calcRepetidas({filas:X.todas}).forEach(function(r){ rep[r.id]=1; }); }catch(e){}
+ var R=registros().filter(function(r){return r.estado!=='anulado';}).slice().sort(function(a,b){ return String(b.cuando||'').localeCompare(String(a.cuando||''))||String(b.fecha||'').localeCompare(String(a.fecha||'')); });
+ var ahora=Date.now(), d2=2*864e5, d7=7*864e5, n2=0, n7=0, nP=0, nR=0, tot=0, fuentes={};
+ var filas=R.map(function(r){
+  var x=I[r.linea+'|'+r.cat], a=cxAporte(r,x), e=cxEstadoReg(r,x,rep,PE), cu=Date.parse(r.cuando||'')||0, nuevo=cu&&(ahora-cu)<d2;
+  if(nuevo)n2++; if(cu&&(ahora-cu)<d7)n7++; if(r.estado==='pendiente')nP++; if(rep[r.id])nR++; if(e[1]==='tg-e-ok')tot+=a.tl;
+  var nom=r.lineaNom||nombreLinea(r.linea); fuentes[r.linea]=nom;
+  var fz=r.fid?(S.fincas.filter(function(f){return f.id===r.fid;})[0]||{}):null;
+  return '<tr class="'+(nuevo?'tg-nuevo':'')+'" data-l="'+esc(r.linea)+'" data-n="'+(cu&&(ahora-cu)<d7?'7':'')+'">'+
+   '<td>'+esc(String(r.cuando||'').slice(0,10))+(nuevo?' <span class="tg-chip tg-e-nuevo">nuevo</span>':'')+'<br><small>'+esc(r.por||'')+'</small></td>'+
+   '<td>'+esc(String(r.fecha||'—').slice(0,10))+'</td><td>'+esc(r.numero||'—')+'</td><td>'+esc(String(r.proveedor||'—').slice(0,32))+'</td>'+
+   '<td class="n">'+fmt(numDe(r.cantidad)||0,2)+'<br><small>'+esc((CAP_UNI[r.unidad]||[0,0,r.unidad||''])[2]||'')+'</small></td>'+
+   '<td class="tg-flecha">→</td>'+
+   '<td><b>'+esc(nom)+'</b><br><small>'+(r.cat==='finca'?('Finca '+esc((fz&&(fz.codigo||fz.productor))||'')):'Organización')+'</small></td>'+
+   '<td class="n">'+fmt(numDe(r.cantidadLinea)||0,3)+'<br><small>'+esc(r.unidadLinea||(x?x.l.un:''))+'</small></td>'+
+   '<td class="n tg-res">'+(x?fmt(a.t,4):'—')+'</td>'+
+   '<td><span class="tg-chip '+e[1]+'">'+e[0]+'</span></td>'+
+   '<td title="'+esc(r.archivo||'')+'"><small>'+esc(String(r.archivo||'—').slice(0,30))+'</small></td></tr>';
+ });
+ var h='<dl class="tg-cifras"><div><dt>Registros</dt><dd>'+fmt(R.length,0)+'</dd></div><div><dt>Cargados en 48 h</dt><dd>'+n2+'</dd></div><div><dt>Últimos 7 días</dt><dd>'+n7+'</dd></div>'+
+  '<div><dt>Pendientes de cantidad</dt><dd'+(nP?' class="tg-mal"':'')+'>'+nP+'</dd></div><div><dt>Repetidos</dt><dd'+(nR?' class="tg-mal"':'')+'>'+nR+'</dd></div><div><dt>t CO₂e que suman</dt><dd>'+fmt(tot,2)+'</dd></div></dl>';
+ h+='<div class="tg-filtros"><label>Fuente <select data-cxd-f="1"><option value="">Todas</option>'+Object.keys(fuentes).sort(function(a,b){return fuentes[a].localeCompare(fuentes[b]);}).map(function(k){ return '<option value="'+esc(k)+'">'+esc(fuentes[k])+'</option>'; }).join('')+'</select></label>'+
+  '<label>Buscar <input type="search" data-cxd-q="1" placeholder="número, proveedor, archivo"></label>'+
+  '<label class="tg-chk"><input type="checkbox" data-cxd-7="1"> Solo los últimos 7 días</label><span class="tg-cuenta" data-cxd-c="1">'+R.length+' visibles</span></div>';
+ h+='<div class="tg-wrap tg-alto"><table class="tg tg-datos"><thead><tr><th>Cargado</th><th>Fecha</th><th>Número</th><th>Proveedor</th><th class="n">En la factura</th><th></th><th>Llega a la fuente</th><th class="n">En la fuente</th><th class="n">t CO₂e</th><th>Estado</th><th>Archivo</th></tr></thead><tbody>'+
+  (filas.length?filas.join(''):'<tr><td colspan="11" class="tg-nota">Todavía no hay facturas ni registros cargados.</td></tr>')+'</tbody></table></div>';
+ h+='<p class="tg-leyenda">Lo que aporta cada registro se reparte en proporción a su cantidad dentro de la fuente. Las filas «nuevo» se cargaron en las últimas 48 horas.</p>';
+ return h;
+}
+function cxFiltrarDatos(){
+ var f=(document.querySelector('[data-cxd-f]')||{}).value||'', q=String((document.querySelector('[data-cxd-q]')||{}).value||'').toLowerCase().trim(), s7=!!(document.querySelector('[data-cxd-7]')||{}).checked, n=0;
+ [].forEach.call(document.querySelectorAll('.tg-datos tbody tr[data-l]'),function(tr){
+  var ok=(!f||tr.dataset.l===f)&&(!s7||tr.dataset.n==='7')&&(!q||tr.textContent.toLowerCase().indexOf(q)>=0);
+  tr.style.display=ok?'':'none'; if(ok)n++; });
+ var c=document.querySelector('[data-cxd-c]'); if(c)c.textContent=n+' visibles';
+}
+document.addEventListener('input',function(ev){ if(ev.target.closest&&ev.target.closest('[data-cxd-q]'))cxFiltrarDatos(); });
+document.addEventListener('change',function(ev){ if(ev.target.closest&&ev.target.closest('[data-cxd-f],[data-cxd-7]'))cxFiltrarDatos(); });
+document.addEventListener('click',function(ev){
+ var m=ev.target.closest&&ev.target.closest('[data-calc-modo]'); if(m){ CALC.modo=m.dataset.calcModo; pintar(); return; }
+ var r=ev.target.closest&&ev.target.closest('tr[data-cxrow]'); if(r&&!ev.target.closest('button,a')){ CALC.abiertas=CALC.abiertas||{}; var k=r.dataset.cxrow; CALC.abiertas[k]=!CALC.abiertas[k]; pintar(); }
+});
+document.addEventListener('keydown',function(ev){ var r=ev.target.closest&&ev.target.closest('tr[data-cxrow]'); if(r&&(ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); r.click(); } });
+
+/* ====== Panel en tablas ====== */
+function tgBarra(p,col){ return '<span class="tg-bar"><i style="width:'+Math.max(0,Math.min(100,p)).toFixed(1)+'%;background:'+(col||'var(--acento)')+'"></i></span>'; }
+function panelResultado(R){
+ var HP=esqActivo('i14067')?huellaProducto():null, X=null; try{ X=sxDatos(); }catch(e){}
+ var C=null; try{ C=presentacionesCalc(); }catch(e){}
+ var h='<div class="tarjeta"><h3>Resultado del estudio</h3><div class="cuerpo"><table class="tg tg-kv"><tbody>'+
+  '<tr><th>Emisiones dentro del límite</th><td class="n">'+fmt(X?X.total:R.emisiones,2)+'</td><td>t CO₂e</td></tr>';
+ if(HP&&HP.prod>0)h+='<tr><th>Café oro del período</th><td class="n">'+fmt(HP.prod*HP.kgU/1000,1)+'</td><td>t ('+fmt(HP.prod,1)+' '+esc(HP.unidad)+')</td></tr>'+
+  '<tr><th>Huella por kilogramo</th><td class="n tg-res">'+fmt(HP.porKg,3)+'</td><td>kg CO₂e por kg de café oro</td></tr>';
+ if(C&&C.res)C.res.forEach(function(x){ h+='<tr><th>'+esc(x.pres.nom)+' · '+esc(x.dest.nom)+'</th><td class="n">'+fmt(x.porU,1)+'</td><td>kg CO₂e por unidad</td></tr>'; });
+ if(X&&X.bio>0)h+='<tr class="tg-aparte"><th>CO₂ biogénico (se informa aparte)</th><td class="n">'+fmt(X.bio,1)+'</td><td>t CO₂, no suma</td></tr>';
+ return h+'</tbody></table><div class="acciones"><button type="button" class="mini" data-vista="calc">Calculadora</button><button type="button" class="mini" data-vista="inf">Informe ISO 14067</button></div></div></div>';
+}
+function panelCategorias(cat,totCat){
+ var h='<div class="tarjeta"><h3>Emisiones por categoría (ISO 14064-1)</h3><div class="cuerpo">';
+ if(!(totCat>0))return h+'<div class="vacio">Todavía no hay consumos capturados.</div></div></div>';
+ h+='<table class="tg"><thead><tr><th>Categoría</th><th>Descripción</th><th class="n">t CO₂e</th><th class="n">%</th><th></th></tr></thead><tbody>';
+ CATS.forEach(function(c){ var p=cat[c.n]*100/totCat; h+='<tr'+(cat[c.n]>0?'':' class="tg-tenue"')+'><td>'+c.n+'</td><td>'+esc(c.t)+'</td><td class="n">'+fmt(cat[c.n],1)+'</td><td class="n">'+fmt(p,1)+'</td><td>'+tgBarra(p,'var(--m'+c.n+')')+'</td></tr>'; });
+ return h+'</tbody><tfoot><tr><td colspan="2">Total</td><td class="n">'+fmt(totCat,1)+'</td><td class="n">100,0</td><td></td></tr></tfoot></table></div></div>';
+}
+function panelCobertura(SU,A){
+ var P=perAvance(), filas=[['Fuentes conciliadas con su evidencia',SU.pct,SU.con+' de '+SU.total,'cds'],['Perfil de la organización',P.pct,P.n+' de '+P.de,'per'],['Conformidad con la norma',A.R.aplicables?Math.round(A.R.conformidad):0,A.R.aplicables?(A.R.t.conforme+' de '+A.R.aplicables):'sin norma','ver']];
+ return '<div class="tarjeta"><h3>Cobertura del inventario</h3><div class="cuerpo"><table class="tg"><thead><tr><th>Indicador</th><th class="n">%</th><th></th><th>Detalle</th><th></th></tr></thead><tbody>'+
+  filas.map(function(f){ return '<tr><td>'+f[0]+'</td><td class="n">'+fmt(f[1],0)+'</td><td>'+tgBarra(f[1],f[1]>=90?'var(--ok)':(f[1]>=60?'var(--aviso)':'var(--grave)'))+'</td><td><small>'+esc(f[2])+'</small></td><td><button type="button" class="mini" data-vista="'+f[3]+'">Ir</button></td></tr>'; }).join('')+
+  '</tbody></table></div></div>';
+}
+
 function pintar(){ migrarLitros(); pintarBase.apply(this,arguments); try{ ponSubpestanas(); }catch(e){} try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
 function ponSubpestanas(){
  var cv=document.getElementById('v-'+vista); if(!cv||vista==='portada')return;
@@ -27928,16 +28141,16 @@ function listaCierre(){ return memo('lcierre',function(){
 }); }
 function tarjetaListaCierre(){
  var LC=listaCierre();
- return '<div class="tarjeta"><h3>Lista de cierre ISO 14067 <small>'+LC.ok+' de '+LC.total+' listos</small></h3><div class="cuerpo"><ul class="sx-cierre">'+
-  LC.items.map(function(x){ return '<li class="sx-e-'+x.estado+'"><span class="sx-ei">'+(x.estado==='ok'?'✓':(x.estado==='falta'?'✕':'!'))+'</span><span><b>'+esc(x.t)+'</b> <small>'+esc(x.cl)+'</small><br><small>'+esc(String(x.nota||'').slice(0,240))+'</small></span>'+
-   '<button type="button" class="mini" data-vista="'+x.ir+'">Ir</button></li>'; }).join('')+'</ul></div></div>';
+ return '<div class="tarjeta"><h3>Lista de cierre ISO 14067 <small>'+LC.ok+' de '+LC.total+' listos</small></h3><div class="cuerpo"><div class="tg-wrap"><table class="tg"><thead><tr><th></th><th>Requisito</th><th>Cláusula</th><th>Situación</th><th></th></tr></thead><tbody>'+
+  LC.items.map(function(x){ var n=String(x.nota||''); return '<tr><td class="tg-est '+x.estado+'">'+(x.estado==='ok'?'✓':(x.estado==='falta'?'✕':'!'))+'</td><td><b>'+esc(x.t)+'</b></td><td><small>'+esc(x.cl)+'</small></td>'+
+   '<td title="'+esc(n)+'"><small>'+esc(n.length>110?n.slice(0,107)+'…':n)+'</small></td><td><button type="button" class="mini" data-vista="'+x.ir+'">Ir</button></td></tr>'; }).join('')+'</tbody></table></div></div></div>';
 }
 function tarjetaSignifPanel(){
  var X=sxDatos(); if(!(X.total>0))return '';
- var top=X.filas.slice(0,5);
- return '<div class="tarjeta"><h3>Lo que más pesa en la huella</h3><div class="cuerpo">'+
-  top.map(function(r){ return barraH(r.et,r.t,top[0].t,'var(--m6)',fmt(r.pct,1)+' % · '+fmt(r.kgkg,3)+' kg/kg · calidad '+r.cal); }).join('')+
-  '<div class="acciones"><button type="button" class="mini" data-vista="sig">Intensidad y significancia</button></div></div></div>';
+ var top=X.filas.slice(0,6);
+ return '<div class="tarjeta"><h3>Lo que más pesa en la huella</h3><div class="cuerpo"><table class="tg"><thead><tr><th>#</th><th>Fuente</th><th class="n">t CO₂e</th><th class="n">%</th><th class="n">Acum.</th><th>Calidad</th></tr></thead><tbody>'+
+  top.map(function(r,i){ return '<tr><td class="tg-num">'+(i+1)+'</td><td>'+esc(r.et)+'</td><td class="n">'+fmt(r.t,1)+'</td><td class="n">'+fmt(r.pct,1)+'</td><td class="n">'+fmt(r.acum,1)+'</td><td><span class="tg-chip '+(r.cal==='alta'?'tg-e-ok':(r.cal==='media'?'tg-e-av':'tg-e-mal'))+'">'+r.cal+'</span></td></tr>'; }).join('')+
+  '</tbody></table><div class="acciones"><button type="button" class="mini" data-vista="sig">Intensidad y significancia</button></div></div></div>';
 }
 
 /* ====== eventos propios ====== */
