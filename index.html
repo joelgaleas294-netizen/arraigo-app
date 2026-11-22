@@ -3819,12 +3819,52 @@ var NIVELES=[
 function nivelNom(n){for(var i=0;i<NIVELES.length;i++)if(NIVELES[i][0]===n)return NIVELES[i][1];return NIVELES[2][1];}
 function regFactores(){ S.perfil.registroFactores=S.perfil.registroFactores||{}; return S.perfil.registroFactores; }
 function regDe(l){ return regFactores()[l.id]||null; }
+/* Regla R2 del plan de factores: el factor se guarda por gas (kg de CO₂, CH₄ y
+   N₂O por unidad técnica) y la aplicación lo lleva a CO₂e con la serie de
+   potenciales declarada del proyecto (R1). El metano es fósil o biogénico según
+   lo declare el factor (g.ch4Fosil) o, si no lo dice, según el renglón.      */
+function gasValido(g){ return !!(g&&typeof g==='object'&&['co2','ch4','n2o'].some(function(k){ return isFinite(numOpc(g[k])); })); }
+function gasNum(g,k){ var v=numOpc(g[k]); return isFinite(v)?v:0; }
+function gasFosil(g,l){ return (g&&g.ch4Fosil!=null)?!!g.ch4Fosil:ch4EsFosil(l); }
+function gasTotal(g,l){
+ var sD=serieDeclarada();
+ return gasNum(g,'co2')*pcgDe(sD,'co2')+gasNum(g,'ch4')*pcgDe(sD,gasFosil(g,l)?'ch4f':'ch4')+gasNum(g,'n2o')*pcgDe(sD,'n2o');
+}
 function factor(l,cat,fid){
  var st=(cat==='org')?S.beneficio:(S.insumos[fid]||{});
  var v=numOpc((st.factores||{})[l.id]);
  if(isFinite(v))return v;
  var a=admisibleFactor(l);
  return a.ok?numOpc(a.f):0;
+}
+/* Hoja de factores del informe: un renglón por fuente cuantificada, con el
+   factor por gas cuando está declarado así, la serie de potenciales, el nivel
+   en la jerarquía, el año, la cita y la autorización si es de otro país.     */
+function hojaFactoresInforme(){
+ var sD=serieDeclarada(), filas=[];
+ LINEAS_TODAS().forEach(function(x){
+  var t=0; try{ t=tco2Linea(x.l,x.cat,x.fid); }catch(e){}
+  if(!(t>0))return;
+  var a=admisibleFactor(x.l), r=regDe(x.l), g=(r&&gasValido(r.gas))?r.gas:null;
+  var via=a.via==='autorizada'?'Otro país, autorizado':(a.via==='derivada'?'Derivado del consumo declarado':(a.jur==='extranjera'?'Otro país':(String(a.nivel||'')==='nacional'?'Nacional':'IPCC u otro por defecto')));
+  filas.push([x.l.et, String(x.l.unTec||x.l.un||''),
+   g?fmt(gasNum(g,'co2'),4):'—', g?fmt(gasNum(g,'ch4'),6)+(gasFosil(g,x.l)?' f':' b'):'—', g?fmt(gasNum(g,'n2o'),6):'—',
+   fmt(factor(x.l,x.cat,x.fid),4), via, String(a.anio||''), String(a.fuente||'')]);
+ });
+ return '<p>Serie de potenciales declarada: '+esc(sD)+' (CH₄ biogénico '+fmt(pcgDe(sD,'ch4'),1)+', CH₄ fósil '+fmt(pcgDe(sD,'ch4f'),1)+', N₂O '+fmt(pcgDe(sD,'n2o'),0)+'). Factores por gas en kg por unidad técnica; «f» y «b» indican metano fósil o biogénico.</p>'+
+  tabla(['Renglón','Unidad técnica','CO₂','CH₄','N₂O','kg CO₂e por unidad','Nivel','Año','Fuente y cita'],filas);
+}
+/* Reglas R3 y R4 del plan de factores: todo factor lleva cita completa y, si es
+   nacional, no puede tener más de cinco años.                               */
+function avisosFactor(a){
+ var out=[], f=String((a&&a.fuente)||''), an=parseInt(String((a&&a.anio)||'').match(/\d{4}/)||'',10), hoyA=parseInt(String(hoy()).slice(0,4),10);
+ if(a&&a.ok){
+  if(!/\d{4}/.test(f)||f.length<25)r0('factor sin cita completa (documento, año y cuadro)');
+  if(/sin fuente citable|supuesto/i.test(f))r0('parte del factor es un supuesto sin cita');
+  if(isFinite(an)&&isFinite(hoyA)&&hoyA-an>5&&/nacional|pais|país/i.test(String(a.nivel||'')+' '+String(a.via||'')))r0('factor nacional de '+an+', con más de cinco años');
+ }
+ function r0(t){ out.push(t); }
+ return out;
 }
 function factor2(l){ var r=regDe(l), w=r?numOpc(r.f2):NaN; return isFinite(w)?w:l.f2; }
 function nivelDe(l){ var a=admisibleFactor(l); return a.nivel||'defecto'; }
@@ -3879,8 +3919,8 @@ function modoEstricto(){ return modoPais()==='estricto'; }
 /* De dónde sale hoy el valor de un renglón, antes de juzgar si es admisible. */
 function origenFactor(l,cod){
  cod=cod||paisProyecto();
- var r=regDe(l), w=r?numOpc(r.f):NaN;
- if(isFinite(w))return {de:'declarado',f:w,nivel:r.nivel||'nacional',fuente:r.fuente||'',anio:r.anio||'',jur:'propia',nom:''};
+ var r=regDe(l), w=r?(gasValido(r.gas)?gasTotal(r.gas,l):numOpc(r.f)):NaN;
+ if(isFinite(w))return {de:'declarado',f:w,nivel:r.nivel||'nacional',fuente:r.fuente||'',anio:r.anio||'',jur:'propia',nom:'',gas:gasValido(r.gas)?r.gas:null};
  var p=facPaisUsable(l,cod), o;
  if(p)o={de:'pais',f:numOpc(p.f),nivel:p.nivel||'nacional',fuente:p.fuente||'',anio:p.anio||''};
  else o={de:'catalogo',f:l.f,nivel:'defecto',fuente:l.or||'',anio:''};
@@ -7140,6 +7180,7 @@ function repCFPPresentaciones(){
   h+='<h3 class="rep-h3">Renglones del tramo común</h3>';
   h+=tabla(['Renglón','Categoría','t CO₂e del ciclo','Nivel del factor'],C.lim.partes.slice().sort(function(a,b){return b.t-a.t;}).map(function(p){return [p.et,String(p.cat),fmt(p.t,3),nivelNom(p.niv)];}));
  }
+ h+='<h3 class="rep-h3">Hoja de factores de emisión</h3>'+hojaFactoresInforme();
  h+='<h3 class="rep-h3">Electricidad</h3>'+par(narr('nElectricidad',C));
  h+='<h2 class="rep-h2">Asignación</h2><p>Regla aplicada: '+esc(P.asignacion||'Por masa')+', con '+fmt(C.asig,0)+' % de la carga asignada al café oro.</p>';
  h+='<h2 class="rep-h2">Carbono biogénico, uso del suelo y remociones</h2>'+par(narr('nBiogenico',C));
@@ -12074,11 +12115,12 @@ function desgloseGasesRaw(){
   tot+=v;
   if(!Pf.declarado)sinPerfil+=v;
   if(sum<=0){ G.otros+=v; fluor+=v; D.otros+=v; return; }
-  var fos=ch4EsFosil(x.l);
-  var kCH4o=fos?pcgDe(sO,'ch4f'):pcgDe(sO,'ch4'), kCH4d=fos?pcgDe(sD,'ch4f'):pcgDe(sD,'ch4');
+  var rg=regDe(x.l), fos=(rg&&gasValido(rg.gas))?gasFosil(rg.gas,x.l):ch4EsFosil(x.l);
+  var sOl=Pf.serie||sO;   /* un factor declarado por gas ya viene en la serie declarada */
+  var kCH4o=fos?pcgDe(sOl,'ch4f'):pcgDe(sOl,'ch4'), kCH4d=fos?pcgDe(sD,'ch4f'):pcgDe(sD,'ch4');
   var eCO2=v*g.co2/100, eCH4=v*g.ch4/100, eN2O=v*g.n2o/100;
   G.co2+=eCO2; G.ch4+=eCH4; G.n2o+=eN2O;
-  var mCO2=eCO2, mCH4=kCH4o>0?(eCH4/kCH4o):0, mN2O=pcgDe(sO,'n2o')>0?(eN2O/pcgDe(sO,'n2o')):0;
+  var mCO2=eCO2, mCH4=kCH4o>0?(eCH4/kCH4o):0, mN2O=pcgDe(sOl,'n2o')>0?(eN2O/pcgDe(sOl,'n2o')):0;
   M.co2+=mCO2; M.ch4+=mCH4; M.n2o+=mN2O;
   D.co2+=mCO2*pcgDe(sD,'co2'); D.ch4+=mCH4*kCH4d; D.n2o+=mN2O*pcgDe(sD,'n2o');
  });
@@ -12142,6 +12184,18 @@ var PERFILES_GAS=[
  [/refriger|r134|r404|hfc/, {co2:0,ch4:0,n2o:0}, 'Son hidrofluorocarbonos, gases fluorados distintos de los tres principales: se informan en su propia línea y no se reparten entre CO₂, CH₄ y N₂O.'],
 ];
 function perfilGas(l){
+ var r=regDe(l);
+ if(r&&gasValido(r.gas)){
+  var sD=serieDeclarada(), g=r.gas, tot=gasTotal(g,l);
+  if(tot>0){
+   var e={co2:gasNum(g,'co2')*pcgDe(sD,'co2')/tot*100, ch4:gasNum(g,'ch4')*pcgDe(sD,gasFosil(g,l)?'ch4f':'ch4')/tot*100, n2o:gasNum(g,'n2o')*pcgDe(sD,'n2o')/tot*100};
+   return {g:e,razon:'Factor declarado por gas, con su cita: '+(r.fuente||''),declarado:true,exacto:true,serie:sD};
+  }
+ }
+ if(String(l.unTec||'')==='km'&&modoEstricto()&&derivadaKm(l)){
+  var comb=combClaseVeh(claseVeh(l)), lc=LINEAS_TODAS().map(function(x){return x.l;}).filter(function(x){ return x.id===(comb==='gasolina'?'gasolina_org':'diesel_org'); })[0];
+  if(lc){ var pc=perfilGas(lc); if(pc.exacto)return {g:pc.g,razon:'Mismo reparto por gas que el combustible del que se deriva el factor por kilómetro.',declarado:true,exacto:true,serie:pc.serie}; }
+ }
  var id=String(l.id||'').toLowerCase();
  for(var i=0;i<PERFILES_GAS.length;i++)if(PERFILES_GAS[i][0].test(id))
   return {g:PERFILES_GAS[i][1],razon:PERFILES_GAS[i][2],declarado:true};
@@ -26681,7 +26735,7 @@ function vistaCalculadora(){
   '<div class="cx-tile"><span>Huella del café oro</span><b>'+(HP.prod>0?fmt(HP.porKg,3):'—')+'</b><small>'+(HP.prod>0?'kg CO₂e por kg':'falta la producción del período')+'</small></div>'+
   '<div class="cx-tile'+(resp<90?' cx-tile-mal':'')+'"><span>Emisión respaldada por facturas</span><b>'+fmt(resp,0)+' %</b><small>'+(sinT+repT>0.005?(fmt(sinT+repT,2)+' t CO₂e sin respaldo o repetidas'):'todo lo calculado tiene su factura')+'</small></div></div>';
  /* 2 · revisar antes de declarar */
- var malos=X.filas.filter(function(x){ return x.tLim>0&&(x.tSin>0.005||x.F.rep||x.F.futuras||!x.adm.ok||x.adm.jur==='extranjera'||/sin fuente publicada confirmada/i.test(x.adm.fuente||'')); });
+ var malos=X.filas.filter(function(x){ return x.tLim>0&&(x.tSin>0.005||x.F.rep||x.F.futuras||!x.adm.ok||x.adm.jur==='extranjera'||/sin fuente publicada confirmada/i.test(x.adm.fuente||'')||avisosFactor(x.adm).length); });
  var sinFacturaNinguna=X.filas.filter(function(x){ return x.tLim>0&&!x.dir&&!x.F.n; });
  if(malos.length){
   CALC.catObj={nom:'todas las fuentes del proyecto',filas:X.todas};
@@ -26694,6 +26748,7 @@ function vistaCalculadora(){
     if(!x.adm.ok)r.push('sin factor admisible');
     else if(x.adm.jur==='extranjera')r.push('factor de otra jurisdicción');
     if(/sin fuente publicada confirmada/i.test(x.adm.fuente||''))r.push('factor sin fuente confirmada');
+    avisosFactor(x.adm).forEach(function(a){ r.push(a); });
     return '<li><b>'+esc(x.l.et)+'</b>: '+r.join(' · ')+'</li>'; }).join('')+'</ul>'+
    (sinFacturaNinguna.length?'<p class="small">Las fuentes sin ninguna factura registrada ('+sinFacturaNinguna.map(function(x){return esc(x.l.et);}).join(', ')+') no se tocan con los botones: corrija su cantidad en su módulo.</p>':'')+
    (puedeEditar()?'<div class="acciones">'+(nRep?'<button type="button" class="mini" data-calc-rep="1">1 · Anular las '+nRep+' facturas repetidas</button>':'')+
