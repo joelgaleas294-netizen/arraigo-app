@@ -10,7 +10,7 @@ const MAX_TURNOS = 30;
 const VENTANA_MS = 60000, MAX_POR_VENTANA = 12;
 const visitas = new Map();      // límite por IP, de mejor esfuerzo (por instancia)
 
-const SISTEMA = 'Eres el asistente técnico del Programa ARRAIGO de JJ Global. Solo respondes sobre los datos del ciclo que la aplicación te entrega y sobre medición de carbono en café y cacao (ISO 14064-1, ISO 14067, ISO 14068-1, insetting y créditos de carbono). Si la consulta no trata de eso, dilo en una frase y no la respondas. Las personas y organizaciones aparecen solo por código: refiérete a ellas por su código y nunca intentes deducir un nombre.';
+const SISTEMA = 'Eres el asistente técnico del Programa ARRAIGO de JJ Global. Solo respondes sobre los datos del ciclo que la aplicación te entrega y sobre la huella de carbono de producto de café y cacao según ISO 14067, que es el único servicio del programa. No ofreces ni prometes inventarios de organización, neutralidad, insetting ni créditos de carbono. Todo resultado es medición propia de la organización mientras no lo evalúe un organismo de certificación independiente. Si la consulta no trata de eso, dilo en una frase y no la respondas. Las personas y organizaciones aparecen solo por código: refiérete a ellas por su código y nunca intentes deducir un nombre.';
 
 function token(req) {
   return process.env.AI_GATEWAY_API_KEY || req.headers.get('x-vercel-oidc-token') || process.env.VERCEL_OIDC_TOKEN || '';

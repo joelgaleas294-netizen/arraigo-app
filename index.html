@@ -1934,7 +1934,6 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
    <div class="lp-usuario"><span class="sesion" id="sesion"></span></div>
    <div class="lp-estado">
     <span class="sync"><i class="punto" id="punto"></i><span id="sync-txt">Comprobando</span></span>
-    <button type="button" class="mini" id="btn-sync">Sincronizar</button>
    </div>
    <span class="chip-modo" id="chip-modo" hidden>Comprobando acceso</span><span class="chip-modo" id="chip-lic" hidden></span>
    <button type="button" class="lp-actualizar" id="btn-actualizar" title="Descarga la versión más reciente de ARRAIGO; sus datos se conservan">⟳ <span id="act-txt">Actualizar ARRAIGO</span></button>
@@ -1950,7 +1949,6 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
    <button type="button" class="mini btn-refrescar" data-accion="refrescar" title="Vuelve a leer la base y repinta la pantalla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg><span>Refrescar</span></button>
    <span class="chip-modo chip-cmp" id="chip-modo-cmp">Comprobando</span>
    <span class="sync sync-cmp"><i class="punto" id="punto-cmp"></i></span>
-   <button type="button" class="mini sync-cmp" id="btn-sync-cmp">Subir</button>
   </div>
 
   <div class="apartados" id="apartados" hidden></div>
@@ -4835,7 +4833,8 @@ function lineasUnicasRaw(){
 function subtotalCategoria(cat,fid,n){
  var sub=0;
  lineasDe(cat).forEach(function(l){
-  if(l.cat===n){var t=tco2Linea(l,cat,fid); sub+=(l.tipo==='r'?-t:t);}
+  /* Existencias y flujos no se compensan: el subtotal es solo de emisiones; las remociones se informan aparte */
+  if(l.cat===n&&l.tipo!=='r')sub+=tco2Linea(l,cat,fid);
   if(l.cat2===n)sub+=tco2Linea2(l,cat,fid);
  });
  return sub;
@@ -6081,7 +6080,11 @@ function marcar(ruta){
  /* la ficha de la empresa solo la sube quien tiene acceso de edición */
  if(!(ruta.indexOf('__pry__/')===0&&!puedeEditar()))pendientes[ruta]=true;
  guardarLocal(); pintarSync();
+ subirPronto();
 }
+/* Sin botón de sincronizar: lo anotado sube solo a la base unos segundos después del último cambio */
+var _tSubir=null;
+function subirPronto(){ if(_tSubir)clearTimeout(_tSubir); _tSubir=setTimeout(function(){ _tSubir=null; if(Object.keys(pendientes).length&&db)sincronizar(true); },3000); }
 function pintarSesion(){
  var e=$('sesion');
  if(!e)return;
@@ -6147,7 +6150,14 @@ function docDe(ruta){
  if(ruta==='captura/registros')return {registros:S.registros||[],capBase:S.capBase||{},_m:Date.now()};
  return null;
 }
-async function sincronizar(silencio){
+/* Una sola subida a la vez: la automática (por cambio, por tiempo o al salir) no se encima con otra en curso */
+var _subiendo=null;
+function sincronizar(silencio){
+ if(_subiendo)return _subiendo;
+ _subiendo=sincronizarAhora(silencio).finally(function(){ _subiendo=null; });
+ return _subiendo;
+}
+async function sincronizarAhora(silencio){
  if(!db){ if(!silencio)msg('Sin base de datos: lo capturado queda en este equipo'); return; }
  var rutas=Object.keys(pendientes), fallo=0, negados=0;
  for(var i=0;i<rutas.length;i++){
@@ -6669,13 +6679,16 @@ function produccionTotal(){
    (marítimo, aéreo y frío en tránsito) solo entra en los límites que llegan
    al puerto de destino o más allá. Antes la puerta de embarque lo sumaba si
    el renglón tenía dato, y un verificador lo habría objetado.                */
+/* Límites del sistema del producto (ISO 14067). La categoría 6 (inversiones, financiamiento, franquicias y
+   viajes de certificación) es del inventario de la organización y no de los procesos del producto: no entra en
+   ningún límite. La categoría 5 (lo que ocurre después de la venta) solo entra cuando el límite llega hasta allí. */
 var LIMITES_PROD=[
- ['De la cuna a la puerta de la finca',   {finca:true, org:false, expo:false, flete:false, cats:[1,2,3,4,5,6]}],
- ['De la cuna a la puerta del beneficio', {finca:true, org:true,  expo:false, flete:false, cats:[1,2,3,4,5,6]}],
- ['De la cuna a la puerta de embarque',   {finca:true, org:true,  expo:true,  flete:false, cats:[1,2,3,4,6]}],
- ['De la cuna al puerto de destino',      {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,6]}],
- ['De la cuna a la tumba',                {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,5,6]}],
- ['Parcial declarado',                    {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,5,6]}]
+ ['De la cuna a la puerta de la finca',   {finca:true, org:false, expo:false, flete:false, cats:[1,2,3,4]}],
+ ['De la cuna a la puerta del beneficio', {finca:true, org:true,  expo:false, flete:false, cats:[1,2,3,4]}],
+ ['De la cuna a la puerta de embarque',   {finca:true, org:true,  expo:true,  flete:false, cats:[1,2,3,4]}],
+ ['De la cuna al puerto de destino',      {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4]}],
+ ['De la cuna a la tumba',                {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,5]}],
+ ['Parcial declarado',                    {finca:true, org:true,  expo:true,  flete:true,  cats:[1,2,3,4,5]}]
 ];
 var FLETE_INTL={tm_maritimo:1,tm_aereo:1,frio_transito:1};
 function reglaLimite(nom){
@@ -7340,7 +7353,7 @@ function vistaPortada(){
   '<div class="hero-der">'+
    '<div class="hero-tres">'+
     '<div class="ht"><span class="ht-et">Emisiones del período</span><span class="ht-n">'+fmt(R.emisiones)+'</span><span class="ht-u">t CO₂e</span></div>'+
-    (HP?'<div class="ht"><span class="ht-et">Huella por unidad</span><span class="ht-n">'+fmt(HP.porU,2)+'</span><span class="ht-u">kg CO₂e por '+esc(HP.unidad)+'</span></div>'
+    (HP?'<div class="ht"><span class="ht-et">Huella por unidad</span><span class="ht-n">'+(HP.prod>0?fmt(HP.porU,2):'—')+'</span><span class="ht-u">'+(HP.prod>0?'kg CO₂e por '+esc(HP.unidad):'falta la producción del estudio')+'</span></div>'
        :'<div class="ht"><span class="ht-et">Remociones</span><span class="ht-n">'+fmt(R.remociones)+'</span><span class="ht-u">t CO₂e, aparte</span></div>')+
     '<div class="ht"><span class="ht-et">Datos con respaldo</span><span class="ht-n">'+SU.pct+' %</span><span class="ht-u">'+SU.con+' de '+SU.total+' datos</span></div>'+
    '</div>'+
@@ -7369,7 +7382,7 @@ function vistaPortada(){
 
  /* ---- dos paneles ---- */
  h+='<div class="rejilla2">';
- h+='<div class="col"><div class="tarjeta"><h3>Emisiones por categoría de ISO 14067</h3><div class="cuerpo">'+
+ h+='<div class="col"><div class="tarjeta"><h3>Emisiones por categoría de fuente (ISO 14064-1)</h3><div class="cuerpo">'+
   (totCat>0
    ? CATS.map(function(c){
       return barraH('Categoría '+c.n,cat[c.n],maxCat,'var(--m'+c.n+')',c.t+' · '+fmt(cat[c.n]*100/totCat,1)+' %');
@@ -11580,8 +11593,8 @@ function declaracionCliente(){
  h+='<p class="rep-p">Las emisiones y las remociones se informan por separado. La norma ISO 14067 no admite restar unas de otras dentro del inventario, y el apartado M6.5 del protocolo prohíbe expresamente el neteo de remociones contra emisiones.</p>';
  var TC=porCategoria();
  h+=figCaja(figBarras(CATS.map(function(c){ return {et:'Categoría '+c.n,v:TC[c.n]||0,txt:fmt(TC[c.n]||0,2)+' t'}; }),
-   {tit:'De dónde salen las emisiones, por categoría de ISO 14067'}),
-  'Las seis categorías de la norma: la 1 es lo que ocurre dentro de la finca y la planta, la 2 la energía comprada, la 3 el transporte, la 4 los productos que la organización compra, la 5 el uso del producto y la 6 el resto.');
+   {tit:'De dónde salen las emisiones, por categoría de fuente (clasificación ISO 14064-1)'}),
+  'Las seis categorías de fuente de ISO 14064-1, usadas aquí solo para ordenar el origen de las emisiones: la 1 es lo que ocurre dentro de la finca y la planta, la 2 la energía comprada, la 3 el transporte, la 4 los productos que la organización compra, la 5 el uso del producto y la 6 el resto. La huella del producto toma solo las que caen dentro de su límite del sistema; la 6 nunca entra.');
  h+=figCaja(figLimiteSistema(),'Etapas de la cadena que entran en esta declaración.');
  h+='<h2 class="rep-h2">Lo que sí se puede afirmar</h2>';
  var si=[
@@ -16871,8 +16884,8 @@ function repInforme14064(){
   CATS.map(function(c){ return [String(c.n),c.t,fmt(T[c.n]||0,2)]; })
   .concat([['','Total de emisiones',fmt(R.emisiones,2)],['','Remociones informadas por separado',fmt(R.remociones,2)]]));
  h+=figCaja(figBarras(CATS.map(function(c){ return {et:'Categoría '+c.n,v:T[c.n]||0,txt:fmt(T[c.n]||0,2)+' t'}; }),
-   {tit:'Emisiones por categoría de ISO 14067, en toneladas de CO₂ equivalente'}),
-  'Reparto de las emisiones del período entre las seis categorías de la norma.');
+   {tit:'Emisiones por categoría de fuente (clasificación ISO 14064-1), en toneladas de CO₂ equivalente'}),
+  'Reparto de las emisiones del período entre las seis categorías de fuente de ISO 14064-1.');
  h+='<p class="rep-p">Las emisiones y las remociones se informan por separado. La norma no admite restar unas de otras dentro del inventario, y el apartado M6.5 del protocolo prohíbe expresamente el neteo de remociones contra emisiones.</p>';
 
  h+='<h2 class="rep-h2">9.3 · Emisiones por gas</h2>';
@@ -17326,7 +17339,7 @@ function repGEI(){
   .concat([['Total',fmt(totE,2),fmt(100,1)+' %']]));
  h+=figCaja(figPastel(CATS.map(function(c){
    return {et:'Categoría '+c.n+' · '+c.t,v:T[c.n]||0,txt:fmt(T[c.n]||0,2)+' t'};
-  }),{tit:'Reparto de las emisiones por categoría de ISO 14067',centro:fmt(totE,1),centroSub:'t CO₂e',max:6}),
+  }),{tit:'Reparto de las emisiones por categoría de fuente (ISO 14064-1)',centro:fmt(totE,1),centroSub:'t CO₂e',max:6}),
   'Participación de cada categoría en el total del período. Las remociones no aparecen en esta figura porque se informan por separado y no se restan de las emisiones.');
 
  /* ---------------------------------------------------------------- 6 */
@@ -18709,9 +18722,8 @@ function vistaAjustes(){
 
  /* --- 5 · los datos --- */
  h+=ajuSec('Los datos y el respaldo',
-  'Todo se guarda primero en este equipo. Sincronizar es lo que lo lleva a la base y a los demás dispositivos; el respaldo es un archivo que se puede guardar aparte.',
+  'Todo se guarda primero en este equipo y la aplicación lo sube sola a la base y a los demás dispositivos en cuanto hay conexión; no hay que pulsar nada. El respaldo es un archivo que se puede guardar aparte.',
   '<div class="acciones">'+
-   '<button type="button" class="mini" id="btn-sync-cmp">Sincronizar ahora</button>'+
    '<button type="button" class="mini" data-accion="respaldo-datos">Descargar el respaldo de los datos</button>'+
    '<button type="button" class="mini" data-accion="respaldo-fotos">Respaldo con las fotografías</button>'+
    ajuIr('car','Carga masiva de datos')+ajuIr('arc','Archivo del proyecto')+
@@ -28296,7 +28308,7 @@ if(a==='pry-crear'){
   return;}
  if(a==='guardar-ya'){
   var ok=false; try{ guardarLocal(); ok=!_lsFallo; }catch(e){ ok=false; }
-  msg(ok?('Guardado en este equipo · '+new Date().toTimeString().slice(0,5)):'No se pudo guardar en este equipo: use Sincronizar o descargue el respaldo');
+  msg(ok?('Guardado en este equipo · '+new Date().toTimeString().slice(0,5)):'No se pudo guardar en este equipo: descargue el respaldo; la aplicación lo sube sola a la base en cuanto hay conexión');
   pintar(); return;}
  if(a==='ctr-plantilla'){ bajarPlantillaCtr(); return;}
  if(a==='ctr-import-cancelar'){ CTR_IMP=null; pintar(); return;}
@@ -28796,7 +28808,8 @@ function arrancar(){
   var enRiesgo=(Object.keys(pendientes).length&&db)||(!lsOk&&!db&&hayDatos()&&!S.demo);
   if(enRiesgo){ev.preventDefault();ev.returnValue='';}
  });
- setInterval(function(){ if(Object.keys(pendientes).length&&db)sincronizar(true); },20000);
+ setInterval(function(){ if(Object.keys(pendientes).length&&db)sincronizar(true); },8000);
+ document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'&&Object.keys(pendientes).length&&db)sincronizar(true); });
 }
 function conectarBase(x){
   db=x; pintarSync();
