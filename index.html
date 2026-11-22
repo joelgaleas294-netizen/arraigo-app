@@ -1982,7 +1982,7 @@ table.tg-kv td{white-space:nowrap}
 .tg-filtros label.tg-chk{flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
 .tg-filtros select,.tg-filtros input[type=search]{font:inherit;font-size:13px;padding:5px 8px;min-width:200px}
 .cx-alerta .tg-mini{margin:6px 0}.cx-alerta .tg-mini td{background:#fff!important}.cx-alerta h3 small{font-weight:500;color:var(--ink-3);font-size:12px}
-.tg td.n small{white-space:normal;display:inline-block;max-width:120px;line-height:1.25}.cx-alerta .tg-chip{white-space:normal}.tg-calc td:nth-child(2){min-width:180px;max-width:260px}.tg-calc .cx-niv{font-size:10px;padding:0 5px}.tg-calc th,.tg-calc td{padding:7px 7px}.cx-alerta .tg td,.cx-alerta .tg th{white-space:normal!important}.tg-calc td:nth-child(2){min-width:150px!important}.tg-calc th,.tg-calc td{padding:7px 6px!important}.tg-calc thead th{letter-spacing:.02em}.tg-calc td{white-space:normal}.tg-calc td:nth-child(2) b{white-space:normal;overflow-wrap:anywhere}.tg .tg-pasos td.n{font-family:inherit}.tg-modos button[aria-pressed=true]{background:var(--acento)!important;color:#fff!important;border-color:var(--acento)!important}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
+.tg td.n small{white-space:normal;display:inline-block;max-width:120px;line-height:1.25}.cx-alerta .tg-chip{white-space:normal}.tg-calc td:nth-child(2){min-width:180px;max-width:260px}.tg-calc .cx-niv{font-size:10px;padding:0 5px}.tg-calc th,.tg-calc td{padding:7px 7px}.cx-alerta .tg td,.cx-alerta .tg th{white-space:normal!important}.tg-calc td:nth-child(2){min-width:150px!important}.tg-calc th,.tg-calc td{padding:7px 6px!important}.tg-calc thead th{letter-spacing:.02em}.tg-calc td{white-space:normal}.tg-calc td:nth-child(2) b{white-space:normal;overflow-wrap:anywhere}.tg .tg-pasos td.n{font-family:inherit}.tg-modos button[aria-pressed=true]{background:var(--acento)!important;color:#fff!important;border-color:var(--acento)!important}.tg td{white-space:normal}.tg td.n{white-space:nowrap}.rejilla2>.col{min-width:0}.tarjeta .cuerpo>table.tg{display:block;overflow-x:auto}table.tg-kv{display:table!important}table.tg-kv th{width:auto}table.tg-kv td.n{font-size:15px;font-weight:600}table.tg-kv td{vertical-align:middle}table.tg-kv td.n small{max-width:none;display:block}.rejilla2 .tg-bar{width:70px}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
 .tg-est{font-weight:700;text-align:center;width:1%}
 .tg-est.ok{color:var(--ok)}.tg-est.aviso{color:var(--aviso)}.tg-est.falta{color:var(--grave)}
 .rejilla2 .tarjeta .cuerpo>.tg{margin-top:2px}
@@ -27218,11 +27218,11 @@ function panelResultado(R){
  var HP=esqActivo('i14067')?huellaProducto():null, X=null; try{ X=sxDatos(); }catch(e){}
  var C=null; try{ C=presentacionesCalc(); }catch(e){}
  var h='<div class="tarjeta"><h3>Resultado del estudio</h3><div class="cuerpo"><table class="tg tg-kv"><tbody>'+
-  '<tr><th>Emisiones dentro del límite</th><td class="n">'+fmt(X?X.total:R.emisiones,2)+'</td><td>t CO₂e</td></tr>';
- if(HP&&HP.prod>0)h+='<tr><th>Café oro del período</th><td class="n">'+fmt(HP.prod*HP.kgU/1000,1)+'</td><td>t ('+fmt(HP.prod,1)+' '+esc(HP.unidad)+')</td></tr>'+
-  '<tr><th>Huella por kilogramo</th><td class="n tg-res">'+fmt(HP.porKg,3)+'</td><td>kg CO₂e por kg de café oro</td></tr>';
- if(C&&C.res)C.res.forEach(function(x){ h+='<tr><th>'+esc(x.pres.nom)+' · '+esc(x.dest.nom)+'</th><td class="n">'+fmt(x.porU,1)+'</td><td>kg CO₂e por unidad</td></tr>'; });
- if(X&&X.bio>0)h+='<tr class="tg-aparte"><th>CO₂ biogénico (se informa aparte)</th><td class="n">'+fmt(X.bio,1)+'</td><td>t CO₂, no suma</td></tr>';
+  '<tr><td>Emisiones dentro del límite</td><td class="n">'+fmt(X?X.total:R.emisiones,2)+'<br><small>t CO₂e</small></td></tr>';
+ if(HP&&HP.prod>0)h+='<tr><td>Café oro del período</td><td class="n">'+fmt(HP.prod*HP.kgU/1000,1)+'<br><small>t ('+fmt(HP.prod,1)+' '+esc(HP.unidad)+')</small></td></tr>'+
+  '<tr><td>Huella por kilogramo</td><td class="n tg-res">'+fmt(HP.porKg,3)+'<br><small>kg CO₂e por kg de café oro</small></td></tr>';
+ if(C&&C.res)C.res.forEach(function(x){ h+='<tr><td>'+esc(x.pres.nom)+' · '+esc(x.dest.nom)+'</td><td class="n">'+fmt(x.porU,1)+'<br><small>kg CO₂e por unidad</small></td></tr>'; });
+ if(X&&X.bio>0)h+='<tr class="tg-aparte"><td>CO₂ biogénico (se informa aparte)</td><td class="n">'+fmt(X.bio,1)+'<br><small>t CO₂, no suma</small></td></tr>';
  return h+'</tbody></table><div class="acciones"><button type="button" class="mini" data-vista="calc">Calculadora</button><button type="button" class="mini" data-vista="inf">Informe ISO 14067</button></div></div></div>';
 }
 function panelCategorias(cat,totCat){
