@@ -1908,6 +1908,48 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .cap-cola-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cap-ambito{margin-bottom:8px;max-width:520px}.cap-ambito select{width:100%}
 </style>
+<style id="cx-estilos">
+.cx .cx-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 18px}
+.cx .cx-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.cx .cx-tile span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.cx .cx-tile b{font-size:30px;line-height:1.1;color:var(--ink)}
+.cx .cx-tile small{color:var(--ink-2);font-size:12.5px}
+.cx .cx-tile-mal{border-color:#d9a441;background:#fff8ea}
+.cx .cx-alerta{border:1px solid #d9a441;border-left:5px solid #c47f00;background:#fff8ea;border-radius:12px;padding:14px 18px;margin:0 0 20px}
+.cx .cx-alerta h3{margin:0 0 6px;font-size:16px}
+.cx .cx-alerta ul{margin:0 0 8px;padding-left:18px}.cx .cx-alerta li{margin:3px 0}
+.cx .cx-guia{color:var(--ink-2);margin:-4px 0 12px;font-size:13.5px}
+.cx .cx-pills{margin:0 0 12px}
+.cx .cx-f{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 12px}
+.cx .cx-f.cx-fuera{opacity:.8;background:var(--surface-2)}
+.cx .cx-f header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cx .cx-f header b{font-size:15.5px;display:block}
+.cx .cx-f header span{font-size:12px;color:var(--ink-3)}
+.cx .cx-t{text-align:right;font-size:22px;font-weight:700;white-space:nowrap}
+.cx .cx-t small{display:block;font-size:11.5px;font-weight:400;color:var(--ink-3)}
+.cx .cx-bar{height:6px;background:var(--surface-3);border-radius:4px;margin:10px 0 12px;overflow:hidden}
+.cx .cx-bar i{display:block;height:100%;background:var(--mod,#2f6f8f)}
+.cx .cx-form{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;margin:6px 0 10px}
+.cx .cx-form2{opacity:.9}
+.cx .cx-term{display:flex;flex-direction:column;justify-content:center;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:92px}
+.cx .cx-term em{font-style:normal;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3)}
+.cx .cx-term b{font-size:16px}.cx .cx-term small{font-size:11.5px;color:var(--ink-2)}
+.cx .cx-term.cx-res{background:#eaf3ee;border-color:#9fc7b0}
+.cx .cx-op{align-self:center;font-size:18px;color:var(--ink-3);padding:0 2px}
+.cx .cx-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;border-top:1px dashed var(--line);padding-top:10px}
+@media (max-width:760px){.cx .cx-cols{grid-template-columns:1fr}.cx .cx-t{font-size:18px}}
+.cx .cx-cols h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3)}
+.cx .cx-cols p{margin:6px 0;font-size:13.5px;line-height:1.45}
+.cx .cx-fte{color:var(--ink-2);font-size:12.5px!important}
+.cx .cx-niv{display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:2px 10px}
+.cx .cx-niv.n1{background:#e3f1e8;color:#1f6b45}.cx .cx-niv.n2{background:#e6eef7;color:#2f5a8a}.cx .cx-niv.n3{background:#fbefd9;color:#8a5a00}.cx .cx-niv.n0{background:#f9e0de;color:#a3261e}
+.cx .cx-ul{margin:0;padding-left:18px;font-size:13.5px}.cx .cx-ul li{margin:3px 0}
+.cx .cx-ul li.mal{color:#a3261e}.cx .cx-ul li.aviso-l{color:#8a5a00}
+.cx .cx-lista summary{cursor:pointer;font-size:13px;margin-top:6px}
+.cx .cx-tabla{max-height:280px;overflow:auto;margin-top:6px}.cx .cx-tabla table{width:100%;font-size:12px;border-collapse:collapse}
+.cx .cx-tabla th,.cx .cx-tabla td{border-bottom:1px solid var(--line);padding:3px 6px;text-align:left}.cx .cx-tabla .n{text-align:right}
+.cx .cx-det{margin:8px 0 18px}.cx .cx-det>summary{cursor:pointer;font-weight:700;padding:8px 0}
+</style>
 </head>
 <body>
 <button type="button" class="saltar" data-accion="saltar-contenido">Saltar al contenido</button>
@@ -2574,6 +2616,11 @@ function numAmbiguo(x){
  return true;
 }
 function nv(x){ return numDe(x); }
+/* Texto de un número calculado por la aplicación. String(676.063) daría «676.063»,
+   que numDe lee como 676 063 (punto de miles): con tres decimales exactos y
+   hasta tres cifras enteras se escribe con coma decimal, que no es ambigua. */
+function numTxt(v,dec){ v=+v; if(!isFinite(v))v=0; var k=Math.pow(10,dec==null?6:dec); var t=String(Math.round(v*k)/k);
+ return /^-?\d{1,3}\.\d{3}$/.test(t)?t.replace('.',','):t; }
 function uid(p){return p+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);}
 function hoy(){var d=new Date();return d.toISOString().slice(0,10);}
 function usarCapBase(n){try{return (window.claude&&window.claude.use)?window.claude.use(n):Promise.resolve(null);}catch(e){return Promise.resolve(null);}}
@@ -23099,7 +23146,7 @@ function escribirCarga(o){
  st.valores=st.valores||{};
  var antes=numDe(st.valores[l.id]);
  var nuevo=(modo==='sumar')?(antes+entra):entra;
- st.valores[l.id]=String(Math.round(nuevo*1e6)/1e6);
+ st.valores[l.id]=numTxt(nuevo);
  marcar((cat==='org')?'beneficio/actual':('insumos/'+fid));
 
  var sello=huella([C.nombre||'pegado',String(o.A.filas.length),fmt(o.A.total,4),
@@ -24019,9 +24066,9 @@ function capRecalcular(ref){
  var e=S.capBase[ref], actual=numDe(st.valores[p.l.id]); if(!isFinite(actual))actual=0;
  var base=e?Math.max(0,actual-(e.suma||0)):actual;
  var suma=capSumaRef(ref), nuevo=Math.round((base+suma)*1e6)/1e6;
- S.capBase[ref]={base:base,suma:suma};
+ S.capBase[ref]={base:base,suma:suma,uLitros:true};
  if(nuevo!==actual){
-  st.valores[p.l.id]=String(nuevo);
+  st.valores[p.l.id]=numTxt(nuevo);
   marcar((p.cat==='org')?'beneficio/actual':('insumos/'+p.fid));
   anotar('dato','Inventario · '+p.l.et,fmt(actual,2),fmt(nuevo,2),
    'derivado de la captura: '+fmt(base,2)+' anotado aparte + '+fmt(suma,2)+' de facturas vigentes');
@@ -24779,7 +24826,7 @@ function aplicarDatosPorFinca(D,archivo){
   var f=null; S.fincas.forEach(function(x){ if(String(x.codigo||'').toUpperCase()===r.codigo.toUpperCase())f=x; });
   if(!f){ sinFinca.push(r.codigo); return; }
   var st=S.insumos[f.id]=S.insumos[f.id]||{}; st.valores=st.valores||{};
-  Object.keys(r.valores).forEach(function(id){ st.valores[id]=String(Math.round(r.valores[id]*1e6)/1e6); valores++; });
+  Object.keys(r.valores).forEach(function(id){ st.valores[id]=numTxt(r.valores[id]); valores++; });
   fincas++; marcar('insumos/'+f.id);
  });
  if(fincas)anotar('carga','Datos de actividad por finca cargados desde '+(archivo||'la plantilla'),'',valores+' cantidades en '+fincas+' fincas',
@@ -26166,7 +26213,7 @@ function calcAplicarSoloFacturas(C){
    ch.slice(0,8).map(function(x){ return esc(x.l.et)+': '+fmt(x.act,2)+' → <b>'+fmt(x.suma,2)+'</b> '+esc(x.l.un); }).join('<br>')+(ch.length>8?('<br>y '+(ch.length-8)+' más'):''),
    'El cambio queda en la bitácora con el valor anterior.']}).then(function(si){
   if(!si)return;
-  ch.forEach(function(x){ x.st.valores[x.l.id]=String(Math.round(x.suma*1e6)/1e6); S.capBase=S.capBase||{}; S.capBase[x.ref]={base:0,suma:x.suma,uLitros:true};
+  ch.forEach(function(x){ x.st.valores[x.l.id]=numTxt(x.suma); S.capBase=S.capBase||{}; S.capBase[x.ref]={base:0,suma:x.suma,uLitros:true};
    marcar(x.cat==='org'?'beneficio/actual':('insumos/'+x.fid)); anotar('dato','Dato de actividad igualado a sus facturas · '+x.l.et,fmt(x.act,2),fmt(x.suma,2),'se quitó lo anotado aparte sin factura'); });
   marcar('captura/registros'); guardarLocal(); pintar(); msg(ch.length+' fuente'+(ch.length===1?'':'s')+' recalculada'+(ch.length===1?'':'s')+' con sus facturas');
  });
@@ -26412,48 +26459,179 @@ document.addEventListener('change',function(ev){ var t=ev.target; if(!t.dataset|
  S.prod.reglasMes[t.dataset.reglaMes]=t.value; marcar('gestion/declaraciones');
  anotar('dato','Mes de referencia de '+(t.dataset.reglaMes==='elec'?'electricidad':'combustibles y demás'),REGLA_MES_TXT[antes]||'',REGLA_MES_TXT[t.value]||t.value,'Instrucción del proyecto para agrupar las facturas por mes');
  guardarLocal(); pintar(); try{ sincronizar(true); }catch(e){} });
+/* ==========================================================================
+   MOD-CALC · Calculadora (reingeniería): primero el resultado y lo que hay que
+   revisar; después, fuente por fuente, la fórmula completa con su cantidad, su
+   conversión, su factor y su ajuste, por qué se usa ese factor y de dónde sale
+   la cantidad (facturas, repetidas, anotado sin factura, fechas fuera del
+   período). Al final, la huella por presentación y el detalle mensual.
+   ========================================================================== */
+function cxNombreCat(n){ for(var i=0;i<CATS.length;i++)if(CATS[i].n===n)return 'Categoría '+n+' · '+CATS[i].t; return 'Categoría '+n; }
+function cxPeriodo(){ var P=S.prod||{}; return {ini:String(P.per_inicio||'').slice(0,10),fin:String(P.per_fin||'').slice(0,10)}; }
+/* Estado de las facturas de un renglón: suma, repetidas y fechas fuera del período */
+function cxFacturas(l,cat,fids,repIds){
+ var PE=cxPeriodo(), hoyS=hoy(), o={n:0,suma:0,rep:0,qRep:0,fuera:0,sinFecha:0,futuras:0,lista:[]};
+ var fs={}; fids.forEach(function(f){ fs[String(f||'')]=1; });
+ registros().forEach(function(r){
+  if(r.estado==='anulado'||r.linea!==l.id||r.cat!==cat||!fs[String(r.fid||'')])return;
+  var q=numDe(r.cantidadLinea)||0; o.n++; o.suma+=q; o.lista.push(r);
+  if(repIds[r.id]){ o.rep++; o.qRep+=q; }
+  var f=String(r.fecha||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f))o.sinFecha++;
+  else if(f>hoyS)o.futuras++;
+  else if(PE.ini&&PE.fin&&(f<PE.ini||f>PE.fin))o.fuera++;
+ });
+ o.lista.sort(function(a,b){ return String(a.fecha).localeCompare(String(b.fecha)); });
+ return o;
+}
+/* Por qué este factor: la jerarquía del programa aplicada al renglón */
+function cxPorQue(l,adm){
+ var pais=nombrePais(paisProyecto()), c=conservador(), t;
+ if(!adm.ok)return {niv:'vacio',txt:'No tiene factor admisible para '+pais+': el único valor disponible es de '+esc(adm.nom||'otra jurisdicción')+'. No entra en la cifra hasta que se cargue un factor nacional, regional o del IPCC para este proyecto.'};
+ if(adm.via==='declarado')t='Es el factor que el proyecto declaró para esta fuente, con su documento. Un factor propio documentado va por delante del valor genérico.';
+ else if(adm.via==='derivada')t='Sale del consumo declarado de la propia flota y del factor del combustible: un dato propio, mejor que un valor por kilómetro de otro país.';
+ else if(adm.nivel==='nacional')t='Es el factor oficial de '+pais+' (N1). Es el primero que pide la jerarquía de factores del programa, por eso se usa antes que cualquier valor regional o del IPCC.';
+ else if(adm.nivel==='regional')t='Es un factor regional publicado (N2). Se usa porque el proyecto no tiene un factor oficial de '+pais+' para esta fuente.';
+ else t='Es el valor por defecto (N3) del catálogo del programa. Se usa porque el proyecto no tiene factor nacional ni regional cargado para esta fuente en '+pais+'.'+(c?(' Por ser por defecto se le suma el descuento conservador del '+fmt(c,0)+' %.'):' El descuento conservador del proyecto está en cero: conviene declararlo en la configuración del cálculo.');
+ if(adm.jur==='extranjera')t+=' Atención: el valor lo publica '+esc(adm.nom||'otra jurisdicción')+', no el IPCC ni '+pais+'; para declararlo conviene reemplazarlo por un factor nacional o del IPCC.';
+ if(/sin fuente publicada confirmada/i.test(adm.fuente||''))t+=' El propio catálogo dice que este valor no tiene fuente confirmada: no debe declararse así.';
+ return {niv:adm.nivel||'defecto',txt:t};
+}
+function cxFuentes(){
+ var P=S.prod||{}, G=reglaLimite(P.limites), EX=idsEXPO(), out=[];
+ var todas=[]; lineasDe('finca').forEach(function(l){ todas.push({l:l,cat:'finca'}); }); lineasDe('org').forEach(function(l){ todas.push({l:l,cat:'org'}); });
+ var repIds={}; calcRepetidas({filas:todas}).forEach(function(r){ repIds[r.id]=1; });
+ function fila(l,cat,fids){
+  if(l.tipo==='r')return;
+  var q=0,t=0,t2=0,usados=[], conv=null, fac=null, aj=null;
+  fids.forEach(function(fid){ var qi=cantidad(l,cat,fid); if(!(qi>0))return; usados.push(fid); q+=qi; t+=tco2Linea(l,cat,fid)||0; t2+=tco2Linea2(l,cat,fid)||0;
+   if(conv==null){ conv=conver(l,cat,fid); fac=factor(l,cat,fid); aj=ajusteCons(l)*ajusteDato(l,cat,fid); } });
+  if(!(q>0))return;
+  var amb=(cat==='finca')?'finca':(EX[l.id]?'expo':'org'), pasa=G[amb]&&(!FLETE_INTL[l.id]||G.flete);
+  var F=cxFacturas(l,cat,usados,repIds), adm=admisibleFactor(l);
+  out.push({l:l,cat:cat,amb:amb,fids:usados,q:q,conv:conv,f:fac,aj:aj,t:t,t2:t2,dir:esDirecta(l),
+   enLim:pasa&&G.cats.indexOf(l.cat)>=0, enLim2:pasa&&!!l.cat2&&G.cats.indexOf(l.cat2)>=0,
+   F:F, sinFact:Math.max(0,q-F.suma), adm:adm, porque:cxPorQue(l,adm)});
+ }
+ var fz=S.fincas.map(function(f){return f.id;});
+ lineasDe('finca').forEach(function(l){ fila(l,'finca',fz); });
+ lineasDe('org').forEach(function(l){ fila(l,'org',[null]); });
+ out.forEach(function(x){ x.tLim=(x.enLim?x.t:0)+(x.enLim2?x.t2:0); x.tSin=(x.q>0&&x.sinFact>0)?(x.t+x.t2)*x.sinFact/x.q:0; x.tRep=(x.q>0&&x.F.qRep>0)?(x.t+x.t2)*x.F.qRep/x.q:0; });
+ out.sort(function(a,b){ return (b.tLim-a.tLim)||((b.t+b.t2)-(a.t+a.t2)); });
+ return {filas:out,todas:todas,G:G};
+}
+var CX_AMB={finca:'Fincas',org:'Beneficio y planta',expo:'Exportación'};
+var CX_NIV={nacional:['N1 · nacional oficial','n1'],regional:['N2 · regional publicado','n2'],defecto:['N3 · por defecto','n3'],vacio:['Sin factor admisible','n0']};
+function cxTermino(et,v,u,cls){ return '<span class="cx-term'+(cls?' '+cls:'')+'"><em>'+et+'</em><b>'+v+'</b>'+(u?'<small>'+esc(u)+'</small>':'')+'</span>'; }
+function cxFormula(x){
+ var l=x.l, h='<div class="cx-form">', unF=x.dir?'t CO₂e':(l.unTec||l.un);
+ if(x.dir)return h+cxTermino('Valor declarado',fmt(x.q,3),'t CO₂e')+(x.aj&&Math.abs(x.aj-1)>1e-9?'<span class="cx-op">×</span>'+cxTermino('Ajuste',fmt(x.aj,3),''):'')+'<span class="cx-op">=</span>'+cxTermino('Emisión',fmt(x.t,3),'t CO₂e','cx-res')+'</div>';
+ h+=cxTermino('Cantidad',fmt(x.q,2),l.un);
+ if(x.conv!=null&&Math.abs(x.conv-1)>1e-9)h+='<span class="cx-op">×</span>'+cxTermino('Conversión',fmt(x.conv,4),unF+' por '+l.un.replace(/s$/,''));
+ h+='<span class="cx-op">×</span>'+cxTermino('Factor',fmt(x.f,4),'kg CO₂e por '+unF.replace(/s$/,''));
+ h+='<span class="cx-op">÷</span>'+cxTermino('A toneladas',fmt(1000,0),'');
+ if(x.aj!=null&&Math.abs(x.aj-1)>1e-9)h+='<span class="cx-op">×</span>'+cxTermino('Ajuste',fmt(x.aj,3),x.adm.nivel==='defecto'&&conservador()?'descuento conservador y calidad':'calidad del dato');
+ h+='<span class="cx-op">=</span>'+cxTermino('Emisión',fmt(x.t,3),'t CO₂e','cx-res')+'</div>';
+ if(x.t2>0)h+='<div class="cx-form cx-form2">'+cxTermino('Fabricación del insumo',fmt(x.q*(x.conv||1),2),l.unTec||l.un)+'<span class="cx-op">×</span>'+cxTermino('Factor de fabricación',fmt(factor2(l),4),'kg CO₂e')+'<span class="cx-op">=</span>'+cxTermino(cxNombreCat(l.cat2).split(' · ')[0],fmt(x.t2,3),'t CO₂e','cx-res')+'</div>';
+ return h;
+}
+function cxTarjeta(x,tot){
+ var l=x.l, niv=CX_NIV[x.porque.niv]||CX_NIV.defecto, pct=tot>0?x.tLim/tot*100:0, F=x.F, un=l.un;
+ var dato=[];
+ if(x.dir)dato.push('<li>Valor anotado directamente en t CO₂e.</li>');
+ else if(F.n)dato.push('<li><b>'+F.n+'</b> factura'+(F.n===1?'':'s')+' registrada'+(F.n===1?'':'s')+' suman <b>'+fmt(F.suma,2)+'</b> '+esc(un)+'.</li>');
+ else dato.push('<li class="mal"><b>Sin facturas registradas:</b> toda la cantidad está anotada a mano.</li>');
+ if(!x.dir&&x.sinFact>0.005&&F.n)dato.push('<li class="mal"><b>'+fmt(x.sinFact,2)+'</b> '+esc(un)+' anotados sin factura ('+fmt(x.sinFact/x.q*100,1)+' % de la cantidad, '+fmt(x.tSin,2)+' t CO₂e).</li>');
+ if(F.rep)dato.push('<li class="mal"><b>'+F.rep+'</b> factura'+(F.rep===1?'':'s')+' repetida'+(F.rep===1?'':'s')+' (mismo proveedor y número): '+fmt(F.qRep,2)+' '+esc(un)+' contados dos veces.</li>');
+ if(F.fuera)dato.push('<li class="aviso-l"><b>'+F.fuera+'</b> factura'+(F.fuera===1?'':'s')+' con fecha fuera del período del estudio.</li>');
+ if(F.futuras)dato.push('<li class="mal"><b>'+F.futuras+'</b> factura'+(F.futuras===1?'':'s')+' con fecha posterior a hoy: fecha mal leída.</li>');
+ if(F.sinFecha)dato.push('<li class="aviso-l"><b>'+F.sinFecha+'</b> factura'+(F.sinFecha===1?'':'s')+' sin fecha legible.</li>');
+ if(x.cat==='finca')dato.push('<li>'+x.fids.length+' finca'+(x.fids.length===1?'':'s')+' con dato.</li>');
+ var lista=F.lista.length?('<details class="cx-lista"><summary>Ver las '+F.lista.length+' facturas</summary><div class="cx-tabla"><table><thead><tr><th>Fecha</th><th>Número</th><th>Proveedor</th><th class="n">Cantidad</th><th>Archivo</th></tr></thead><tbody>'+
+  F.lista.slice(0,300).map(function(r){ return '<tr><td>'+esc(r.fecha||'—')+'</td><td>'+esc(r.numero||'—')+'</td><td>'+esc(r.proveedor||'—')+'</td><td class="n">'+fmt(numDe(r.cantidadLinea)||0,2)+'</td><td>'+esc(String(r.archivo||'').slice(0,60))+'</td></tr>'; }).join('')+'</tbody></table></div></details>'):'';
+ return '<article class="cx-f'+(x.tLim>0?'':' cx-fuera')+'">'+
+  '<header><div><b>'+esc(l.et)+'</b><span>'+CX_AMB[x.amb]+' · '+esc(cxNombreCat(l.cat))+'</span></div>'+
+  '<div class="cx-t">'+fmt(x.tLim>0?x.tLim:(x.t+x.t2),2)+'<small>t CO₂e'+(x.tLim>0?(' · '+fmt(pct,1)+' %'):' · fuera del límite')+'</small></div></header>'+
+  (x.tLim>0?'<div class="cx-bar"><i style="width:'+Math.min(100,pct).toFixed(2)+'%"></i></div>':'')+
+  cxFormula(x)+
+  '<div class="cx-cols"><div><h4>Por qué este factor</h4><span class="cx-niv '+niv[1]+'">'+niv[0]+'</span><p>'+x.porque.txt+'</p>'+
+   '<p class="cx-fte"><b>Fuente:</b> '+esc(x.adm.fuente||l.or||'sin declarar')+(x.adm.anio?(' · '+esc(String(x.adm.anio))):'')+'</p>'+
+   '<button type="button" class="mini" data-vista="pai">Cambiar el factor de este proyecto</button></div>'+
+  '<div><h4>De dónde sale la cantidad</h4><ul class="cx-ul">'+dato.join('')+'</ul>'+lista+'</div></div></article>';
+}
 function vistaCalculadora(){
  if(CAP.restPry!==PRY)setTimeout(capColaRestaurar,0);
  presAsegura(); try{ capRepararMesesPorArchivo(); }catch(e){}
- var D=calcDatos(), HP=huellaProducto();
- var h=cabModulo('calc','<p class="vista-sub">La huella de carbono del café oro exportado, puesto en el puerto de destino, por presentación de venta. Cada cifra se puede seguir hasta su dato de actividad y su factor.</p>');
- h+='<div class="calc">';
- h+='<div class="acciones" style="justify-content:flex-end;margin:-6px 0 14px"><button type="button" class="primario" data-calc-xls="1">Exportar a Excel para el auditor</button></div>';
- h+='<div class="calc-sel"><div><span class="calc-et">Presentación</span><div class="calc-pills">'+D.pres.map(function(p){ return '<button type="button" data-calc-p="'+esc(p.id)+'" aria-pressed="'+(p===D.pr)+'">'+esc(p.nom)+'</button>'; }).join('')+'</div></div>'+
-  '<div><span class="calc-et">Destino</span><div class="calc-pills">'+D.dest.map(function(d){ return '<button type="button" data-calc-d="'+esc(d.id)+'" aria-pressed="'+(d===D.de)+'">'+esc(d.nom)+'</button>'; }).join('')+'</div></div></div>';
- if(!(D.C.kgTot>0)){
-  return h+'<div class="calc-vacio"><b>Falta la producción del período.</b><p>Sin la producción no hay huella por saco ni por kilogramo. Anótela aquí, en unidades de '+esc(huellaProducto().unidad)+':</p>'+
-   '<div class="campos" style="max-width:420px">'+campo('Producción del período','prod.produccion','number',(S.prod||{}).produccion||'')+'</div></div>'+tarjetaEstructura()+'</div>';
+ var D=calcDatos(), HP=huellaProducto(), P=S.prod||{}, X=cxFuentes(), LIM=emisionesEnLimite(P.limites);
+ var h=cabModulo('calc','<p class="vista-sub">Cómo se llega a las emisiones del período y a la huella del café: fuente por fuente, con su cantidad, su factor de emisión, por qué se usa ese factor y de dónde sale la cantidad.</p>');
+ h+='<div class="calc cx">';
+ /* 1 · resultado */
+ var totLim=LIM.total, sinT=0, repT=0, conFact=0, totF=0;
+ X.filas.forEach(function(x){ if(!(x.tLim>0))return; sinT+=x.tSin*(x.tLim/(x.t+x.t2||1)); repT+=x.tRep*(x.tLim/(x.t+x.t2||1)); totF+=x.tLim; });
+ var resp=totF>0?Math.max(0,100-(sinT+repT)/totF*100):0;
+ h+='<div class="cx-res">'+
+  '<div class="cx-tile"><span>Emisiones dentro del límite</span><b>'+fmt(totLim,2)+'</b><small>t CO₂e · '+esc(LIM.limite)+'</small></div>'+
+  '<div class="cx-tile"><span>Huella del café oro</span><b>'+(HP.prod>0?fmt(HP.porKg,3):'—')+'</b><small>'+(HP.prod>0?'kg CO₂e por kg':'falta la producción del período')+'</small></div>'+
+  '<div class="cx-tile'+(resp<90?' cx-tile-mal':'')+'"><span>Emisión respaldada por facturas</span><b>'+fmt(resp,0)+' %</b><small>'+(sinT+repT>0.005?(fmt(sinT+repT,2)+' t CO₂e sin respaldo o repetidas'):'todo lo calculado tiene su factura')+'</small></div></div>';
+ /* 2 · revisar antes de declarar */
+ var malos=X.filas.filter(function(x){ return x.tLim>0&&(x.tSin>0.005||x.F.rep||x.F.futuras||!x.adm.ok||x.adm.jur==='extranjera'||/sin fuente publicada confirmada/i.test(x.adm.fuente||'')); });
+ var sinFacturaNinguna=X.filas.filter(function(x){ return x.tLim>0&&!x.dir&&!x.F.n; });
+ if(malos.length){
+  CALC.catObj={nom:'todas las fuentes del proyecto',filas:X.todas};
+  var nRep=0; X.filas.forEach(function(x){ nRep+=x.F.rep; });
+  h+='<div class="cx-alerta"><h3>Revise antes de declarar</h3><ul>'+
+   malos.slice(0,8).map(function(x){ var r=[];
+    if(x.tSin>0.005)r.push(fmt(x.sinFact,2)+' '+esc(x.l.un)+' sin factura ('+fmt(x.tSin,2)+' t CO₂e)');
+    if(x.F.rep)r.push(x.F.rep+' factura'+(x.F.rep===1?'':'s')+' repetida'+(x.F.rep===1?'':'s'));
+    if(x.F.futuras)r.push('fechas posteriores a hoy');
+    if(!x.adm.ok)r.push('sin factor admisible');
+    else if(x.adm.jur==='extranjera')r.push('factor de otra jurisdicción');
+    if(/sin fuente publicada confirmada/i.test(x.adm.fuente||''))r.push('factor sin fuente confirmada');
+    return '<li><b>'+esc(x.l.et)+'</b>: '+r.join(' · ')+'</li>'; }).join('')+'</ul>'+
+   (sinFacturaNinguna.length?'<p class="small">Las fuentes sin ninguna factura registrada ('+sinFacturaNinguna.map(function(x){return esc(x.l.et);}).join(', ')+') no se tocan con los botones: corrija su cantidad en su módulo.</p>':'')+
+   (puedeEditar()?'<div class="acciones">'+(nRep?'<button type="button" class="mini" data-calc-rep="1">1 · Anular las '+nRep+' facturas repetidas</button>':'')+
+    '<button type="button" class="mini" data-calc-solo="1">'+(nRep?'2 · ':'')+'Dejar cada fuente igual a la suma de sus facturas</button></div>':'')+'</div>';
  }
- var u=D.I?('± '+fmt(D.I.u,1)+' %'):'';
- h+='<div class="calc-res"><div class="calc-num"><span class="calc-n">'+fmt(D.R.porU,2)+'</span><span class="calc-u">kg CO₂e</span></div>'+
-  '<div class="calc-txt">por <b>'+esc(D.pr.nom)+'</b> de café oro exportado, puesto en <b>'+esc(D.de.nom)+'</b></div>'+
-  '<div class="calc-sub"><span><b>'+fmt(D.R.tot,3)+'</b> kg CO₂e por kg de café oro</span><span><b>'+fmt(D.R.porT,0)+'</b> kg CO₂e por tonelada</span>'+(u?'<span>Incertidumbre <b>'+u+'</b> al 95 %</span>':'')+'</div></div>';
- /* barra de composición */
- h+='<div class="calc-barra" role="img" aria-label="Composición del resultado por etapa">'+D.etapas.map(function(e){ return e.pct>0?'<span style="width:'+e.pct.toFixed(2)+'%;background:'+(CALC_COL[e.t]||'#888')+'" title="'+esc(e.t)+': '+fmt(e.pct,1)+' %"></span>':''; }).join('')+'</div>';
- h+='<div class="calc-leyenda">'+D.etapas.map(function(e){ return '<span><i style="background:'+(CALC_COL[e.t]||'#888')+'"></i>'+esc(e.t)+' <b>'+fmt(e.pct,1)+' %</b></span>'; }).join('')+'</div>';
- /* camino del cálculo */
- h+='<div class="calc-tabla"><div class="calc-fila calc-cab"><span>Etapa</span><span>kg CO₂e por unidad</span><span>kg CO₂e por kg</span><span>%</span></div>';
- D.etapas.forEach(function(e){
-  var ab=CALC.abierta===e.t;
-  h+='<button type="button" class="calc-fila calc-etapa" data-calc-e="'+esc(e.t)+'" aria-expanded="'+ab+'"><span><i style="background:'+(CALC_COL[e.t]||'#888')+'"></i>'+esc(e.t)+'<small>'+e.filas.length+' fuente'+(e.filas.length===1?'':'s')+'</small></span>'+
-   '<span>'+fmt(e.kgU,2)+'</span><span>'+fmt(e.kg,4)+'</span><span>'+fmt(e.pct,1)+'</span></button>';
-  if(ab){
-   h+='<div class="calc-det"><div class="calc-dfila calc-dcab"><span>Fuente</span><span>Dato de actividad</span><span>Factor</span><span>kg CO₂e por unidad</span></div>'+
-    e.filas.map(function(f){ return '<div class="calc-dfila"><span>'+esc(f.et)+'</span><span>'+esc(f.dato)+'</span><span>'+esc(f.fac)+'</span><span>'+fmt(f.kgU,3)+'</span></div>'; }).join('')+'</div>';
+ /* 3 · fuente por fuente */
+ var dentro=X.filas.filter(function(x){return x.tLim>0;}), fuera=X.filas.filter(function(x){return !(x.tLim>0);});
+ CALC.ambX=CALC.ambX||'';
+ var ambs=Object.keys(CX_AMB).filter(function(k){ return dentro.some(function(x){return x.amb===k;}); });
+ h+='<h2 class="calc-h2">Cálculo fuente por fuente</h2><p class="cx-guia">Ordenado por lo que aporta. Cada fuente se calcula así: <b>cantidad × conversión × factor ÷ 1 000 × ajuste = t CO₂e</b>.</p>';
+ if(ambs.length>1)h+='<div class="calc-pills cx-pills"><button type="button" data-cx-amb="" aria-pressed="'+(!CALC.ambX)+'">Todas</button>'+ambs.map(function(k){ return '<button type="button" data-cx-amb="'+k+'" aria-pressed="'+(CALC.ambX===k)+'">'+CX_AMB[k]+'</button>'; }).join('')+'</div>';
+ var vis=dentro.filter(function(x){ return !CALC.ambX||x.amb===CALC.ambX; });
+ if(!vis.length)h+='<p class="calc-vacio">Todavía no hay cantidades anotadas dentro del límite del sistema. Se anotan en «Subir facturas y registros», «Emisiones de la finca» y «Emisiones del beneficio y la planta».</p>';
+ h+=vis.map(function(x){ return cxTarjeta(x,totLim); }).join('');
+ LIM.partes.filter(function(p){return p.id==='poda'||p.id==='cultivo';}).forEach(function(p){
+  h+='<article class="cx-f"><header><div><b>'+esc(p.et)+'</b><span>Fincas · Categoría 1</span></div><div class="cx-t">'+fmt(p.t,2)+'<small>t CO₂e · '+fmt(totLim>0?p.t/totLim*100:0,1)+' %</small></div></header><p class="cx-guia">Se calcula en su módulo con la masa retirada y su destino (lo que se quema emite; lo que vuelve al suelo, no).</p></article>'; });
+ if(fuera.length)h+='<details class="cx-det"><summary>Fuera del límite del sistema · no suman a la huella ('+fuera.length+')</summary>'+fuera.map(function(x){ return cxTarjeta(x,totLim); }).join('')+'</details>';
+ /* 4 · huella por presentación y destino */
+ h+='<h2 class="calc-h2">Huella por presentación y destino</h2>';
+ if(!(D.C.kgTot>0)){
+  h+='<div class="calc-vacio"><b>Falta la producción del período.</b><p>Sin la producción no hay huella por saco ni por kilogramo. Anótela aquí, en unidades de '+esc(HP.unidad)+':</p><div class="campos" style="max-width:420px">'+campo('Producción del período','prod.produccion','number',P.produccion||'')+'</div></div>';
+ } else {
+  h+='<div class="calc-sel"><div><span class="calc-et">Presentación</span><div class="calc-pills">'+D.pres.map(function(p){ return '<button type="button" data-calc-p="'+esc(p.id)+'" aria-pressed="'+(p===D.pr)+'">'+esc(p.nom)+'</button>'; }).join('')+'</div></div>'+
+   '<div><span class="calc-et">Destino</span><div class="calc-pills">'+D.dest.map(function(d){ return '<button type="button" data-calc-d="'+esc(d.id)+'" aria-pressed="'+(d===D.de)+'">'+esc(d.nom)+'</button>'; }).join('')+'</div></div></div>';
+  var u=D.I?('± '+fmt(D.I.u,1)+' %'):'';
+  if(D.R){
+   h+='<div class="calc-res"><div class="calc-num"><span class="calc-n">'+fmt(D.R.porU,2)+'</span><span class="calc-u">kg CO₂e</span></div><div class="calc-txt">por <b>'+esc(D.pr.nom)+'</b> de café oro exportado, puesto en <b>'+esc(D.de.nom)+'</b></div>'+
+    '<div class="calc-sub"><span><b>'+fmt(D.R.tot,3)+'</b> kg CO₂e por kg</span><span><b>'+fmt(D.R.porT,0)+'</b> kg CO₂e por tonelada</span>'+(u?'<span>Incertidumbre <b>'+u+'</b> al 95 %</span>':'')+'</div></div>';
+   h+='<div class="calc-barra" role="img" aria-label="Composición por etapa">'+D.etapas.map(function(e){ return e.pct>0?'<span style="width:'+e.pct.toFixed(2)+'%;background:'+(CALC_COL[e.t]||'#888')+'" title="'+esc(e.t)+': '+fmt(e.pct,1)+' %"></span>':''; }).join('')+'</div>';
+   h+='<div class="calc-tabla"><div class="calc-fila calc-cab"><span>Etapa</span><span>kg CO₂e por unidad</span><span>kg CO₂e por kg</span><span>%</span></div>'+
+    D.etapas.map(function(e){ return '<div class="calc-fila"><span><i style="background:'+(CALC_COL[e.t]||'#888')+'"></i>'+esc(e.t)+'<small>'+e.filas.length+' fuente'+(e.filas.length===1?'':'s')+'</small></span><span>'+fmt(e.kgU,2)+'</span><span>'+fmt(e.kg,4)+'</span><span>'+fmt(e.pct,1)+'</span></div>'; }).join('')+
+    '<div class="calc-fila calc-total"><span>Total</span><span>'+fmt(D.R.porU,2)+'</span><span>'+fmt(D.R.tot,4)+'</span><span>100,0</span></div></div>';
   }
- });
- h+='<div class="calc-fila calc-total"><span>Total</span><span>'+fmt(D.R.porU,2)+'</span><span>'+fmt(D.R.tot,4)+'</span><span>100,0</span></div></div>';
- /* bases */
- h+=tarjetaEstructura();
- h+='<div class="calc-bases"><div><span class="calc-et">Producción del período</span><b>'+fmt(HP.prod,2)+'</b> '+esc(HP.unidad)+' · '+fmt(D.C.kgTot,0)+' kg</div>'+
-  '<div><span class="calc-et">Asignación al café oro</span><b>'+fmt(D.C.asig,1)+' %</b> · '+esc((S.prod||{}).asignacion||'Por masa')+'</div>'+
-  '<div><span class="calc-et">Potenciales de calentamiento</span><b>'+esc(serieDeclarada())+'</b> a 100 años</div>'+
-  '<div><span class="calc-et">Límite del sistema</span><b>De la finca al puerto de destino</b></div></div>';
- h+='<p class="calc-nota">El CO₂ biogénico de la combustión de biomasa se informa por separado y no se suma a la huella. Las presentaciones, sus materiales de empaque y las rutas se editan en «Estudio de huella ISO 14067».</p>';
- h+='<div class="acciones"><button type="button" data-vista="hcp">Editar presentaciones y rutas</button><button type="button" data-vista="inf">Ver el informe</button><button type="button" class="peligro" data-cero-todo="1">Empezar de cero los datos de actividad</button></div>';
+  h+='<div class="calc-bases"><div><span class="calc-et">Producción del período</span><b>'+fmt(HP.prod,2)+'</b> '+esc(HP.unidad)+' · '+fmt(D.C.kgTot,0)+' kg</div>'+
+   '<div><span class="calc-et">Asignación al café oro</span><b>'+fmt(D.C.asig,1)+' %</b> · '+esc(P.asignacion||'Por masa')+'</div></div>';
+ }
+ /* 5 · detalle mensual */
+ var te=tarjetaEstructura();
+ if(te)h+='<details class="cx-det"><summary>Datos de actividad por categoría y por mes</summary>'+te+'</details>';
+ h+='<div class="calc-bases"><div><span class="calc-et">Potenciales de calentamiento</span><b>'+esc(serieDeclarada())+'</b> a 100 años</div><div><span class="calc-et">Límite del sistema</span><b>'+esc(LIM.limite)+'</b></div><div><span class="calc-et">Descuento conservador</span><b>'+fmt(conservador(),0)+' %</b> sobre factores por defecto</div></div>';
+ h+='<p class="calc-nota">El CO₂ biogénico de la combustión de biomasa se informa por separado y no se suma. Las remociones no se restan de las emisiones. Resultado de medición propia de la organización, sin verificación independiente.</p>';
+ h+='<div class="acciones"><button type="button" class="primario" data-calc-xls="1">Exportar a Excel para el auditor</button><button type="button" data-vista="hcp">Editar presentaciones y rutas</button><button type="button" data-vista="inf">Ver el informe</button><button type="button" class="peligro" data-cero-todo="1">Empezar de cero los datos de actividad</button></div>';
  return h+'</div>';
 }
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-cx-amb]'); if(!b)return; CALC.ambX=b.dataset.cxAmb||''; pintar(); });
 document.addEventListener('click',function(ev){
  var b=ev.target.closest&&ev.target.closest('[data-calc-p],[data-calc-d],[data-calc-e],[data-calc-a],[data-calc-c],[data-calc-m],[data-calc-u],[data-calc-fs]'); if(!b)return;
  if(b.dataset.calcFs){ var mz=document.getElementById('calc-matriz'); if(document.fullscreenElement)document.exitFullscreen(); else if(mz&&mz.requestFullscreen)mz.requestFullscreen(); return; }
@@ -26617,7 +26795,7 @@ function migrarLitros(){
  /* Una vez por sesión, las facturas registradas en este equipo suben a la base del proyecto */
  if(!CAP.regPush&&PRY&&(S.registros||[]).length){ CAP.regPush=true; marcar('captura/registros'); setTimeout(function(){ try{ sincronizar(true); }catch(e){} },2500); }
  var conv_=function(st,ruta){ if(!st||st.uLitros)return; var hay=false;
-  if(st.valores)GAL_IDS.forEach(function(id){ var v=numDe(st.valores[id]); if(isFinite(v)&&v!==0){ st.valores[id]=String(Math.round(v*GAL_L*1e4)/1e4); hay=true; try{ anotar('dato','Combustible de galones a litros · '+nombreLinea(id)+' ('+ruta+')',fmt(v,2)+' galones',st.valores[id]+' litros','conversión única: la plataforma registra los combustibles en litros, como las facturas'); }catch(e){} } });
+  if(st.valores)GAL_IDS.forEach(function(id){ var v=numDe(st.valores[id]); if(isFinite(v)&&v!==0){ st.valores[id]=numTxt(v*GAL_L,4); hay=true; try{ anotar('dato','Combustible de galones a litros · '+nombreLinea(id)+' ('+ruta+')',fmt(v,2)+' galones',st.valores[id]+' litros','conversión única: la plataforma registra los combustibles en litros, como las facturas'); }catch(e){} } });
   st.uLitros=true; if(hay)marcar(ruta); };
  if(S.beneficio)conv_(S.beneficio,'beneficio/actual');
  Object.keys(S.insumos||{}).forEach(function(k){ if(S.insumos[k])conv_(S.insumos[k],'insumos/'+k); });
