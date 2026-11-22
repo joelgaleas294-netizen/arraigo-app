@@ -27741,6 +27741,8 @@ function sxDatos(){ return memo('sx',function(){
 var SX_SENS=[
  {id:'comp',nom:'Factor de CH₄ y N₂O del compostaje',lin:['compostaje','compostaje_cascarilla'],lo:(0.03*27+0.06*273)/173.52,hi:(8*27+0.6*273)/173.52,
   fue:'IPCC 2006, vol. 5, cuadro 4.1, base húmeda: CH₄ 0,03 a 8 g/kg y N₂O 0,06 a 0,6 g/kg (valor usado 4 y 0,24)'},
+ {id:'compair',nom:'Compostera con manejo aireado (escenario)',lin:['compostaje','compostaje_cascarilla'],lo:(1.7*27+0.24*273)/173.52,hi:1,
+  fue:'1,7 g CH₄/kg medido en compostaje de residuos verdes con volteo (Ryals et al., 2019, Environmental Research Letters, doi 10.1088/1748-9326/ab5262), frente a 4 g/kg del IPCC. Camas de 1,5 m de alto y 2 m de ancho, material vegetal sin estiércol, volteo quincenal los dos primeros meses y mensual hasta los cuatro meses, pico de 68 °C. Se adopta solo con registros de temperatura, humedad, volteos y lecturas de CH₄ u O₂'},
  {id:'bioc',nom:'CH₄ y N₂O de la combustión de leña y casulla',lin:['lena_secado','cascarilla'],lo:(100*27+1.5*273)/(300*27+4*273),hi:(900*27+15*273)/(300*27+4*273),
   fue:'IPCC 2006, vol. 2, cuadro 2.5: CH₄ 100 a 900 y N₂O 1,5 a 15 kg/TJ (valor usado 300 y 4)'},
  {id:'n2of',nom:'Factor EF1 del N₂O del compost en fincas',lin:['n_compost_fincas'],lo:(0.001*44/28*273+2.394)/6.684,hi:(0.018*44/28*273+2.394)/6.684,
