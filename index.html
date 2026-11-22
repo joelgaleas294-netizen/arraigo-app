@@ -1907,6 +1907,35 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 #cap-visor .cv-msj{color:#fff;margin:auto}
 .cap-cola-n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cap-ambito{margin-bottom:8px;max-width:520px}.cap-ambito select{width:100%}
+.subpest{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px;border-bottom:1px solid rgba(0,0,0,.1);padding-bottom:8px}
+.subpest button{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid transparent;background:none;cursor:pointer;color:inherit}
+.subpest button:hover{background:rgba(0,0,0,.04)}
+.subpest button[aria-current="page"]{border-color:currentColor;font-weight:600}
+.leyenda-mp{font-size:12.5px;color:#6b5a1e;background:#fbf4dc;border:1px solid #efe1a8;border-radius:8px;padding:6px 10px;margin:0 0 12px}
+.ctx-mp{font-size:11px;border:1px solid #d9c77a;color:#7a6418;border-radius:6px;padding:1px 6px;margin-left:6px}
+.nv-mas>summary{cursor:pointer;list-style:none}.nv-mas>summary::-webkit-details-marker{display:none}.nv-mas>summary::after{content:' ▾'}
+.sx-tab td,.sx-tab th{font-size:13px;vertical-align:top}.sx-tab .n{text-align:right;white-space:nowrap}.sx-tab td.mal,.sx-tab .mal,small.mal{color:#a32d2d}
+.sx-tab input,.sx-tab select{font:inherit;font-size:13px;max-width:150px;padding:4px 6px}.sx-tab input[type=date]{max-width:138px}.cx-tabla{overflow-x:auto}
+.sx-tot td{font-weight:600;border-top:2px solid currentColor}
+.sx-niv,.sx-cal{display:inline-block;font-size:12px;padding:1px 8px;border-radius:6px}
+.sx-alta{background:#fcebeb;color:#791f1f}.sx-media{background:#faeeda;color:#633806}.sx-baja{background:#eeeee8;color:#555}
+.sx-calta{background:#eaf3de;color:#27500a}.sx-cmedia{background:#faeeda;color:#633806}.sx-cbaja{background:#fcebeb;color:#791f1f}
+.sx-matriz{display:grid;grid-template-columns:110px repeat(3,minmax(0,1fr));gap:6px}
+.sx-mc{border:1px solid #e3e3dc;border-radius:8px;padding:8px;min-height:64px;font-size:12.5px}.sx-mc small{display:block;color:#777;margin-bottom:4px}
+.sx-mh{border:0;min-height:0;font-weight:600;color:#555;display:flex;align-items:flex-end}
+.sx-q-alta-baja{background:#fcebeb}.sx-q-alta-media,.sx-q-media-baja{background:#fbf4e4}
+.sx-chip{display:inline-block;background:#fff;border:1px solid #ddd;border-radius:6px;padding:1px 6px;margin:2px 3px 0 0}
+.sx-torn{display:flex;flex-direction:column;gap:8px}.sx-tf{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 140px;gap:10px;align-items:center;font-size:13px}
+.sx-tb{position:relative;height:16px;background:#f3f3ee;border-radius:4px}.sx-tb::after{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;border-left:1px solid #888}
+.sx-tb i{position:absolute;top:0;bottom:0}.sx-neg{right:50%;background:#5dcaa5;border-radius:4px 0 0 4px}.sx-pos{left:50%;background:#e24b4a;border-radius:0 4px 4px 0}
+.sx-tv{text-align:right;font-variant-numeric:tabular-nums}
+.sx-cierre{list-style:none;margin:0;padding:0}.sx-cierre li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:start;padding:7px 0;border-bottom:1px solid #eee}
+.sx-ei{font-weight:700}.sx-e-ok .sx-ei{color:#3b6d11}.sx-e-aviso .sx-ei{color:#ba7517}.sx-e-falta .sx-ei{color:#a32d2d}
+.sx-docs{margin-top:10px}.sx-docs h4{margin:0 0 4px}.sx-docs .mal{color:#a32d2d}
+.sx-chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 12px;font-size:13px}
+.sx-abierto td{background:#f6f6f0}.sx-okt{color:#3b6d11}.sx-ok td{opacity:.6}.sx-venc{border-color:#a32d2d!important;color:#a32d2d}
+button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;text-align:left}
+
 </style>
 <style id="cx-estilos">
 .arc-arbol{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}.arc-grupo{border:1px solid var(--borde,#d9d4c7);border-radius:10px;padding:8px}.arc-gt{font-weight:700;font-size:.85rem;margin-bottom:6px}.arc-c{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:transparent;border:0;border-radius:6px;padding:5px 6px;font-size:.85rem;cursor:pointer}.arc-c:hover{background:rgba(0,0,0,.05)}.arc-c.activo{background:var(--m8,#e6efe9);font-weight:700}.arc-c b{font-variant-numeric:tabular-nums;opacity:.75}
@@ -2017,6 +2046,7 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
    <section id="v-apr" hidden></section>
    <section id="v-org" hidden></section>
    <section id="v-calc" hidden></section>
+   <section id="v-sig" hidden></section>
    <section id="v-ing" hidden></section>
    <section id="v-per" hidden></section>
    <section id="v-hcp" hidden></section>
@@ -5735,6 +5765,8 @@ var MODULOS=[
   des:'El resumen del ciclo, la descarga, el respaldo y el cierre.'},
  {id:'calc',scol:'s6',codigo:'MOD-CALC',nom:'Calculadora',col:'m6',etapa:'cerrar',paso:15,
   des:'La huella por presentación de venta y destino, con el camino completo del cálculo por etapa.'},
+ {id:'sig',scol:'s6',codigo:'MOD-SIG',nom:'Intensidad y significancia',col:'m6',etapa:'cerrar',paso:15.5,
+  des:'Cuánto pesa cada fuente, su intensidad por kilo de café oro, la calidad de su dato, el reparto por gas, la sensibilidad a cada supuesto y la huella por destino.'},
  {id:'inf',scol:'s8',codigo:'MOD-INF',nom:'Informe del estudio ISO 14067',col:'m8',etapa:'cerrar',paso:16,
   des:'El informe del estudio según los apartados 7.2 y 7.3 de ISO 14067, armado con los datos y exportable a Word y PDF.'},
  {id:'mit',scol:'s6',codigo:'MOD-MIT',nom:'Plan de mitigación',col:'m6',etapa:'cerrar',paso:17,
@@ -5786,6 +5818,8 @@ function modulo(id){for(var i=0;i<MODULOS.length;i++)if(MODULOS[i].id===id)retur
 function nomMod(m){return (m&&m.id==='pry'&&proyectoBloqueado())?'La empresa':(m?m.nom:'');}
 function datoModulo(m){
  var R=resumenGlobal();
+ if(m.id==='sig'){ var Xs=sxDatos(); var na=Xs.filas.filter(function(r){return r.mag==='alta';}).length; return [String(na),'fuentes significativas',Xs.total>0]; }
+ if(m.id==='arc'){ return [String(arcDocs().length),'documentos en el archivo',arcDocs().length>0]; }
  if(m.id==='calc'){ var Hc=huellaProducto(); return [Hc.prod>0?fmt(Hc.porKg,2):'—','kg CO₂e por kg',Hc.prod>0]; }
  if(m.id==='ing'){ return [String(ING.log.length||''),'',false]; }
  if(m.id==='per'){ var Ap=perAvance(); return [Ap.pct+' %','del perfil completo',Ap.pct===100]; }
@@ -5903,7 +5937,7 @@ function compEfectivo(){
 /* Pantallas retiradas del menú para trabajar simple (08/11/2026): su función quedó en otra pantalla.
    Biblioteca de factores y documental → Factores de emisión; Inventario de fuentes, Carga masiva y Hoja de cálculo → Subir facturas y registros;
    Archivo y Evidencia → Centro de datos de sustentos; poda de sombra, ODS, diagnóstico, mitigación y auditorías → fuera del alcance de la huella de producto. */
-var MOD_OCULTOS=['res','apr','org','pry','lfe','bib','tal','pod','car','arc','evi','cal','dia','mit','aui','iai'];
+var MOD_OCULTOS=['res','apr','org','pry','lfe','bib','tal','pod','car','evi','ing','cal','dia','mit','aui','iai'];
 function moduloVisible(id){ return MOD_OCULTOS.indexOf(id)<0&&moduloEnAlcance(id)&&(!COMP_MOD[id]||COMP_MOD[id]===compEfectivo()); }
 function selectorComponente(){
  if(!compDisponible('H')||!compDisponible('R'))return '';
@@ -6036,7 +6070,7 @@ function vistaLibFac(){
  });
  return h+'</tbody></table></div></div>';
 }
-function pintarNav(){
+function pintarNav(){ if(typeof pintarNavNuevo==='function')return pintarNavNuevo();
  var n=$('nav');
  var h='<button type="button" class="nv-panel" data-vista="portada"'+(vista==='portada'?' aria-current="page"':'')+' style="--mod:var(--lat-marca)">'+
   '<span class="nv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICO_INICIO+'</svg></span>'+
@@ -7181,6 +7215,8 @@ function repCFPPresentaciones(){
   h+=tabla(['Renglón','Categoría','t CO₂e del ciclo','Nivel del factor'],C.lim.partes.slice().sort(function(a,b){return b.t-a.t;}).map(function(p){return [p.et,String(p.cat),fmt(p.t,3),nivelNom(p.niv)];}));
  }
  h+='<h3 class="rep-h3">Hoja de factores de emisión</h3>'+hojaFactoresInforme();
+ try{ h+='<h3 class="rep-h3">Significancia de las fuentes</h3>'+tabla(['Fuente','t CO₂e','% del total','kg CO₂e/kg oro','Nivel','Calidad del dato'],sxFilasInforme());
+  h+='<h3 class="rep-h3">Análisis de sensibilidad por supuesto</h3>'+tabla(['Supuesto','Rango y fuente','Efecto, t CO₂e','Huella resultante, kg CO₂e/kg'],sxSensInforme()); }catch(e){}
  h+='<h3 class="rep-h3">Electricidad</h3>'+par(narr('nElectricidad',C));
  h+='<h2 class="rep-h2">Asignación</h2><p>Regla aplicada: '+esc(P.asignacion||'Por masa')+', con '+fmt(C.asig,0)+' % de la carga asignada al café oro.</p>';
  h+='<h2 class="rep-h2">Carbono biogénico, uso del suelo y remociones</h2>'+par(narr('nBiogenico',C));
@@ -7243,7 +7279,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['calc','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['calc','sig','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 var VISTA_HIST=[];
 function ir(v,atras){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
@@ -7458,11 +7494,12 @@ function vistaPortada(){
     '<div class="ht"><span class="ht-et">Emisiones del período</span><span class="ht-n">'+fmt(R.emisiones)+'</span><span class="ht-u">t CO₂e</span></div>'+
     (HP?'<div class="ht"><span class="ht-et">Huella por unidad</span><span class="ht-n">'+(HP.prod>0?fmt(HP.porU,2):'—')+'</span><span class="ht-u">'+(HP.prod>0?'kg CO₂e por '+esc(HP.unidad):'falta la producción del estudio')+'</span></div>'
        :'<div class="ht"><span class="ht-et">Remociones</span><span class="ht-n">'+fmt(R.remociones)+'</span><span class="ht-u">t CO₂e, aparte</span></div>')+
-    '<div class="ht"><span class="ht-et">Datos con respaldo</span><span class="ht-n">'+SU.pct+' %</span><span class="ht-u">'+SU.con+' de '+SU.total+' datos</span></div>'+
+    '<div class="ht"><span class="ht-et">Fuentes conciliadas</span><span class="ht-n">'+SU.pct+' %</span><span class="ht-u">'+SU.con+' de '+SU.total+' fuentes</span></div>'+
    '</div>'+
   '</div>'+
  '</div>';
 
+ h+=leyendaMedicion();
  if(S.demo)h+='<div class="aviso"><b>Datos de ejemplo.</b> Lo cargado es ilustrativo y no corresponde a ninguna organización. '+
   '<button type="button" class="mini" data-accion="limpiar-ejemplo" style="margin-left:6px">Empezar de cero</button>'+
   '<button type="button" class="mini" data-vista="pry" style="margin-left:6px">Cargar el ejemplo completo</button></div>';
@@ -7475,7 +7512,7 @@ function vistaPortada(){
   tarjetaCifra('Declaración',E.falta?String(E.falta):'Lista',E.falta?'puntos pendientes':'sin puntos pendientes')+
   tarjetaCifra('Auditoría',A.R.aplicables?(fmt(A.R.conformidad,0)+' %'):'—',A.R.aplicables?(A.R.t.mayor+' mayores, '+A.R.t.menor+' menores'):'sin norma declarada')+
   tarjetaCifra('Hallazgos abiertos',String(ncA.length),ncV.length?(ncV.length+' fuera de plazo'):'ninguno vencido')+
-  tarjetaCifra('Evidencia',SU.pct+' %',SU.con+' de '+SU.total+' datos con respaldo')+
+  tarjetaCifra('Fuentes conciliadas',SU.pct+' %',SU.con+' de '+SU.total+' fuentes con su evidencia')+
   tarjetaCifra('Fincas',String(S.fincas.length),fmt(R.superficie,1)+' ha')+
  '</dl>';
  if(E.falta||ncA.length)h+='<div class="acciones no-imprimir" style="margin:-6px 0 20px">'+
@@ -7494,7 +7531,7 @@ function vistaPortada(){
   '<p class="pista" style="margin-top:10px">Las remociones no entran en estas barras: se informan aparte, porque la norma no admite restarlas de las emisiones.</p>'+
   '</div></div></div>';
  h+='<div class="col"><div class="tarjeta"><h3>Cobertura del inventario</h3><div class="cuerpo">'+
-  medidor(SU.pct,'Datos con evidencia recuperable',SU.con+' de '+SU.total+' datos anotados tienen respaldo')+
+  medidor(SU.pct,'Fuentes conciliadas con su evidencia',SU.con+' de '+SU.total+' fuentes conciliadas')+
   medidor(perAvance().pct,'Perfil de la organización',perAvance().n+' de '+perAvance().de+' apartados completos')+
   medidor(A.R.aplicables?Math.round(A.R.conformidad):0,'Conformidad con la norma declarada',
    A.R.aplicables?(A.R.t.conforme+' de '+A.R.aplicables+' criterios'):'sin norma declarada')+
@@ -7518,28 +7555,30 @@ function vistaPortada(){
   h+='</div></div>';
  }
 
- /* ---- mapa de ruta por etapas ---- */
+ /* ---- cierre y lo que más pesa ---- */
+ h+='<div class="rejilla2"><div class="col">'+tarjetaListaCierre()+'</div><div class="col">'+tarjetaSignifPanel()+'</div></div>';
+ /* ---- la ruta del estudio, con los mismos grupos que el menú ---- */
  h+='<h2 class="tit-seccion">La ruta del estudio</h2>';
  h+='<div class="etapas">';
  var numEt=0;
- ETAPAS.forEach(function(e,ie){
-  var ms=MODULOS.filter(function(m){return m.etapa===e[0]&&moduloVisible(m.id);});
-  if(!ms.length)return;
-  var listos=ms.filter(function(m){return datoModulo(m)[2];}).length;
-  var pct=ms.length?Math.round(listos*100/ms.length):0;
+ NAV_GRUPOS.forEach(function(g){
+  var its=g[1].filter(function(it){ return it[2].some(navMiembroVisible); });
+  if(!its.length)return;
+  var ds=its.map(function(it){ var m=modulo(it[0]), d=['','',false]; try{ if(m)d=datoModulo(m)||d; }catch(e){} return {it:it,m:m,d:d}; });
+  var listos=ds.filter(function(x){return x.d[2];}).length, pct=Math.round(listos*100/ds.length);
   h+='<section class="etapa"><header class="et-cab"><span class="et-n">'+(++numEt)+'</span>'+
-   '<span class="et-txt"><span class="et-nom">'+esc(e[1])+'</span>'+
+   '<span class="et-txt"><span class="et-nom">'+esc(g[0])+'</span>'+
    '<span class="et-barra"><span class="et-relleno" style="width:'+pct+'%"></span></span></span>'+
-   '<span class="et-cont">'+listos+'/'+ms.length+'</span></header><div class="et-mods">';
-  ms.forEach(function(m){
-   var d=datoModulo(m);
-   h+='<button type="button" class="mod mod-corto" data-vista="'+m.id+'" style="--mod:var(--'+m.col+')" title="'+esc(m.des)+'">'+
+   '<span class="et-cont">'+listos+'/'+ds.length+'</span></header><div class="et-mods">';
+  ds.forEach(function(x){
+   var it=x.it, m=x.m||{codigo:'',col:'m6',des:''}, dest=navMiembroVisible(it[0])?it[0]:it[2].filter(navMiembroVisible)[0];
+   h+='<button type="button" class="mod mod-corto" data-vista="'+dest+'" style="--mod:var(--'+(m.col||'m6')+')" title="'+esc(m.des||'')+'">'+
     '<span class="mod-rail"></span>'+
-    '<span class="mod-int"><span class="mod-ico">'+svgIco(m.id)+'</span>'+
-    '<span class="mod-txt"><span class="mod-cod">'+m.codigo+'</span>'+
-    '<span class="mod-nom">'+esc(nomMod(m))+'</span></span></span>'+
-    '<span class="mod-pie"><span class="mod-dato">'+esc(d[0])+'<small>'+esc(d[1])+'</small></span>'+
-    '<span class="mod-estado'+(d[2]?' con':'')+'">'+etiquetaModulo(m.id,d[2])+'</span></span>'+
+    '<span class="mod-int"><span class="mod-ico">'+svgIco(it[0])+'</span>'+
+    '<span class="mod-txt"><span class="mod-cod">'+esc(m.codigo||'')+'</span>'+
+    '<span class="mod-nom">'+esc(it[1])+'</span></span></span>'+
+    '<span class="mod-pie"><span class="mod-dato">'+esc(String(x.d[0]||''))+'<small>'+esc(String(x.d[1]||''))+'</small></span>'+
+    '<span class="mod-estado'+(x.d[2]?' con':'')+'">'+etiquetaModulo(it[0],x.d[2])+'</span></span>'+
     '</button>';
   });
   h+='</div></section>';
@@ -13599,6 +13638,7 @@ function vistaArchivo(){
   tarjetaCifra('Documentos',String(R.total),'en el índice del archivo')+
   tarjetaCifra('Con su copia',String(R.conAdj),R.sinAdj?(R.sinAdj+' sin archivo ni enlace'):'ninguno sin copia')+
   tarjetaCifra('Facturas de la captura',String(nFac),'unidas a su dato de actividad')+
+  tarjetaCifra('Pendientes',String(arcPendientesLista().filter(function(x){return x.estado!=='resuelto';}).length),'de evidencia, con responsable')+
   '</dl>';
  if(R.caducados||R.pendientes){
   h+='<p class="aviso">'+esc(String(R.caducados))+' documento'+(R.caducados===1?'':'s')+' marcado'+(R.caducados===1?'':'s')+
@@ -13652,8 +13692,9 @@ function vistaArchivo(){
     ? 'Ningún documento coincide con lo que busca en esta carpeta. Borre el texto o vuelva a «Ver todas».'
     : 'El archivo del proyecto todavía no tiene documentos. Suba archivos o vincule los que ya están en Drive.')+'</p>';
  } else {
-  L.forEach(function(d){ h+=fichaArcDoc(d); });
+  h+='<div class="cx-tabla"><table class="tabla sx-tab sx-arc"><thead><tr><th>Documento</th><th>Carpeta</th><th>Fecha</th><th>Sostiene</th><th>Estado</th><th>Copia</th></tr></thead><tbody>'+L.map(arcFilaDoc).join('')+'</tbody></table></div>';
  }
+ h+=vistaCoberturaArc()+vistaPendientesEvid()+vistaCongelarArc();
  /* --- lo que antes ocupaba la pantalla, ahora plegado --- */
  h+='<details class="ayuda" style="margin-top:18px"><summary class="ayuda-bt"><span class="ayuda-ico" aria-hidden="true"></span><span>Las carpetas del estudio y qué exige el protocolo</span></summary><div class="ayuda-cu">';
  h+='<p class="rep-p">Cada carpeta tiene un origen típico y un destino declarado. El destino dice para qué sirve el documento dentro del cálculo o del expediente, y es lo que permite que un verificador vaya directo a lo que busca.</p>';
@@ -26718,7 +26759,7 @@ function cxTarjeta(x,tot){
   '<div class="cx-cols"><div><h4>Por qué este factor</h4><span class="cx-niv '+niv[1]+'">'+niv[0]+'</span><p>'+x.porque.txt+'</p>'+
    '<p class="cx-fte"><b>Fuente:</b> '+esc(x.adm.fuente||l.or||'sin declarar')+(x.adm.anio?(' · '+esc(String(x.adm.anio))):'')+'</p>'+
    '<button type="button" class="mini" data-vista="pai">Cambiar el factor de este proyecto</button></div>'+
-  '<div><h4>De dónde sale la cantidad</h4><ul class="cx-ul">'+dato.join('')+'</ul>'+lista+'</div></div></article>';
+  '<div><h4>De dónde sale la cantidad</h4><ul class="cx-ul">'+dato.join('')+'</ul>'+lista+sxDocsLinea(l.id)+'</div></div></article>';
 }
 function vistaCalculadora(){
  if(CAP.restPry!==PRY)setTimeout(capColaRestaurar,0);
@@ -26968,7 +27009,404 @@ function migrarLitros(){
  if(cr)marcar('captura/registros');
  }catch(e){}
 }
-function pintar(){ migrarLitros(); pintarBase.apply(this,arguments); try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
+function pintar(){ migrarLitros(); pintarBase.apply(this,arguments); try{ ponSubpestanas(); }catch(e){} try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
+function ponSubpestanas(){
+ var cv=document.getElementById('v-'+vista); if(!cv||vista==='portada')return;
+ var html=subPestanas()+leyendaMedicion(); if(!html)return;
+ var ref=cv.querySelector(':scope > .volver-barra')||cv.querySelector(':scope > .modcab');
+ if(ref)ref.insertAdjacentHTML('afterend',html); else cv.insertAdjacentHTML('afterbegin',html);
+}
+/* ====== Menú por etapas del estudio (reorganizado el 22/11/2026) ======
+   Diez entradas agrupadas por lo que hace la persona: definir el estudio,
+   capturar datos y revisar resultados. Las pantallas que antes eran módulos
+   sueltos viven ahora como pestañas dentro de la entrada que les corresponde;
+   ninguna ruta se borra. */
+ICO.sig='<path d="M4 20h16"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16V5"/>';
+var NAV_GRUPOS=[
+ ['Definir el estudio',[
+  ['hcp','Estudio ISO 14067',['hcp','per','cfg']],
+  ['pai','Factores de emisión',['pai']]]],
+ ['Capturar datos',[
+  ['cap','Facturas y registros',['cap','cds']],
+  ['ben','Fuentes de emisión',['ben','fincas','ins']],
+  ['arc','Archivo de evidencias',['arc']]]],
+ ['Resultados',[
+  ['calc','Calculadora',['calc']],
+  ['sig','Intensidad y significancia',['sig']],
+  ['inf','Informe ISO 14067',['inf']],
+  ['ver','Verificación externa',['ver','con']]]]
+];
+var NAV_MAS=[['ods','Vinculación con los ODS'],['rep','Otros reportes'],['aju','Ajustes']];
+var SUBPEST_NOM={hcp:'Estudio',per:'Perfil de la organización',cfg:'Configuración del cálculo',cap:'Subir facturas',cds:'Conciliar sustentos',
+ ben:'Beneficio y planta',fincas:'Fincas y productores',ins:'Emisiones de la finca',ver:'Verificación',con:'Control de la medición'};
+function navMiembroVisible(id){
+ if(id==='fincas'||id==='ins')return moduloVisible(id)&&(S.fincas||[]).length>0;
+ if(id==='sig')return true;
+ return moduloVisible(id);
+}
+function navItemDe(v){
+ for(var g=0;g<NAV_GRUPOS.length;g++)for(var i=0;i<NAV_GRUPOS[g][1].length;i++){ var it=NAV_GRUPOS[g][1][i]; if(it[2].indexOf(v)>=0)return it; }
+ return null;
+}
+function subPestanas(){
+ var it=navItemDe(vista); if(!it)return '';
+ var ms=it[2].filter(navMiembroVisible); if(ms.length<2)return '';
+ return '<nav class="subpest no-imprimir" aria-label="Pestañas de '+esc(it[1])+'">'+ms.map(function(id){
+  return '<button type="button" data-vista="'+id+'"'+(vista===id?' aria-current="page"':'')+'>'+esc(SUBPEST_NOM[id]||id)+'</button>'; }).join('')+'</nav>';
+}
+function leyendaMedicion(){
+ if(S.perfil&&S.perfil.verificado)return '';
+ return '<p class="leyenda-mp">Medición propia de la organización, sin verificación de un organismo independiente. No es una declaración de neutralidad.</p>';
+}
+function pintarNavNuevo(){
+ var n=$('nav'); if(!n)return;
+ var h='<button type="button" class="nv-panel" data-vista="portada"'+(vista==='portada'?' aria-current="page"':'')+' style="--mod:var(--lat-marca)">'+
+  '<span class="nv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICO_INICIO+'</svg></span>'+
+  '<span class="nv-txt">Panel</span></button>'+selectorComponente();
+ NAV_GRUPOS.forEach(function(g){
+  var items=g[1].filter(function(it){ return it[2].some(navMiembroVisible); });
+  if(!items.length)return;
+  h+='<div class="nv-bloque"><span class="nv-grupo">'+esc(g[0])+'</span>';
+  items.forEach(function(it){
+   var dest=navMiembroVisible(it[0])?it[0]:it[2].filter(navMiembroVisible)[0];
+   var m=modulo(it[0]), num='';
+   try{ if(it[0]==='hcp'){ var LC=listaCierre(); num=LC.ok+'/'+LC.total; }
+        else if(it[0]==='arc'){ num=String(arcDocs().length); }
+        else if(it[0]==='sig'){ num=String(sxDatos().filas.filter(function(x){return x.mag==='alta';}).length); }
+        else if(m){ var d=datoModulo(m); num=(it[0]==='cfg')?'':String(d[0]||''); } }catch(e){ num=''; }
+   var act=it[2].indexOf(vista)>=0;
+   h+='<button type="button" data-vista="'+dest+'" style="--mod:var(--'+((m&&m.scol)||'s6')+')"'+(act?' aria-current="page"':'')+'>'+
+    '<span class="nv-ico">'+svgIco(it[0])+'</span><span class="nv-txt">'+esc(it[1])+'</span><span class="nv-num">'+esc(num)+'</span></button>';
+  });
+  h+='</div>';
+ });
+ var masAct=NAV_MAS.some(function(t){return t[0]===vista;});
+ h+='<details class="nv-bloque nv-mas"'+(masAct?' open':'')+'><summary class="nv-grupo">Más</summary>';
+ NAV_MAS.forEach(function(t){
+  if(t[0]==='ods'&&!moduloVisible('ods'))return;
+  h+='<button type="button" data-vista="'+t[0]+'" style="--mod:var(--lat-marca)"'+(vista===t[0]?' aria-current="page"':'')+'>'+
+   '<span class="nv-ico">'+svgIco(t[0])+'</span><span class="nv-txt">'+esc(t[1])+'</span></button>';
+ });
+ h+='</details>';
+ n.innerHTML=h;
+ var c=$('ctx');
+ if(c){var fp=pryActual();
+  if(!fp){ c.innerHTML='<b>Sin proyecto abierto</b> · dé de alta la primera empresa'; }
+  else c.innerHTML='<span class="etq">'+esc(fp.codigo)+'</span> '+
+   (S.perfil.organizacion?('<b>'+esc(S.perfil.organizacion)+'</b> · '):(fp.empresa?('<b>'+esc(fp.empresa)+'</b> · '):''))+
+   'ciclo '+esc(S.perfil.ciclo||'sin declarar')+(S.perfil.verificado?'':' <span class="ctx-mp" title="Medición propia de la organización, sin verificación independiente">medición propia</span>');}
+}
+
+/* ====== Archivo de evidencias: qué cifra sostiene cada documento ======
+   Un documento sostiene un renglón de dos maneras: por su carpeta (las
+   facturas de 02.2.1 sostienen los combustibles) o porque se vinculó a mano
+   (la fuente de un factor, en la carpeta 03). La vinculación manual es la que
+   vale para el factor; la de carpeta, para el dato de actividad. */
+function sxLineas(){ return memo('sxl',function(){ var m={}; LINEAS_TODAS().forEach(function(x){ if(!m[x.l.id])m[x.l.id]=x; }); return m; }); }
+function sxAmb(x){ return (x&&x.cat==='finca')?'finca':'org'; }
+function arcLineasDoc(d){
+ var out={}, L=sxLineas();
+ (d.lineas||[]).forEach(function(id){ out[id]='vinculado'; });
+ var c=String(d.carpeta||'');
+ if(c.indexOf('02')===0){ Object.keys(L).forEach(function(id){ if(out[id])return; var x=L[id]; try{ if(arcCarpetaDeLinea(x.l,sxAmb(x))===c)out[id]='carpeta'; }catch(e){} }); }
+ return out;
+}
+function arcDocsDeLinea(id){
+ return memo('sxdl',function(){ var m={}; arcDocs().forEach(function(d){ var ls=arcLineasDoc(d); Object.keys(ls).forEach(function(k){ (m[k]=m[k]||[]).push({d:d,como:ls[k]}); }); }); return m; })[id]||[];
+}
+function sxDocFactor(id){ return arcDocsDeLinea(id).filter(function(x){ return x.como==='vinculado'&&String(x.d.carpeta)==='03'; }); }
+function sxDocsLinea(id){
+ var L=arcDocsDeLinea(id); if(!L.length)return '<div class="sx-docs"><h4>Documentos del archivo</h4><p class="mal">Ningún documento del archivo sostiene esta fuente. <button type="button" class="mini" data-vista="arc">Abrir el archivo</button></p></div>';
+ var vin=L.filter(function(x){return x.como==='vinculado';}), car=L.filter(function(x){return x.como==='carpeta';});
+ function li(x){ var u=driveUrl(x.d); return '<li>'+esc(x.d.nombre||'documento')+' <small>'+esc(x.d.carpeta)+(x.d.fecha?(' · '+esc(x.d.fecha)):'')+'</small>'+(u?' <a href="'+esc(u)+'" target="_blank" rel="noopener">abrir</a>':'')+'</li>'; }
+ return '<div class="sx-docs"><h4>Documentos del archivo</h4>'+
+  (vin.length?'<ul class="cx-ul">'+vin.map(li).join('')+'</ul>':'<p class="mal">Sin documento vinculado para el factor.</p>')+
+  (car.length?'<details class="cx-lista"><summary>'+plural(car.length,'documento','documentos')+' de la carpeta '+esc(car[0].d.carpeta)+'</summary><ul class="cx-ul">'+car.slice(0,60).map(li).join('')+'</ul></details>':'')+
+  '</div>';
+}
+function arcPend(){ var A=arcEstado(); A.pend=A.pend||{}; return A.pend; }
+function arcCongelados(){ var A=arcEstado(); A.congelados=A.congelados||[]; return A.congelados; }
+function arcCongelar(motivo){
+ var docs=arcDocs().map(function(d){ return [d.id,d.carpeta,d.nombre||'',(d.drive&&d.drive.id)||'',(d.adjuntos||[]).length,(d.lineas||[]).join(',')]; });
+ var X=sxDatos();
+ var c={id:uid('cg'),fecha:new Date().toISOString(),quien:quienEdita(),motivo:String(motivo||'Declaración del estudio').slice(0,200),
+  n:docs.length,total:Math.round(X.total*1000)/1000,porKg:Math.round(X.porKg*100000)/100000,docs:docs};
+ c.sello=huella(JSON.stringify([c.fecha,c.quien,c.total,docs]));
+ var L=arcCongelados(); L.push(c); while(L.length>8)L.shift();
+ marcar('gestion/archivo'); anotar('archivo','Archivo congelado para la declaración ('+c.n+' documentos, sello '+c.sello+')','',c.motivo); guardarLocal();
+ return c;
+}
+/* Pendientes de evidencia: lo que falta para que cada tonelada tenga respaldo */
+function arcPendientesLista(){
+ var X=sxDatos(), P=arcPend(), out=[];
+ X.filas.forEach(function(r){
+  if(r.tSin>0.005)out.push({k:r.id+':fact',fuente:r.et,falta:fmt(r.sinFact,2)+' '+r.un+' anotados sin factura',t:r.tSin});
+  if(!r.docFactor)out.push({k:r.id+':fac',fuente:r.et,falta:'Falta el documento de la fuente del factor (carpeta 03)',t:r.t});
+ });
+ arcDocs().forEach(function(d){
+  if(!arcTieneCopia(d))out.push({k:'doc:'+d.id,fuente:d.nombre||'documento',falta:'Documento sin copia adjunta ni enlace',t:0});
+  else if(d.estado==='pendiente')out.push({k:'doc:'+d.id,fuente:d.nombre||'documento',falta:'Documento marcado como pendiente',t:0});
+ });
+ out.forEach(function(x){ var p=P[x.k]||{}; x.resp=p.resp||''; x.fecha=p.fecha||''; x.estado=p.estado||'abierto'; x.nota=p.nota||''; });
+ out.sort(function(a,b){ return (a.estado==='resuelto')-(b.estado==='resuelto')||b.t-a.t; });
+ return out;
+}
+function vistaPendientesEvid(){
+ var L=arcPendientesLista(), ed=puedeEditar(), hoy_=hoy();
+ var ab=L.filter(function(x){return x.estado!=='resuelto';});
+ var h='<div class="tarjeta" id="arc-pend"><h3>Pendientes de evidencia <small>'+ab.length+' abiertos</small></h3><div class="cuerpo">';
+ if(!L.length)return h+'<p>No hay pendientes: cada fuente tiene factura y documento del factor.</p></div></div>';
+ h+='<p class="pista">Cada pendiente con su responsable y su fecha. Lo que no se consiga a tiempo se declara como dato estimado, con su peso en toneladas.</p>';
+ h+='<div class="cx-tabla"><table class="tabla sx-tab"><thead><tr><th>Fuente o documento</th><th>Qué falta</th><th class="n">t CO₂e</th><th>Responsable</th><th>Fecha límite</th><th>Estado</th></tr></thead><tbody>';
+ L.forEach(function(x){
+  var venc=x.fecha&&x.estado!=='resuelto'&&x.fecha<hoy_;
+  h+='<tr'+(x.estado==='resuelto'?' class="sx-ok"':'')+'><td>'+esc(x.fuente)+'</td><td>'+esc(x.falta)+'</td><td class="n">'+(x.t>0?fmt(x.t,2):'—')+'</td>'+
+   '<td><input type="text" data-arcpend="'+esc(x.k)+'" data-campo="resp" value="'+esc(x.resp)+'" placeholder="nombre"'+(ed?'':' disabled')+'></td>'+
+   '<td><input type="date" data-arcpend="'+esc(x.k)+'" data-campo="fecha" value="'+esc(x.fecha)+'"'+(ed?'':' disabled')+(venc?' class="sx-venc" title="Fecha vencida"':'')+'></td>'+
+   '<td><select data-arcpend="'+esc(x.k)+'" data-campo="estado"'+(ed?'':' disabled')+'>'+['abierto','en curso','resuelto'].map(function(o){return '<option'+(o===x.estado?' selected':'')+'>'+o+'</option>';}).join('')+'</select></td></tr>';
+ });
+ h+='</tbody></table></div></div></div>';
+ return h;
+}
+function vistaCoberturaArc(){
+ var X=sxDatos(), conDoc=0, conFac=0;
+ X.filas.forEach(function(r){ if(r.nDocs>0||r.nFact>0)conDoc+=r.t; if(r.docFactor)conFac+=r.t; });
+ var h='<div class="tarjeta"><h3>Cobertura documental de la huella</h3><div class="cuerpo">'+
+  '<dl class="cifras">'+
+  tarjetaCifra('Dato de actividad',X.total>0?fmt(conDoc/X.total*100,0)+' %':'—','de las t CO₂e con factura o registro')+
+  tarjetaCifra('Fuente del factor',X.total>0?fmt(conFac/X.total*100,0)+' %':'—','de las t CO₂e con documento en la carpeta 03')+
+  tarjetaCifra('Facturas sin conseguir',fmt(X.tSin,2),'t CO₂e anotadas sin factura')+
+  '</dl>';
+ h+='<div class="cx-tabla"><table class="tabla sx-tab"><thead><tr><th>Fuente</th><th class="n">t CO₂e</th><th class="n">Facturas</th><th class="n">Respaldo del dato</th><th>Documento del factor</th><th class="n">Documentos</th></tr></thead><tbody>'+
+  X.filas.map(function(r){ var df=sxDocFactor(r.id);
+   return '<tr><td>'+esc(r.et)+'</td><td class="n">'+fmt(r.t,2)+'</td><td class="n">'+r.nFact+'</td><td class="n'+(r.resp<95?' mal':'')+'">'+fmt(r.resp,0)+' %</td>'+
+    '<td'+(df.length?'':' class="mal"')+'>'+(df.length?esc(df.map(function(x){return x.d.nombre;}).join('; ')):'falta')+'</td><td class="n">'+r.nDocs+'</td></tr>'; }).join('')+
+  '</tbody></table></div>';
+ h+='<p class="pista">Un documento se vincula a una fuente desde su ficha, en «Fuentes que sostiene». Los de la carpeta 03 vinculados así cuentan como documento del factor.</p></div></div>';
+ return h;
+}
+function vistaCongelarArc(){
+ var L=arcCongelados(), ed=puedeEditar();
+ var h='<div class="tarjeta"><h3>Copia congelada para la declaración</h3><div class="cuerpo">'+
+  '<p>Congelar guarda la lista exacta de documentos, con su enlace y las fuentes que sostienen, junto con la huella de ese momento y un sello. El verificador revisa esa copia, aunque el archivo siga cambiando después.</p>';
+ if(L.length){
+  h+='<table class="tabla sx-tab"><thead><tr><th>Fecha</th><th>Quién</th><th>Motivo</th><th class="n">Documentos</th><th class="n">t CO₂e</th><th>Sello</th></tr></thead><tbody>'+
+   L.slice().reverse().map(function(c){ return '<tr><td>'+esc(String(c.fecha).slice(0,16).replace('T',' '))+'</td><td>'+esc(c.quien)+'</td><td>'+esc(c.motivo)+'</td><td class="n">'+c.n+'</td><td class="n">'+fmt(c.total,2)+'</td><td><code>'+esc(c.sello)+'</code></td></tr>'; }).join('')+
+   '</tbody></table>';
+ } else h+='<p class="mal">Todavía no se ha congelado ninguna copia del archivo.</p>';
+ if(ed)h+='<div class="campos"><div class="campo ancho"><label for="arc-cg-mot">Motivo</label><input id="arc-cg-mot" type="text" placeholder="Declaración del estudio CFC2026, versión para el verificador"></div></div>'+
+  '<div class="acciones"><button type="button" class="primario" data-sx="arc-congelar">Congelar el archivo ahora</button></div>';
+ return h+'</div></div>';
+}
+function arcFilaDoc(d){
+ var ls=arcLineasDoc(d), L=sxLineas(), vin=Object.keys(ls).filter(function(k){return ls[k]==='vinculado';});
+ var u=driveUrl(d), abierto=sel.arcAbierto===d.id;
+ var sost=vin.map(function(k){ return (L[k]?L[k].l.et:k); });
+ var nCar=Object.keys(ls).length-vin.length;
+ return '<tr class="'+(abierto?'sx-abierto':'')+'"><td><button type="button" class="enlace" data-sx="arc-abrir" data-id="'+esc(d.id)+'">'+esc(d.nombre||'documento sin nombre')+'</button>'+
+  (d.emisor?'<br><small>'+esc(d.emisor)+'</small>':'')+'</td>'+
+  '<td>'+esc(d.carpeta)+'</td><td>'+esc(d.fecha||d.periodo||'—')+'</td>'+
+  '<td>'+(sost.length?esc(sost.join('; ')):(nCar?'<small>'+nCar+' por carpeta</small>':'<small class="mal">sin vincular</small>'))+'</td>'+
+  '<td class="'+(d.estado==='vigente'?'sx-okt':(d.estado?'mal':''))+'">'+esc(d.estado||'—')+'</td>'+
+  '<td>'+(u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">Drive</a>':((d.adjuntos||[]).length?'adjunto':'<span class="mal">sin copia</span>'))+'</td></tr>'+
+  (abierto?'<tr><td colspan="6">'+fichaArcVinculos(d)+fichaArcDoc(d)+'</td></tr>':'');
+}
+function fichaArcVinculos(d){
+ var L=sxLineas(), X=sxDatos(), ed=puedeEditar(), set={}; (d.lineas||[]).forEach(function(k){set[k]=1;});
+ var ids=X.filas.map(function(r){return r.id;});
+ Object.keys(L).forEach(function(k){ if(set[k]&&ids.indexOf(k)<0)ids.push(k); });
+ return '<div class="tarjeta sx-vinc"><h3>Fuentes que sostiene este documento</h3><div class="cuerpo"><div class="sx-chk">'+
+  ids.map(function(k){ var x=L[k]; if(!x)return ''; return '<label><input type="checkbox" data-arclin="'+esc(d.id)+'" value="'+esc(k)+'"'+(set[k]?' checked':'')+(ed?'':' disabled')+'> '+esc(x.l.et)+'</label>'; }).join('')+
+  '</div><p class="pista">Marque las fuentes cuya cifra depende de este documento. En la Calculadora, cada fuente muestra los documentos vinculados.</p></div></div>';
+}
+
+/* ====== Intensidad y significancia ======
+   Cuánto pesa cada fuente, cuánto aporta por kilo de café oro, qué tan bueno
+   es su dato y cuánto movería el resultado cada supuesto. */
+function sxUmbrales(){ var a=numDe(S.perfil.sigAlta); return {alta:(isFinite(a)&&a>0)?a:5,baja:umbralSignificancia()}; }
+function sxDatos(){ return memo('sx',function(){
+ var P=S.prod||{}, LIM=emisionesEnLimite(P.limites), HP=huellaProducto(), U=sxUmbrales();
+ var kg=HP.prod*HP.kgU, k=(kg>0)?(HP.asig/100*1000/kg):0;
+ var CX={}; try{ cxFuentes().filas.forEach(function(x){ var c=CX[x.l.id]||(CX[x.l.id]={tSin:0,sinFact:0,nFact:0,t:0,un:x.l.un}); c.tSin+=x.tSin; c.sinFact+=x.sinFact; c.nFact+=(x.F&&x.F.n)||0; c.t+=x.t+x.t2; }); }catch(e){}
+ var L=sxLineas(), tot=LIM.total||0, acum=0, gas={co2:0,ch4f:0,ch4b:0,n2o:0,tip:0,sin:0}, tSin=0;
+ var filas=(LIM.partes||[]).slice().sort(function(a,b){return b.t-a.t;}).map(function(p){
+  var x=L[p.id], l=x?x.l:null, c=CX[p.id]||{tSin:0,sinFact:0,nFact:0,un:l?l.un:''};
+  var pct=tot>0?p.t/tot*100:0; acum+=pct;
+  var mag=pct>=U.alta?'alta':(pct>=U.baja?'media':'baja');
+  var resp=p.t>0?Math.max(0,Math.min(100,100-c.tSin/p.t*100)):100;
+  var df=sxDocFactor(p.id).length>0, niv=String(p.niv||'defecto');
+  var pts=(niv==='nacional'?2:(niv==='regional'?1:0))+(resp>=95?2:(resp>=70?1:0))+(df?1:0);
+  var cal=pts>=4?'alta':(pts>=2?'media':'baja');
+  var g={co2:0,ch4f:0,ch4b:0,n2o:0}, tipo='sin';
+  if(l){ var PG=perfilGas(l), fos;
+   try{ var r=regDe(l); fos=(r&&gasValido(r.gas))?gasFosil(r.gas,l):ch4EsFosil(l); }catch(e){ fos=true; }
+   if(PG.declarado){ tipo=PG.exacto?'exacto':'tipico';
+    g.co2=p.t*(PG.g.co2||0)/100; g.n2o=p.t*(PG.g.n2o||0)/100; if(fos)g.ch4f=p.t*(PG.g.ch4||0)/100; else g.ch4b=p.t*(PG.g.ch4||0)/100; }
+  }
+  if(tipo==='sin')gas.sin+=p.t; else { gas.co2+=g.co2; gas.ch4f+=g.ch4f; gas.ch4b+=g.ch4b; gas.n2o+=g.n2o; if(tipo==='tipico')gas.tip+=p.t; }
+  tSin+=c.tSin;
+  return {id:p.id,et:p.et||(l?l.et:p.id),cat:p.cat,t:p.t,pct:pct,acum:acum,kgkg:p.t*k,mag:mag,niv:niv,resp:resp,docFactor:df,cal:cal,pts:pts,
+   tSin:c.tSin,sinFact:c.sinFact,nFact:c.nFact,un:c.un||(l?l.un:''),nDocs:arcDocsDeLinea(p.id).length,gas:g,tipoGas:tipo};
+ });
+ var bio=0; try{ (co2Biogenico().filas||[]).forEach(function(f){ bio+=nv(f.t)||0; }); }catch(e){}
+ return {filas:filas,total:tot,k:k,porKg:tot*k,porU:HP.porU,unidad:HP.unidad,kg:kg,HP:HP,U:U,gas:gas,bio:bio,tSin:tSin};
+}); }
+var SX_SENS=[
+ {id:'comp',nom:'Factor de CH₄ y N₂O del compostaje',lin:['compostaje','compostaje_cascarilla'],lo:(0.03*27+0.06*273)/173.52,hi:(8*27+0.6*273)/173.52,
+  fue:'IPCC 2006, vol. 5, cuadro 4.1, base húmeda: CH₄ 0,03 a 8 g/kg y N₂O 0,06 a 0,6 g/kg (valor usado 4 y 0,24)'},
+ {id:'bioc',nom:'CH₄ y N₂O de la combustión de leña y casulla',lin:['lena_secado','cascarilla'],lo:(100*27+1.5*273)/(300*27+4*273),hi:(900*27+15*273)/(300*27+4*273),
+  fue:'IPCC 2006, vol. 2, cuadro 2.5: CH₄ 100 a 900 y N₂O 1,5 a 15 kg/TJ (valor usado 300 y 4)'},
+ {id:'n2of',nom:'Factor EF1 del N₂O del compost en fincas',lin:['n_compost_fincas'],lo:(0.001*44/28*273+2.394)/6.684,hi:(0.018*44/28*273+2.394)/6.684,
+  fue:'IPCC, Refinamiento 2019, vol. 4, cuadro 11.1: EF1 0,001 a 0,018 (valor usado 0,010)'},
+ {id:'elec',nom:'Factor de la red eléctrica',lin:['elec_org','elec_exp','elec_finca'],alt:0.652,
+  fue:'0,6092 (Secretaría de Energía, 2018) frente a 0,652 t CO₂e/MWh calculado del Balance Energético Nacional 2023'},
+ {id:'mar',nom:'Distancia del flete marítimo',lin:['tm_maritimo'],lo:0.85,hi:1.15,fue:'±15 % hasta tener la distancia del conocimiento de embarque'},
+ {id:'mcf',nom:'MCF de las lagunas de aguas mieles',lin:['aguas_mieles'],lo:1,hi:0.8/0.3,fue:'IPCC 2006, vol. 5, cuadro 6.3: 0,3 laguna poco profunda, 0,8 laguna profunda'},
+ {id:'dqo',nom:'DQO de las aguas mieles',lin:['aguas_mieles'],lo:3/15,hi:1,fue:'IPCC 2006, vol. 5, cuadro 6.9: café 3 a 15 kg DQO/m³, a la espera del análisis de la FHIA'},
+ {id:'yute',nom:'Fabricación del saco de yute',lin:['yute'],lo:0.566/1.566,hi:2.566/1.566,fue:'Hilado y tejido supuesto en 1,0 kg CO₂e/kg; rango de 0 a 2 hasta tener la EPD'}
+];
+function sxSensibilidad(){
+ var X=sxDatos(), T={}; X.filas.forEach(function(r){T[r.id]=r.t;});
+ return SX_SENS.map(function(s){
+  var t=0; s.lin.forEach(function(id){ t+=T[id]||0; }); if(!(t>0))return null;
+  var lo=s.lo, hi=s.hi;
+  if(s.alt){ var x=sxLineas()[s.lin.filter(function(id){return T[id];})[0]], f=0; try{ f=origenFactor(x.l).f; }catch(e){}
+   if(!(f>0))return null; var r=s.alt/f; lo=Math.min(1,r); hi=Math.max(1,r); }
+  var dLo=t*(lo-1), dHi=t*(hi-1);
+  return {s:s,t:t,dLo:dLo,dHi:dHi,kLo:(X.total+dLo)*X.k,kHi:(X.total+dHi)*X.k};
+ }).filter(Boolean).sort(function(a,b){ return (b.dHi-b.dLo)-(a.dHi-a.dLo); });
+}
+function sxNivChip(m){ return '<span class="sx-niv sx-'+m+'">'+m+'</span>'; }
+function sxCalChip(c){ return '<span class="sx-cal sx-c'+c+'">'+c+'</span>'; }
+function vistaSignificancia(){
+ var X=sxDatos(), U=X.U, ed=puedeEditar(), P=S.prod||{};
+ var h=cabModulo('sig','<p class="vista-sub">Cuánto pesa cada fuente en la huella, cuánto aporta por kilo de café oro, qué tan sólido es su dato y cuánto cambiaría el resultado si cambia cada supuesto.</p>');
+ if(!(X.total>0))return h+'<p class="rep-p">Todavía no hay emisiones calculadas dentro del límite del estudio.</p>';
+ h+='<dl class="cifras">'+
+  tarjetaCifra('Intensidad',X.kg>0?fmt(X.porKg,3):'—','kg CO₂e por kg de café oro')+
+  tarjetaCifra('Por unidad',X.kg>0?fmt(X.porU,2):'—','kg CO₂e por '+esc(X.unidad))+
+  tarjetaCifra('Emisiones en el límite',fmt(X.total,2),'t CO₂e')+
+  tarjetaCifra('CO₂ biogénico',fmt(X.bio,1),'t, se informa aparte y no se suma')+
+  '</dl>';
+ /* 1 · por fuente */
+ var nA=X.filas.filter(function(r){return r.mag==='alta';});
+ var pA=nA.reduce(function(a,r){return a+r.pct;},0);
+ h+='<div class="tarjeta"><h3>Significancia por fuente</h3><div class="cuerpo">'+
+  '<p>'+plural(nA.length,'fuente significativa reúne','fuentes significativas reúnen')+' el '+fmt(pA,1)+' % de la huella. Nivel alto: '+fmt(U.alta,0)+' % o más del total; medio: de '+fmt(U.baja,0)+' % a '+fmt(U.alta,0)+' %; bajo: menos de '+fmt(U.baja,0)+' %.</p>'+
+  '<div class="cx-tabla"><table class="tabla sx-tab"><thead><tr><th>Fuente</th><th class="n">t CO₂e</th><th class="n">%</th><th class="n">Acumulado</th><th class="n">kg CO₂e/kg oro</th><th>Nivel</th><th>Calidad del dato</th></tr></thead><tbody>'+
+  X.filas.map(function(r){ return '<tr><td>'+esc(r.et)+'</td><td class="n">'+fmt(r.t,2)+'</td><td class="n">'+fmt(r.pct,1)+'</td><td class="n">'+fmt(r.acum,0)+' %</td><td class="n">'+fmt(r.kgkg,4)+'</td><td>'+sxNivChip(r.mag)+'</td><td>'+sxCalChip(r.cal)+'</td></tr>'; }).join('')+
+  '<tr class="sx-tot"><td>Total</td><td class="n">'+fmt(X.total,2)+'</td><td class="n">100</td><td></td><td class="n">'+fmt(X.porKg,4)+'</td><td></td><td></td></tr>'+
+  '</tbody></table></div>'+
+  '<div class="campos" style="margin-top:10px">'+campo('Umbral de nivel alto, % del total','perfil.sigAlta','number',U.alta)+campo('Umbral de significancia, % del total','perfil.significancia','number',U.baja)+'</div>'+
+  '<p class="pista">Calidad del dato: suma el nivel del factor (nacional 2, regional 1, por defecto 0), el respaldo del dato con factura (95 % o más 2, 70 % o más 1) y si la fuente del factor está documentada en el archivo (1). Alta de 4 a 5, media de 2 a 3, baja de 0 a 1.</p>'+
+  '</div></div>';
+ /* 2 · matriz */
+ var celdas={}; X.filas.forEach(function(r){ (celdas[r.mag+'|'+r.cal]=celdas[r.mag+'|'+r.cal]||[]).push(r); });
+ var cons={'alta|baja':'Prioridad: medir o documentar','alta|media':'Mejorar el dato','alta|alta':'Mantener y vigilar','media|baja':'Mejorar cuando se pueda','media|media':'Revisar en el ciclo','media|alta':'Correcto','baja|baja':'Basta declararlo','baja|media':'Correcto','baja|alta':'Correcto'};
+ h+='<div class="tarjeta"><h3>Matriz de significancia: magnitud frente a calidad del dato</h3><div class="cuerpo"><div class="sx-matriz">'+
+  '<div class="sx-mc sx-mh"></div><div class="sx-mc sx-mh">Calidad baja</div><div class="sx-mc sx-mh">Calidad media</div><div class="sx-mc sx-mh">Calidad alta</div>';
+ ['alta','media','baja'].forEach(function(m){
+  h+='<div class="sx-mc sx-mh">Magnitud '+m+'</div>';
+  ['baja','media','alta'].forEach(function(c){ var L=celdas[m+'|'+c]||[];
+   h+='<div class="sx-mc sx-q-'+m+'-'+c+'"><small>'+esc(cons[m+'|'+c])+'</small>'+L.map(function(r){return '<span class="sx-chip" title="'+fmt(r.t,2)+' t CO₂e">'+esc(r.et)+'</span>';}).join('')+'</div>'; });
+ });
+ h+='</div><p class="pista">El cuadrante de arriba a la izquierda es donde el verificador mira primero: fuentes que pesan mucho y se apoyan en un dato débil.</p></div></div>';
+ /* 3 · por gas */
+ var G=X.gas, gt=X.total||1;
+ h+='<div class="tarjeta"><h3>Emisiones por gas</h3><div class="cuerpo"><div class="cx-tabla"><table class="tabla sx-tab"><thead><tr><th>Gas</th><th class="n">t CO₂e</th><th class="n">%</th><th class="n">kg CO₂e/kg oro</th></tr></thead><tbody>'+
+  [['CO₂ fósil',G.co2],['CH₄ fósil',G.ch4f],['CH₄ biogénico',G.ch4b],['N₂O',G.n2o],['Sin desglose por gas',G.sin]].map(function(x){ return '<tr><td>'+x[0]+'</td><td class="n">'+fmt(x[1],2)+'</td><td class="n">'+fmt(x[1]/gt*100,1)+'</td><td class="n">'+fmt(x[1]*X.k,4)+'</td></tr>'; }).join('')+
+  '<tr class="sx-tot"><td>Total</td><td class="n">'+fmt(X.total,2)+'</td><td class="n">100</td><td class="n">'+fmt(X.porKg,4)+'</td></tr>'+
+  '<tr><td>CO₂ biogénico (informado aparte)</td><td class="n">'+fmt(X.bio,2)+'</td><td class="n">—</td><td class="n">'+fmt(X.bio*X.k,4)+'</td></tr>'+
+  '</tbody></table></div>';
+ var sinD=X.filas.filter(function(r){return r.tipoGas==='sin';}), tip=X.filas.filter(function(r){return r.tipoGas==='tipico';});
+ if(sinD.length)h+='<p class="aviso">Sin desglose por gas: '+esc(sinD.map(function(r){return r.et;}).join(', '))+'. Declare el factor por gas en «Factores de emisión» para repartirlas.</p>';
+ if(tip.length)h+='<p class="pista">Con perfil típico, no declarado: '+esc(tip.map(function(r){return r.et;}).join(', '))+'.</p>';
+ h+='</div></div>';
+ /* 4 · sensibilidad */
+ var SS=sxSensibilidad(), mx=SS.reduce(function(a,x){return Math.max(a,Math.abs(x.dLo),Math.abs(x.dHi));},0.0001);
+ h+='<div class="tarjeta"><h3>Análisis de sensibilidad por supuesto <small class="cl">ISO 14067, 6.4.6 y 6.6</small></h3><div class="cuerpo">'+
+  '<p>Cuánto cambia la huella si cada supuesto se mueve dentro de su rango publicado, uno a la vez. Las barras están ordenadas de mayor a menor efecto.</p><div class="sx-torn">';
+ SS.forEach(function(x){
+  h+='<div class="sx-tf"><span class="sx-tn">'+esc(x.s.nom)+'</span><span class="sx-tb"><i class="sx-neg" style="width:'+(Math.abs(x.dLo)/mx*50).toFixed(1)+'%"></i><i class="sx-pos" style="width:'+(Math.abs(x.dHi)/mx*50).toFixed(1)+'%"></i></span>'+
+   '<span class="sx-tv">'+fmt(x.dLo,1)+' / +'+fmt(x.dHi,1)+' t<br><small>'+fmt(x.kLo,3)+' a '+fmt(x.kHi,3)+' kg/kg</small></span></div>';
+ });
+ h+='</div><table class="tabla sx-tab" style="margin-top:10px"><thead><tr><th>Supuesto</th><th>Rango y fuente</th></tr></thead><tbody>'+SS.map(function(x){return '<tr><td>'+esc(x.s.nom)+'</td><td>'+esc(x.s.fue)+'</td></tr>';}).join('')+'</tbody></table></div></div>';
+ /* 5 · por destino y presentación */
+ var PC=null; try{ PC=presentacionesCalc(); }catch(e){}
+ h+='<div class="tarjeta"><h3>Huella por destino y presentación</h3><div class="cuerpo">';
+ if(PC&&PC.res&&PC.res.length){
+  h+='<p>La huella es común hasta el puerto de embarque ('+fmt(PC.base,3)+' kg CO₂e/kg); cambian el empaque y el flete marítimo de cada destino.</p>'+
+   '<div class="cx-tabla"><table class="tabla sx-tab"><thead><tr><th>Presentación</th><th>Destino</th><th class="n">Hasta embarque</th><th class="n">Empaque</th><th class="n">Flete</th><th class="n">kg CO₂e/kg</th><th class="n">Por unidad</th></tr></thead><tbody>'+
+   PC.res.map(function(x){ return '<tr><td>'+esc(x.pres.nom||'')+'</td><td>'+esc(x.dest.nom||'')+'</td><td class="n">'+fmt(x.base,3)+'</td><td class="n">'+fmt(x.emp,3)+'</td><td class="n">'+fmt(x.flete,3)+'</td><td class="n"><b>'+fmt(x.tot,3)+'</b></td><td class="n">'+fmt(x.porU,1)+' kg</td></tr>'; }).join('')+
+   '</tbody></table></div><p class="pista">La venta nacional no lleva flete marítimo: su huella es la de embarque más su empaque. Presentaciones y destinos se editan en el Estudio ISO 14067.</p>';
+ } else h+='<p>Declare las presentaciones de venta y los destinos en el Estudio ISO 14067 para ver la huella de cada una.</p>';
+ h+='<div class="acciones"><button type="button" class="mini" data-vista="hcp">Editar presentaciones y destinos</button></div></div></div>';
+ /* 6 · asignación */
+ var kgN=numDe(P.ventaNacionalKg), tMar=0; X.filas.forEach(function(r){ if(r.id==='tm_maritimo')tMar+=r.t; });
+ h+='<div class="tarjeta"><h3>Asignación declarada <small class="cl">ISO 14067, 6.4.6</small></h3><div class="cuerpo">'+
+  '<p>Regla: <b>'+esc(P.asignacion||'Por masa, valor por defecto sin confirmar')+'</b> · '+fmt(X.HP.asig,0)+' % al café oro · producción base: '+fmt(X.kg/1000,1)+' t de café oro.</p>'+
+  '<p>Coproductos declarados: '+esc(pv('asig_coproductos','sin declarar'))+'</p>'+
+  '<div class="campos">'+campo('Café oro vendido en el mercado nacional en el período (kg)','prod.ventaNacionalKg','number',P.ventaNacionalKg==null?'':P.ventaNacionalKg)+'</div>';
+ if(isFinite(kgN)&&kgN>0&&X.kg>0){
+  var base=(X.total-tMar)*X.HP.asig/100*1000, kEx=base/X.kg, kTo=base/(X.kg+kgN);
+  h+='<p class="aviso">Si la venta nacional pasó por la misma planta, el denominador debe incluirla o asignarse una parte de las emisiones. Hasta el puerto de embarque, la intensidad pasa de '+fmt(kEx,3)+' a '+fmt(kTo,3)+' kg CO₂e/kg ('+fmt((kTo/kEx-1)*100,1)+' %). Declare la decisión en el Estudio ISO 14067.</p>';
+ } else h+='<p class="pista">Si parte del café se vendió en el país (OG, LDC) después de pasar por la misma planta, anote aquí los kilos para ver su efecto en la intensidad.</p>';
+ h+='<div class="acciones"><button type="button" class="mini" data-vista="hcp">Abrir la sección de asignación</button></div></div></div>';
+ return h;
+}
+function sxFilasInforme(){ var X=sxDatos(); return X.filas.map(function(r){ return [r.et,fmt(r.t,3),fmt(r.pct,1)+' %',fmt(r.kgkg,4),r.mag,r.cal]; }); }
+function sxSensInforme(){ return sxSensibilidad().map(function(x){ return [x.s.nom,x.s.fue,fmt(x.dLo,2)+' a +'+fmt(x.dHi,2),fmt(x.kLo,3)+' a '+fmt(x.kHi,3)]; }); }
+
+/* ====== Lista de cierre ISO 14067 ======
+   Lo que la norma pide antes de declarar, con su estado. Sustituye al
+   porcentaje del estudio, que no decía qué faltaba. */
+function listaCierre(){ return memo('lcierre',function(){
+ var out=[], C=null;
+ try{ C=presentacionesCalc(); revisionPresentaciones(C).forEach(function(x){ out.push({cl:x.cl,t:x.t,estado:x.estado==='ok'?'ok':(x.estado==='falta'?'falta':'aviso'),nota:x.nota,ir:'hcp'}); }); }catch(e){}
+ var X=sxDatos(), P=S.prod||{};
+ out.push({cl:'6.3.6',t:'Período del estudio declarado',estado:(pv('per_inicio')&&pv('per_fin'))?'ok':'falta',nota:(pv('per_inicio')||'?')+' a '+(pv('per_fin')||'?'),ir:'hcp'});
+ out.push({cl:'6.4.9.2',t:'Cambio directo de uso del suelo evaluado',estado:pv('dluc')?'ok':'aviso',nota:pv('dluc','sin declarar'),ir:'hcp'});
+ out.push({cl:'6.4.9.4',t:'CO₂ biogénico informado aparte, sin sumarlo',estado:X.bio>0?'ok':'aviso',nota:fmt(X.bio,1)+' t de CO₂ biogénico informadas por separado.',ir:'sig'});
+ var debil=X.filas.filter(function(r){return r.mag==='alta'&&r.cal==='baja';});
+ out.push({cl:'6.3.5',t:'Fuentes significativas con dato de calidad suficiente',estado:debil.length?'aviso':'ok',nota:debil.length?('Magnitud alta y calidad baja: '+debil.map(function(r){return r.et;}).join(', ')+'.'):'Ninguna fuente significativa con dato débil.',ir:'sig'});
+ var ab=arcPendientesLista().filter(function(x){return x.estado!=='resuelto';});
+ out.push({cl:'M3.6',t:'Evidencia recuperable de cada dato',estado:X.tSin>0.005?'aviso':(ab.length?'aviso':'ok'),nota:fmt(X.tSin,2)+' t CO₂e sin factura · '+plural(ab.length,'pendiente abierto','pendientes abiertos')+'.',ir:'arc'});
+ out.push({cl:'7',t:'Archivo de evidencias congelado para la declaración',estado:arcCongelados().length?'ok':'aviso',nota:arcCongelados().length?('Última copia: '+String(arcCongelados()[arcCongelados().length-1].fecha).slice(0,10)):'Sin copia congelada.',ir:'arc'});
+ var ok=out.filter(function(x){return x.estado==='ok';}).length;
+ return {items:out,ok:ok,total:out.length};
+}); }
+function tarjetaListaCierre(){
+ var LC=listaCierre();
+ return '<div class="tarjeta"><h3>Lista de cierre ISO 14067 <small>'+LC.ok+' de '+LC.total+' listos</small></h3><div class="cuerpo"><ul class="sx-cierre">'+
+  LC.items.map(function(x){ return '<li class="sx-e-'+x.estado+'"><span class="sx-ei">'+(x.estado==='ok'?'✓':(x.estado==='falta'?'✕':'!'))+'</span><span><b>'+esc(x.t)+'</b> <small>'+esc(x.cl)+'</small><br><small>'+esc(String(x.nota||'').slice(0,240))+'</small></span>'+
+   '<button type="button" class="mini" data-vista="'+x.ir+'">Ir</button></li>'; }).join('')+'</ul></div></div>';
+}
+function tarjetaSignifPanel(){
+ var X=sxDatos(); if(!(X.total>0))return '';
+ var top=X.filas.slice(0,5);
+ return '<div class="tarjeta"><h3>Lo que más pesa en la huella</h3><div class="cuerpo">'+
+  top.map(function(r){ return barraH(r.et,r.t,top[0].t,'var(--m6)',fmt(r.pct,1)+' % · '+fmt(r.kgkg,3)+' kg/kg · calidad '+r.cal); }).join('')+
+  '<div class="acciones"><button type="button" class="mini" data-vista="sig">Intensidad y significancia</button></div></div></div>';
+}
+
+/* ====== eventos propios ====== */
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-sx]'); if(!b)return;
+ var a=b.dataset.sx;
+ if(a==='arc-abrir'){ sel.arcAbierto=(sel.arcAbierto===b.dataset.id)?null:b.dataset.id; pintar(); return; }
+ if(a==='arc-congelar'){ if(!puedeEditar())return; var m=($('arc-cg-mot')||{}).value||''; var c=arcCongelar(m); msg('Archivo congelado: '+c.n+' documentos, sello '+c.sello); pintar(); return; }
+});
+document.addEventListener('change',function(ev){
+ var t=ev.target; if(!t||!t.dataset)return;
+ if(t.dataset.arcpend){ if(!puedeEditar())return; var P=arcPend(), k=t.dataset.arcpend, p=P[k]||(P[k]={});
+  var antes=p[t.dataset.campo]||''; p[t.dataset.campo]=t.value; p._m=Date.now(); p.quien=quienEdita();
+  marcar('gestion/archivo'); anotar('dato','Pendiente de evidencia · '+k+' · '+t.dataset.campo,antes,t.value); guardarLocal(); return; }
+ if(t.dataset.arclin){ if(!puedeEditar())return; var d=arcDe(t.dataset.arclin); if(!d)return;
+  var L=d.lineas||[], v=t.value, antes2=L.join(',');
+  if(t.checked){ if(L.indexOf(v)<0)L.push(v); } else L=L.filter(function(x){return x!==v;});
+  d.lineas=L; marcar('gestion/archivo'); anotar('dato','Archivo · '+(d.nombre||'documento')+' · fuentes que sostiene',antes2,L.join(',')); guardarLocal(); return; }
+});
+
 function pintarBase(){
  /* la memoria de cálculo vive dentro de una sola pintada y no sobrevive a la
     siguiente, de modo que no puede quedar desfasada respecto del estado */
@@ -26996,6 +27434,7 @@ function pintarBase(){
  else if(vista==='apr')$('v-apr').innerHTML=vistaAprender();
  else if(vista==='org')$('v-org').innerHTML=vistaOrganizaciones();
  else if(vista==='calc')$('v-calc').innerHTML=vistaCalculadora();
+ else if(vista==='sig')$('v-sig').innerHTML=vistaSignificancia();
  else if(vista==='ing')$('v-ing').innerHTML=vistaIngreso();
  else if(vista==='per')$('v-per').innerHTML=vistaPerfil();
  else if(vista==='hcp')$('v-hcp').innerHTML=vistaEstudio();
