@@ -1936,6 +1936,10 @@ button.mini.peligro{color:#9b2c2c;border-color:#d9a5a5}
 .sx-abierto td{background:#f6f6f0}.sx-okt{color:#3b6d11}.sx-ok td{opacity:.6}.sx-venc{border-color:#a32d2d!important;color:#a32d2d}
 button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;text-align:left}
 
+.ici-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.ici-fig{margin:6px 0 12px}.ici-fig figcaption{font-size:12.5px;color:#5f6b66;text-align:center;font-style:italic}
+.ici-indice{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 14px;margin:0 0 14px;font-size:13px}.ici-indice a{color:inherit;text-decoration:none;padding:3px 0;border-bottom:1px dotted #ccc}.ici-indice a.ok{color:#3b6d11}
+.ici-sec textarea{width:100%;font:15px/1.55 "Times New Roman",Times,serif;text-align:justify;padding:8px}.ici-h4{margin:12px 0 4px}
+.ici-est{font-size:15px;padding:2px 10px;border-radius:6px}.ici-BORRADOR{background:#eeeee8}.ici-EN_REVISION{background:#faeeda;color:#633806}.ici-APROBADO{background:#eaf3de;color:#27500a}
 </style>
 <style id="cx-estilos">
 .arc-arbol{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}.arc-grupo{border:1px solid var(--borde,#d9d4c7);border-radius:10px;padding:8px}.arc-gt{font-weight:700;font-size:.85rem;margin-bottom:6px}.arc-c{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:transparent;border:0;border-radius:6px;padding:5px 6px;font-size:.85rem;cursor:pointer}.arc-c:hover{background:rgba(0,0,0,.05)}.arc-c.activo{background:var(--m8,#e6efe9);font-weight:700}.arc-c b{font-variant-numeric:tabular-nums;opacity:.75}
@@ -2047,6 +2051,8 @@ button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text
    <section id="v-org" hidden></section>
    <section id="v-calc" hidden></section>
    <section id="v-sig" hidden></section>
+   <section id="v-ici" hidden></section>
+   <section id="v-fot" hidden></section>
    <section id="v-ing" hidden></section>
    <section id="v-per" hidden></section>
    <section id="v-hcp" hidden></section>
@@ -2566,7 +2572,7 @@ function puedeEditar(){
     bloquea es sacar lo capturado: el respaldo, los informes y la entrega al
     verificador no pasan por aquí. */
  if(licBloquea())return false;
- if(SES&&(SES.rol==='tecnico'||SES.rol==='auditor'||SES.rol==='lector'))return false;
+ if(SES&&(SES.rol==='tecnico'||SES.rol==='auditor'||SES.rol==='aprobador'||SES.rol==='lector'))return false;
  return !db||modo==='edicion';
 }
 function puedeGestionar(){
@@ -2717,7 +2723,7 @@ async function subirLocalACentral(){
  if(PRY&&!S.demo&&!v['p:'+PRY]&&hayDatos()){
   ['org/perfil','beneficio/actual','ods/declaracion','bitacora/registro','nc/registro','gestion/declaraciones',
    'gestion/muestreo','gestion/cargas','gestion/archivo','gestion/nivel3','gestion/cultivo','gestion/cohortes','gestion/control',
-   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo','gestion/factores','captura/registros'].forEach(function(r){pendientes[r]=true;});
+   'gestion/instrumentos','gestion/medidores','gestion/calidad','gestion/transporte','gestion/recalculo','gestion/factores','gestion/ici','captura/registros'].forEach(function(r){pendientes[r]=true;});
   S.fincas.forEach(function(x){ pendientes['fincas/'+x.id]=true; pendientes['insumos/'+x.id]=true; });
   S.parcelas.forEach(function(x){ pendientes['parcelas/'+x.id]=true; });
   S.podas.forEach(function(x){ pendientes['podas/'+x.id]=true; });
@@ -5459,6 +5465,7 @@ function contenedor(ref){
  if(p[0]==='poda'){var d=S.podas.find(function(x){return x.id===p[1];}); return d?{obj:d,ruta:'podas/'+d.id}:null;}
  if(p[0]==='contrato'){var ct=contratoDe(p[1]); return ct?{obj:ct,ruta:'gestion/declaraciones'}:null;}
  if(p[0]==='arcdoc'){var ad=arcDe(p[1]); return ad?{obj:ad,ruta:'gestion/archivo'}:null;}
+ if(p[0]==='area'){ var Ar=areasH(); Ar[p[1]]=Ar[p[1]]||{}; return {obj:Ar[p[1]],ruta:'gestion/archivo'}; }
  if(p[0]==='cdoc'){var cd=clReg(p[1],true); return {obj:cd,ruta:'gestion/archivo'};}
  if(p[0]==='perdoc'){ return {obj:perDocs(),ruta:'org/perfil'}; }
  if(p[0]==='arbol'){var q2=S.parcelas.find(function(x){return x.id===p[1];}); if(!q2)return null;
@@ -5499,6 +5506,7 @@ function adjuntosTodos(){
  porLinea(S.beneficio,'org',null,'Beneficio');
  ((S.archivo&&S.archivo.libres)||[]).forEach(function(r){ (r.adjuntos||[]).forEach(function(a){ t.push({a:a,ref:'cdoc:'+r.id,donde:'Carpeta de documentos · '+((CL_GRUPOS[r.grupo]&&CL_GRUPOS[r.grupo].t)||'')+' '+r.carpeta}); }); });
  ((S.perfil&&S.perfil.docsPres&&S.perfil.docsPres.adjuntos)||[]).forEach(function(a){ t.push({a:a,ref:'perdoc:pres',donde:'Perfil de la organización · documentos de presentación'}); });
+ var Aa=(S.archivo&&S.archivo.areas)||{}; Object.keys(Aa).forEach(function(k){ (Aa[k].adjuntos||[]).forEach(function(a){ t.push({a:a,ref:'area:'+k,donde:'Evidencia fotográfica · '+k}); }); });
  return t;
 }
 
@@ -5765,6 +5773,10 @@ var MODULOS=[
   des:'El resumen del ciclo, la descarga, el respaldo y el cierre.'},
  {id:'calc',scol:'s6',codigo:'MOD-CALC',nom:'Calculadora',col:'m6',etapa:'cerrar',paso:15,
   des:'La huella por presentación de venta y destino, con el camino completo del cálculo por etapa.'},
+ {id:'ici',scol:'s8',codigo:'MOD-ICI',nom:'Informe interno de control',col:'m8',etapa:'cerrar',paso:15.8,
+  des:'Revisión interna del estudio por secciones, con firmas de quien elabora, revisa y aprueba, dictamen y acta de aprobación interna.'},
+ {id:'fot',scol:'s7',codigo:'MOD-FOT',nom:'Evidencia fotográfica',col:'m7',etapa:'campo',paso:11.5,
+  des:'Fotografías y verificación de cada área del alcance de la medición, con fecha, autor y coordenada.'},
  {id:'sig',scol:'s6',codigo:'MOD-SIG',nom:'Intensidad y significancia',col:'m6',etapa:'cerrar',paso:15.5,
   des:'Cuánto pesa cada fuente, su intensidad por kilo de café oro, la calidad de su dato, el reparto por gas, la sensibilidad a cada supuesto y la huella por destino.'},
  {id:'inf',scol:'s8',codigo:'MOD-INF',nom:'Informe del estudio ISO 14067',col:'m8',etapa:'cerrar',paso:16,
@@ -5818,6 +5830,8 @@ function modulo(id){for(var i=0;i<MODULOS.length;i++)if(MODULOS[i].id===id)retur
 function nomMod(m){return (m&&m.id==='pry'&&proyectoBloqueado())?'La empresa':(m?m.nom:'');}
 function datoModulo(m){
  var R=resumenGlobal();
+ if(m.id==='ici'){ var Ii=ici(); return [ICI_EST[Ii.flujo.estado],'versión '+String(Ii.flujo.version||0).padStart(2,'0'),Ii.flujo.estado==='APROBADO']; }
+ if(m.id==='fot'){ var Af=areasH(), nf=AREAS_HUELLA.filter(function(a){return (Af[a[0]].adjuntos||[]).length;}).length; return [nf+'/'+AREAS_HUELLA.length,'áreas con fotografía',nf===AREAS_HUELLA.length]; }
  if(m.id==='sig'){ var Xs=sxDatos(); var na=Xs.filas.filter(function(r){return r.mag==='alta';}).length; return [String(na),'fuentes significativas',Xs.total>0]; }
  if(m.id==='arc'){ return [String(arcDocs().length),'documentos en el archivo',arcDocs().length>0]; }
  if(m.id==='calc'){ var Hc=huellaProducto(); return [Hc.prod>0?fmt(Hc.porKg,2):'—','kg CO₂e por kg',Hc.prod>0]; }
@@ -6226,7 +6240,7 @@ function pintarSesion(){
  var f=pryActual();
  var ini=String(SES.usuario||'?').trim().split(/\s+/).slice(0,2).map(function(x){return x.charAt(0);}).join('').toUpperCase();
  e.innerHTML='<span class="ses-av" aria-hidden="true">'+esc(ini)+'</span><span class="ses-quien"><b>'+esc(SES.usuario)+'</b>'+
-  '<span class="ses-rol">'+(SES.tipo==='portal'?'portal':({responsable:'responsable',tecnico:'campo',auditor:'auditor',lector:'consulta'}[SES.rol]||'campo'))+'</span></span>'+
+  '<span class="ses-rol">'+(SES.tipo==='portal'?'portal':({responsable:'responsable',tecnico:'campo',auditor:'auditor',aprobador:'aprobador',lector:'consulta'}[SES.rol]||'campo'))+'</span></span>'+
   (SES.tipo==='proyecto'&&f?('<span class="ses-quien" style="font-size:10.5px">'+esc(f.codigo)+'</span>'):'')+
   '<button type="button" class="mini" data-accion="acc-salir">Cerrar sesión</button>';
 }
@@ -6270,6 +6284,7 @@ function docDe(ruta){
  if(ruta==='gestion/muestreo')return {muestreo:S.muestreo||null,proy:S.proy||{}};
  if(ruta==='gestion/cargas')return {cargas:S.cargas||[]};
  if(ruta==='gestion/archivo')return {archivo:S.archivo||{docs:[]}};
+ if(ruta==='gestion/ici')return {ici:S.ici||{}};
  if(ruta==='gestion/nivel3')return {n3:n3()};
  if(ruta==='gestion/cultivo')return {cultivo:cultivo()};
  if(ruta==='gestion/cohortes')return {cohortes:cohortes()};
@@ -6408,7 +6423,7 @@ async function cargarDeLaBase(){
   var GES=[['gestion/nivel3','n3'],['gestion/cultivo','cultivo'],['gestion/cohortes','cohortes'],
    ['gestion/control','control'],['gestion/instrumentos','instrumentos'],['gestion/medidores','medidores'],
    ['gestion/calidad','calidad'],['gestion/transporte','transporte'],['gestion/recalculo','recalculo'],
-   ['gestion/muestreo','muestreo'],['gestion/cargas','cargas'],['gestion/factores','factores']];
+   ['gestion/muestreo','muestreo'],['gestion/cargas','cargas'],['gestion/factores','factores'],['gestion/ici','ici']];
   for(var ig=0;ig<GES.length;ig++){
    try{
     var dg=await db.doc(dbr(GES[ig][0])).get();
@@ -7279,7 +7294,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['calc','sig','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['calc','sig','ici','fot','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 var VISTA_HIST=[];
 function ir(v,atras){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
@@ -11160,7 +11175,7 @@ function repFuentes(){
 }
 
 /* ====== roles ====== */
-var ROLES=[['tecnico','Capturar en campo'],['responsable','Editar todo'],['auditor','Auditor interno: ver todo y registrar hallazgos'],['lector','Solo consulta']];
+var ROLES=[['tecnico','Capturar en campo'],['responsable','Editar todo'],['auditor','Auditor interno: ver todo y registrar hallazgos'],['aprobador','Aprobar informes: consulta y firma de aprobación'],['lector','Solo consulta']];
 function rolNom(r){ for(var i=0;i<ROLES.length;i++)if(ROLES[i][0]===r)return ROLES[i][1]; return 'Capturar en campo'; }
 function opcionesRol(){ return ROLES.map(function(x){return '<option value="'+x[0]+'">'+esc(x[1])+'</option>';}).join(''); }
 
@@ -27021,6 +27036,477 @@ function ponSubpestanas(){
    capturar datos y revisar resultados. Las pantallas que antes eran módulos
    sueltos viven ahora como pestañas dentro de la entrada que les corresponde;
    ninguna ruta se borra. */
+ICO.ici='<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13l2 2 3.5-4"/>';
+ICO.fot='<path d="M4 8.5h3.2L9 6h6l1.8 2.5H20v10H4Z"/><circle cx="12" cy="13" r="3.2"/>';
+/* ====== Gráficos para pantalla e impresión (SVG, sin bibliotecas) ====== */
+var SVG_COL=['#1f3a5f','#2f6f8a','#3b8e6b','#8a9a3b','#c9993d','#b8452f','#7a5c99','#5f6b66','#4f86b5','#a8741a','#3c6e47','#9a3f5f'];
+function svgBarras(items,o){
+ o=o||{}; var W=o.ancho||640, et=o.et||220, fila=o.fila||24, val=o.val||86, H=items.length*fila+8;
+ var mx=Math.max.apply(null,items.map(function(x){return Math.abs(x.v)||0;}).concat([1e-9]));
+ var area=W-et-val;
+ var h='<svg class="svg-g" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="'+esc(o.titulo||'Gráfico de barras')+'" style="font-family:Arial,Helvetica,sans-serif">';
+ items.forEach(function(x,i){
+  var y=4+i*fila, w=Math.max(1,(Math.abs(x.v)||0)/mx*area), c=x.color||SVG_COL[i%SVG_COL.length];
+  h+='<text x="'+(et-8)+'" y="'+(y+fila/2+4)+'" text-anchor="end" font-size="11" fill="#1d2522">'+esc(String(x.et).slice(0,40))+'</text>'+
+   '<rect x="'+et+'" y="'+(y+3)+'" width="'+w.toFixed(1)+'" height="'+(fila-8)+'" rx="2" fill="'+c+'"/>'+
+   '<text x="'+(et+w+6).toFixed(1)+'" y="'+(y+fila/2+4)+'" font-size="11" fill="#1d2522">'+esc(x.lab!=null?x.lab:fmt(x.v,2))+'</text>';
+ });
+ return h+'</svg>';
+}
+function svgDona(items,o){
+ o=o||{}; var R=70, r=42, cx=90, cy=90, tot=items.reduce(function(a,x){return a+Math.max(0,x.v||0);},0)||1, a0=-Math.PI/2;
+ var h='<svg class="svg-g" viewBox="0 0 520 190" width="100%" role="img" aria-label="'+esc(o.titulo||'Gráfico circular')+'" style="font-family:Arial,Helvetica,sans-serif">';
+ items.forEach(function(x,i){
+  var f=Math.max(0,x.v||0)/tot; if(f<=0)return; var a1=a0+f*2*Math.PI, c=x.color||SVG_COL[i%SVG_COL.length], gr=f>0.5?1:0;
+  if(f>=0.9999){ h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+((R+r)/2)+'" fill="none" stroke="'+c+'" stroke-width="'+(R-r)+'"/>'; }
+  else h+='<path d="M'+(cx+R*Math.cos(a0)).toFixed(2)+' '+(cy+R*Math.sin(a0)).toFixed(2)+' A'+R+' '+R+' 0 '+gr+' 1 '+(cx+R*Math.cos(a1)).toFixed(2)+' '+(cy+R*Math.sin(a1)).toFixed(2)+
+   ' L'+(cx+r*Math.cos(a1)).toFixed(2)+' '+(cy+r*Math.sin(a1)).toFixed(2)+' A'+r+' '+r+' 0 '+gr+' 0 '+(cx+r*Math.cos(a0)).toFixed(2)+' '+(cy+r*Math.sin(a0)).toFixed(2)+' Z" fill="'+c+'"/>';
+  a0=a1;
+ });
+ h+='<text x="'+cx+'" y="'+(cy-2)+'" text-anchor="middle" font-size="15" font-weight="700" fill="#1f3a5f">'+esc(o.centro||fmt(tot,1))+'</text><text x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" font-size="10" fill="#5f6b66">'+esc(o.unidad||'t CO₂e')+'</text>';
+ items.forEach(function(x,i){ var y=22+i*22, c=x.color||SVG_COL[i%SVG_COL.length];
+  h+='<rect x="200" y="'+(y-10)+'" width="12" height="12" rx="2" fill="'+c+'"/><text x="218" y="'+y+'" font-size="11.5" fill="#1d2522">'+esc(x.et)+' · '+fmt(x.v,1)+' ('+fmt((x.v||0)/tot*100,1)+' %)</text>'; });
+ return h+'</svg>';
+}
+function svgTornado(SS){
+ var W=640, et=230, val=110, fila=26, H=SS.length*fila+24, area=(W-et-val)/2, c0=et+area;
+ var mx=SS.reduce(function(a,x){return Math.max(a,Math.abs(x.dLo),Math.abs(x.dHi));},1e-9);
+ var h='<svg class="svg-g" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Análisis de sensibilidad" style="font-family:Arial,Helvetica,sans-serif">'+
+  '<line x1="'+c0+'" y1="2" x2="'+c0+'" y2="'+(H-18)+'" stroke="#5f6b66" stroke-width="1"/>';
+ SS.forEach(function(x,i){ var y=4+i*fila, wl=Math.abs(x.dLo)/mx*area, wh=Math.abs(x.dHi)/mx*area;
+  h+='<text x="'+(et-8)+'" y="'+(y+fila/2+3)+'" text-anchor="end" font-size="11" fill="#1d2522">'+esc(x.s.nom.slice(0,38))+'</text>'+
+   '<rect x="'+(c0-wl).toFixed(1)+'" y="'+(y+4)+'" width="'+wl.toFixed(1)+'" height="'+(fila-10)+'" fill="#3b8e6b"/>'+
+   '<rect x="'+c0+'" y="'+(y+4)+'" width="'+wh.toFixed(1)+'" height="'+(fila-10)+'" fill="#b8452f"/>'+
+   '<text x="'+(W-val+6)+'" y="'+(y+fila/2+3)+'" font-size="10.5" fill="#1d2522">'+fmt(x.dLo,1)+' / +'+fmt(x.dHi,1)+' t</text>'; });
+ h+='<text x="'+c0+'" y="'+(H-4)+'" text-anchor="middle" font-size="10" fill="#5f6b66">huella declarada · verde: supuesto en su valor bajo · rojo: en su valor alto</text>';
+ return h+'</svg>';
+}
+function svgMatriz(X){
+ var cel={}; X.filas.forEach(function(r){ (cel[r.mag+'|'+r.cal]=cel[r.mag+'|'+r.cal]||[]).push(r); });
+ var col={'alta|baja':'#f3d3cc','alta|media':'#f6e3c4','alta|alta':'#e4ecd9','media|baja':'#f6e3c4','media|media':'#eef0ea','media|alta':'#e4ecd9','baja|baja':'#eef0ea','baja|media':'#e4ecd9','baja|alta':'#e4ecd9'};
+ var W=640, x0=110, cw=(W-x0)/3, ch=84;
+ var h='<svg class="svg-g" viewBox="0 0 '+W+' '+(ch*3+30)+'" width="100%" role="img" aria-label="Matriz de significancia" style="font-family:Arial,Helvetica,sans-serif">';
+ ['Calidad baja','Calidad media','Calidad alta'].forEach(function(t,i){ h+='<text x="'+(x0+cw*i+cw/2)+'" y="14" text-anchor="middle" font-size="11" font-weight="700" fill="#5f6b66">'+t+'</text>'; });
+ ['alta','media','baja'].forEach(function(m,j){
+  h+='<text x="'+(x0-8)+'" y="'+(24+ch*j+ch/2)+'" text-anchor="end" font-size="11" font-weight="700" fill="#5f6b66">Magnitud '+m+'</text>';
+  ['baja','media','alta'].forEach(function(c,i){ var L=cel[m+'|'+c]||[], x=x0+cw*i, y=20+ch*j;
+   h+='<rect x="'+(x+2)+'" y="'+(y+2)+'" width="'+(cw-4)+'" height="'+(ch-4)+'" rx="5" fill="'+col[m+'|'+c]+'"/>';
+   L.slice(0,5).forEach(function(r,k){ h+='<text x="'+(x+8)+'" y="'+(y+18+k*14)+'" font-size="10" fill="#1d2522">'+esc(r.et.slice(0,34))+'</text>'; });
+   if(L.length>5)h+='<text x="'+(x+8)+'" y="'+(y+18+5*14)+'" font-size="10" fill="#5f6b66">y '+(L.length-5)+' más</text>';
+  });
+ });
+ return h+'</svg>';
+}
+
+/* ====== Evidencia fotográfica de las áreas del alcance de la medición ====== */
+var AREAS_HUELLA=[
+ ['recepcion','Recepción y pesaje del café',[]],
+ ['despulpado','Despulpado y beneficio húmedo',['elec_org']],
+ ['aguasmieles','Separador de sólidos y lagunas de aguas mieles',['aguas_mieles']],
+ ['compostera','Planta de compostaje de pulpa y cascarilla',['compostaje','compostaje_cascarilla']],
+ ['secado','Secadoras (casulla y leña) y patios de secado',['lena_secado','cascarilla']],
+ ['trillado','Trillado y clasificación',[]],
+ ['bodega','Bodega de café oro y empaque (yute y big bag)',['yute','polipropileno']],
+ ['energia','Acometida eléctrica y planta generadora',['diesel_gen']],
+ ['flota','Flota propia y abastecimiento de combustible',['diesel_org','gasolina_org']],
+ ['taller','Taller, lubricantes y gas licuado',['lubricantes','glp']],
+ ['fincas','Fincas de productores: aplicación de compost',['n_compost_fincas']],
+ ['embarque','Carga y transporte a Puerto Cortés',['km_puerto','tm_maritimo']]
+];
+var ESTADOS_AREA_H=['sin verificar','conforme','con observación','no conforme'];
+function areasH(){ var A=arcEstado(); A.areas=A.areas||{}; AREAS_HUELLA.forEach(function(a){ A.areas[a[0]]=A.areas[a[0]]||{}; }); return A.areas; }
+function areaT(a){ var X=sxDatos(), t=0; a[2].forEach(function(id){ X.filas.forEach(function(r){ if(r.id===id)t+=r.t; }); }); return t; }
+function vistaFotos(){
+ var A=areasH(), ed=puedeEditar(), X=sxDatos(), L=sxLineas();
+ var conF=AREAS_HUELLA.filter(function(a){ return (A[a[0]].adjuntos||[]).length; }).length;
+ var ver=AREAS_HUELLA.filter(function(a){ return A[a[0]].estado&&A[a[0]].estado!=='sin verificar'; }).length;
+ var h=cabModulo('fot','<p class="vista-sub">Las fotografías de cada área que entra en el alcance de la medición de la huella, con su fecha, su autor y su coordenada, y la verificación del área. Pasan al informe interno de control como anexo.</p>');
+ h+='<dl class="cifras">'+tarjetaCifra('Áreas del alcance',String(AREAS_HUELLA.length),'de la recepción al embarque')+
+  tarjetaCifra('Con fotografía',conF+' de '+AREAS_HUELLA.length,'áreas documentadas')+
+  tarjetaCifra('Verificadas',ver+' de '+AREAS_HUELLA.length,'con estado, fecha y responsable')+'</dl>';
+ AREAS_HUELLA.forEach(function(a){
+  var o=A[a[0]], t=areaT(a), dis=ed?'':' disabled';
+  h+='<div class="tarjeta" id="area-'+a[0]+'"><h3>'+esc(a[1])+(t>0?' <small>'+fmt(t,2)+' t CO₂e · '+fmt(t/(X.total||1)*100,1)+' %</small>':'')+'</h3><div class="cuerpo">'+
+   (a[2].length?'<p class="pista">Fuentes de la huella en esta área: '+esc(a[2].map(function(id){return L[id]?L[id].l.et:id;}).join('; '))+'.</p>':'')+
+   '<div class="campos">'+
+   '<div class="campo"><label>Estado de la verificación</label><select data-area="'+a[0]+'" data-campo="estado"'+dis+'>'+ESTADOS_AREA_H.map(function(e){return '<option'+(e===(o.estado||'sin verificar')?' selected':'')+'>'+e+'</option>';}).join('')+'</select></div>'+
+   '<div class="campo"><label>Fecha de la verificación</label><input type="date" data-area="'+a[0]+'" data-campo="fecha" value="'+esc(o.fecha||'')+'"'+dis+'></div>'+
+   '<div class="campo"><label>Verificó</label><input type="text" data-area="'+a[0]+'" data-campo="verifico" value="'+esc(o.verifico||'')+'"'+dis+'></div>'+
+   '</div><div class="campos">'+
+   '<div class="campo ancho"><label>Hallazgo</label><input type="text" data-area="'+a[0]+'" data-campo="hallazgo" value="'+esc(o.hallazgo||'')+'" placeholder="lo que se observó en el área"'+dis+'></div>'+
+   '<div class="campo ancho"><label>Acción</label><input type="text" data-area="'+a[0]+'" data-campo="accion" value="'+esc(o.accion||'')+'" placeholder="corrección o mejora, con responsable"'+dis+'></div>'+
+   '</div>'+adjuntosHTML('area:'+a[0],'Fotografías del área',[['foto','Tomar fotografía']],'Fotografíe el área completa y el punto de medición (báscula, medidor, separador, compostera). La fecha y la coordenada se guardan con la foto.')+
+   '</div></div>';
+ });
+ setTimeout(function(){ try{ pintarMiniaturas(); }catch(e){} },30);
+ return h;
+}
+
+/* ====== Referencias internacionales de huella de café ======
+   Valores publicados, con su límite y su unidad. No son comparables uno a
+   uno con este estudio: cambian el límite del sistema, la unidad (cereza,
+   pergamino, oro o producto final), los potenciales de calentamiento y el
+   tratamiento del cambio de uso del suelo. Se presentan como referencia. */
+var REF_HUELLA=[
+ {et:'Promedio mundial del café, con cambio de uso del suelo',v:28.53,u:'kg CO₂e/kg de café',sis:'Mayoritariamente convencional',lim:'De la finca al punto de venta; promedio mundial de 38 700 fincas en 119 países',cita:'Poore, J. y Nemecek, T. (2018). Reducing food’s environmental impacts through producers and consumers. Science 360(6392):987-992. Datos de Our World in Data.',url:'https://ourworldindata.org/grapher/ghg-per-kg-poore'},
+ {et:'Rango de la literatura para café verde',v:15.33,v0:0.38,u:'kg CO₂e/kg de café verde',sis:'Varios',lim:'Según origen, beneficio y cadena',cita:'CBI, Ministerio de Relaciones Exteriores de los Países Bajos. 8 tips on how to reduce carbon footprint in the coffee sector.',url:'https://www.cbi.eu/market-information/coffee/tips-reduce-carbon-footprint'},
+ {et:'Monocultivos de café, América Latina',v:10.8,v0:9.0,u:'kg CO₂e/kg de pergamino',sis:'Convencional, sin sombra o sombra simple',lim:'Finca y beneficio; 116 fincas de México, Guatemala, Nicaragua, El Salvador y Colombia',cita:'van Rikxoort, H., Schroth, G., Läderach, P. y Rodríguez-Sánchez, B. (2014). Carbon footprints and carbon stocks reveal climate-friendly coffee production. Agronomy for Sustainable Development 34:887-897.',url:'https://link.springer.com/article/10.1007/s13593-014-0223-8'},
+ {et:'Policultivos con sombra, América Latina',v:7.3,v0:6.2,u:'kg CO₂e/kg de pergamino',sis:'Agroforestal',lim:'Finca y beneficio; mismo estudio',cita:'van Rikxoort et al. (2014), ídem.',url:'https://link.springer.com/article/10.1007/s13593-014-0223-8'},
+ {et:'Mediana de estudios de producción de café',v:2.18,u:'kg CO₂e/kg de grano verde',sis:'Varios; el orgánico resultó apenas menor',lim:'Producción del grano verde; revisión de estudios publicados',cita:'Environmental Reviews 33:1-15 (2025), doi 10.1139/er-2024-0079.',url:'https://researchonline.jcu.edu.au/88541/1/88541.pdf'},
+ {et:'Café convencional, Costa Rica y Nicaragua',v:0.67,v0:0.26,u:'kg CO₂e/kg de cereza fresca',sis:'Convencional',lim:'Finca; ensayos de largo plazo de CATIE',cita:'Noponen, M. R. A. et al. (2012). Greenhouse gas emissions in coffee grown with differing input levels under conventional and organic management. Agriculture, Ecosystems & Environment 151:6-15.',url:'https://gala.gre.ac.uk/id/eprint/11340'},
+ {et:'Café orgánico, Costa Rica y Nicaragua',v:0.52,v0:0.12,u:'kg CO₂e/kg de cereza fresca',sis:'Orgánico',lim:'Finca; mismo estudio',cita:'Noponen et al. (2012), ídem.',url:'https://gala.gre.ac.uk/id/eprint/11340'}
+];
+function escenariosHuella(){
+ var PC=null; try{ PC=presentacionesCalc(); }catch(e){}
+ if(!PC||!PC.res||!PC.res.length)return null;
+ var porPres={};
+ PC.res.forEach(function(x){ var k=x.pres.nom||'Presentación'; var p=porPres[k]||(porPres[k]={pres:x.pres,kgU:x.kgU,emp:x.emp,base:x.base,dest:[]}); p.dest.push(x); });
+ var A=Object.keys(porPres).map(function(k){ var p=porPres[k]; return {nom:k,kgU:p.kgU,base:p.base,emp:p.emp,kgkg:p.base+p.emp,porU:(p.base+p.emp)*p.kgU,dest:p.dest}; });
+ return {base:PC.base,A:A,PC:PC};
+}
+function tablaEscenarios(E,cls){
+ cls=cls||'tabla sx-tab';
+ var a='<table class="'+cls+'"><thead><tr><th>Unidad funcional</th><th class="n">kg de café oro</th><th class="n">Hasta embarque, kg CO₂e/kg</th><th class="n">Empaque, kg CO₂e/kg</th><th class="n">kg CO₂e/kg</th><th class="n">kg CO₂e por unidad</th></tr></thead><tbody>'+
+  E.A.map(function(p){ return '<tr><td>'+esc(p.nom)+'</td><td class="n">'+fmt(p.kgU,0)+'</td><td class="n">'+fmt(p.base,3)+'</td><td class="n">'+fmt(p.emp,3)+'</td><td class="n"><b>'+fmt(p.kgkg,3)+'</b></td><td class="n"><b>'+fmt(p.porU,1)+'</b></td></tr>'; }).join('')+'</tbody></table>';
+ var b='<table class="'+cls+'"><thead><tr><th>Unidad funcional</th><th>Puerto de destino</th><th class="n">Hasta Puerto Cortés, por unidad</th><th class="n">Flete marítimo, por unidad</th><th class="n">Total por unidad, kg CO₂e</th><th class="n">kg CO₂e/kg</th></tr></thead><tbody>';
+ E.A.forEach(function(p){ p.dest.forEach(function(x){ b+='<tr><td>'+esc(p.nom)+'</td><td>'+esc(x.dest.nom||'')+(x.dest.puerto?(' · '+esc(x.dest.puerto)):'')+'</td><td class="n">'+fmt(p.porU,1)+'</td><td class="n">'+fmt(x.flete*p.kgU,1)+'</td><td class="n"><b>'+fmt(x.porU,1)+'</b></td><td class="n">'+fmt(x.tot,3)+'</td></tr>'; }); });
+ b+='</tbody></table>';
+ return {a:a,b:b};
+}
+function graficoEscenarios(E){
+ var it=[]; E.A.forEach(function(p,i){ it.push({et:p.nom+' · Puerto Cortés',v:p.porU,lab:fmt(p.porU,1)+' kg CO₂e',color:'#1f3a5f'});
+  p.dest.forEach(function(x){ it.push({et:p.nom+' · '+(x.dest.nom||''),v:x.porU,lab:fmt(x.porU,1)+' kg CO₂e',color:'#c9993d'}); }); });
+ return svgBarras(it,{et:260,titulo:'Huella por unidad funcional'});
+}
+function graficoComparativo(){
+ var X=sxDatos(), E=escenariosHuella(), it=[];
+ REF_HUELLA.forEach(function(r){ it.push({et:r.et,v:r.v,lab:(r.v0!=null?(fmt(r.v0,2)+' a '):'')+fmt(r.v,2)+' · '+r.u.replace('kg CO₂e/',''),color:/rg[aá]nic|Agrofor/.test(r.sis)?'#3b8e6b':'#8a8f8c'}); });
+ if(E&&E.A.length){ it.push({et:'Este estudio · hasta Puerto Cortés',v:E.A[0].kgkg,lab:fmt(E.A[0].kgkg,3)+' · kg de café oro',color:'#1f3a5f'}); }
+ it.push({et:'Este estudio · hasta puerto de destino',v:X.porKg,lab:fmt(X.porKg,3)+' · kg de café oro',color:'#c9993d'});
+ return svgBarras(it,{et:300,val:150,titulo:'Comparativo con referencias internacionales'});
+}
+
+/* ====== Informe interno de control del estudio de huella ======
+   Mismo modelo que el informe del Sistema Interno de Control de Origen: un
+   informe por ciclo, borrador automático por sección, tablas de trabajo,
+   flujo de elaboración, revisión y aprobación con firmas separadas, dictamen
+   y acta de aprobación interna. */
+var ICI_SEC=[
+ ['introduccion','Introducción y objetivo','Propósito del informe, ciclo, producto y a quién se dirige (comité y verificador).'],
+ ['terminologia','Terminología y criterios de significancia','Definiciones usadas en el estudio y criterios con que se clasifica cada fuente por su peso y por la calidad de su dato.'],
+ ['organizacion','Datos de la organización y del estudio','Razón social, producto, unidad declarada, período, límites del sistema, norma y potenciales de calentamiento.'],
+ ['estructura','Estructura del control interno','Responsable del estudio, revisor y comité; separación entre quien elabora, revisa y aprueba; conflicto de interés.'],
+ ['competencia','Competencia del equipo del estudio','Formación del equipo en ISO 14067, en el protocolo y en el manejo de la aplicación.'],
+ ['inventario','Inventario de fuentes','Fuentes cuantificadas, inexistentes y excluidas con su peso frente al criterio de corte.'],
+ ['datos','Datos de actividad y evidencia','Cobertura con facturas y registros, datos sin factura, pendientes con responsable y copia congelada del archivo.'],
+ ['factores','Factores de emisión','Jerarquía aplicada, citas, antigüedad, desglose por gas y serie de potenciales de calentamiento.'],
+ ['significancia','Significancia e intensidad por fuente','Peso de cada fuente, intensidad por kilo de café oro, matriz de magnitud y calidad, reparto por gas.'],
+ ['sensibilidad','Sensibilidad e incertidumbre','Efecto de cada supuesto dentro de su rango publicado sobre la huella declarada.'],
+ ['biogenico','CO₂ biogénico, uso del suelo y almacenamiento','CO₂ biogénico informado aparte, cambio directo de uso del suelo y carbono almacenado.'],
+ ['asignacion','Asignación y venta nacional','Regla de asignación, coproductos y tratamiento del café vendido en el país.'],
+ ['escenarios','Escenarios por unidad funcional','Huella hasta Puerto Cortés y hasta los puertos de destino, por saco de yute de 69 kg y por big bag de 1 t de café oro.'],
+ ['comparativo','Comparativo con referencias internacionales','Huella de café convencional publicada por entidades internacionales frente a la de este café orgánico bajo manejo agroforestal.'],
+ ['instalaciones','Verificación de instalaciones y procesos','Estado de cada área del alcance, fecha, quién verificó, hallazgo, acción y evidencia fotográfica.'],
+ ['medicion','Control de la medición','Básculas, medidores y su comprobación en el ciclo.'],
+ ['hallazgos','Hallazgos internos y acciones correctivas','No conformidades levantadas, su responsable, plazo y estado.'],
+ ['seguimiento','Seguimiento del ciclo anterior','Cierre de lo pendiente del ciclo anterior y verificación de su eficacia.'],
+ ['cambios','Cambios de método y recálculos','Cambios de factor o de método del ciclo, con su efecto, según la bitácora.'],
+ ['reduccion','Plan de reducción','Medidas sobre las fuentes significativas, con responsable y plazo.'],
+ ['comite','Decisión del comité','Fecha y acta del comité, criterio de decisión y lo resuelto.'],
+ ['conclusiones','Conclusiones y riesgos','Solidez del estudio, riesgos para la declaración y prioridades del próximo ciclo.'],
+ ['recomendaciones','Recomendaciones','Recomendaciones con responsable, plazo y prioridad.'],
+ ['dictamen','Dictamen del control interno','Dictamen sobre si el estudio está listo para declararse y para la verificación externa; da paso al acta.']
+];
+var ICI_DICT=['Apto para declarar','Apto para declarar con condiciones','No apto para declarar'];
+var ICI_PRIO=['alta','media','baja'];
+var ICI_GLOS=[
+ ['Huella de carbono de producto','Suma de las emisiones y remociones de gases de efecto invernadero de un producto en su ciclo de vida, expresada en CO₂ equivalente (ISO 14067:2018).'],
+ ['CO₂ equivalente (CO₂e)','Unidad que expresa el efecto de cada gas como la masa de CO₂ que produce el mismo calentamiento en 100 años.'],
+ ['Potencial de calentamiento global (PCG)','Factor que convierte cada gas a CO₂e. Se usa la serie del Sexto Informe del IPCC (AR6): CH₄ biogénico 27, CH₄ fósil 29,8 y N₂O 273.'],
+ ['Unidad declarada y unidad funcional','Cantidad de producto a la que se refiere la huella: 1 kg de café oro, y por presentación de venta el saco de yute de 69 kg y el big bag de 1 t.'],
+ ['Límite del sistema','Etapas incluidas: de la finca al puerto de embarque (Puerto Cortés) y, en el escenario de destino, el flete marítimo hasta el puerto del comprador.'],
+ ['Dato de actividad','Cantidad medida de lo que genera emisiones: litros de combustible, kWh, toneladas de pulpa, metros cúbicos de aguas mieles.'],
+ ['Factor de emisión','Emisión por unidad de dato de actividad, con su fuente, año, unidad y nivel.'],
+ ['Nivel del factor','N1: factor nacional oficial; N2: regional publicado; N3: valor por defecto internacional (IPCC). Se prefiere siempre el de mayor nivel disponible.'],
+ ['CO₂ biogénico','CO₂ que proviene de la biomasa (leña, casulla, compost). Se cuantifica y se informa aparte; no se suma a la huella.'],
+ ['CH₄ biogénico','Metano de origen biológico (compostaje, aguas mieles, combustión de biomasa). Sí se suma a la huella con su potencial de calentamiento.'],
+ ['Asignación','Reparto de las emisiones entre el producto principal y los coproductos cuando salen del mismo proceso.'],
+ ['Criterio de corte','Umbral por debajo del cual una fuente puede excluirse si se declara y su suma no supera el límite fijado.'],
+ ['Significancia','Peso de una fuente en la huella. Alta: igual o mayor al umbral alto; media: entre el umbral de significancia y el alto; baja: menor al umbral de significancia.'],
+ ['Calidad del dato','Combinación del nivel del factor, del respaldo con factura del dato de actividad y de la documentación de la fuente del factor.'],
+ ['Sensibilidad','Cambio de la huella cuando un supuesto se mueve dentro de su rango publicado, uno a la vez.'],
+ ['Medición propia','Resultado calculado por la organización sin evaluación de un organismo de certificación independiente. No es una declaración de neutralidad.']
+];
+function ici(){
+ S.ici=S.ici||{}; var I=S.ici;
+ if(!I.codigo){ var an=String((pv('per_fin')||hoy()).slice(0,4)); I.anio=an; I.codigo='INF-CI-'+an; I.formato=(siglasOrg()||'ORG')+'-HCP-FOR-001'; I.creado=new Date().toISOString(); }
+ I.datos=I.datos||{}; I.redaccion=I.redaccion||{}; I.docs=I.docs||{}; I.obsFuentes=I.obsFuentes||{}; I.recomendaciones=I.recomendaciones||[];
+ I.dictamen=I.dictamen||{}; I.flujo=I.flujo||{estado:'BORRADOR'}; return I;
+}
+function siglasOrg(){ var o=perV('razon')||S.perfil.organizacion||''; if(/cafico/i.test(o))return 'CAFICO'; return o.split(/\s+/).filter(function(w){return /^[A-ZÁÉÍÓÚÑ]/.test(w)&&w.length>2;}).map(function(w){return w.charAt(0);}).join('').slice(0,6).toUpperCase(); }
+function iciEditable(){ return puedeEditar()&&ici().flujo.estado==='BORRADOR'; }
+function iciFirma(){ return {nombre:quienEdita(),fecha:new Date().toISOString()}; }
+function iciLogo(){ var lg=logoOrg(); if(lg)return lg; var o=perV('razon')||S.perfil.organizacion||''; if(/cafico/i.test(o))return location.origin+'/marca/cafico.png'; return ''; }
+/* Borrador de cada sección a partir de los datos del estudio */
+function iciBorrador(id){
+ var X=sxDatos(), HP=X.HP, P=S.prod||{}, org=perV('razon')||S.perfil.organizacion||'la organización', LC=listaCierre();
+ var top=X.filas.filter(function(r){return r.mag==='alta';}), E=escenariosHuella(), SS=sxSensibilidad();
+ var per=(pv('per_inicio')&&pv('per_fin'))?('del '+fechaLarga(pv('per_inicio'))+' al '+fechaLarga(pv('per_fin'))):('del ciclo '+(S.perfil.ciclo||''));
+ var I=ici(), D=I.datos;
+ switch(id){
+ case 'introduccion': return 'Este informe documenta el control interno del estudio de huella de carbono del '+pv('producto','café verde oro')+' de '+org+', correspondiente al período '+per+'. Su objetivo es revisar que el estudio cumpla los requisitos de ISO 14067:2018 y del protocolo del programa antes de declarar el resultado y de someterlo a la verificación de un organismo independiente.\n\nSe dirige al comité de aprobación de la organización y, en su momento, al organismo verificador. El resultado se presenta como medición propia de la organización.';
+ case 'terminologia': return 'Las definiciones de este informe siguen ISO 14067:2018 y las Directrices del IPCC. La tabla de terminología reúne los términos usados en el estudio.\n\nCada fuente se clasifica por su magnitud y por la calidad de su dato. La magnitud es alta cuando la fuente aporta el '+fmt(X.U.alta,0)+' % o más de la huella, media entre el '+fmt(X.U.baja,0)+' % y el '+fmt(X.U.alta,0)+' %, y baja por debajo del '+fmt(X.U.baja,0)+' %. La calidad suma el nivel del factor (nacional 2, regional 1, por defecto 0), el respaldo con factura del dato (95 % o más 2, 70 % o más 1) y la documentación de la fuente del factor en el archivo de evidencias (1); es alta de 4 a 5 puntos, media de 2 a 3 y baja de 0 a 1. Una fuente de magnitud alta y calidad baja es prioridad de mejora antes de declarar.';
+ case 'organizacion': return org+(perV('registro')?(', con registro '+perV('registro')):'')+', estudia la huella de carbono de '+pv('producto','café verde oro')+', expresada por '+(HP.unidad||'quintal de café oro')+' y por kilogramo. El período es '+per+' y la producción base es de '+fmt(X.kg/1000,1)+' t de café oro.\n\nEl límite del sistema va de la finca al puerto de embarque, Puerto Cortés, y en el escenario de destino incluye el flete marítimo hasta el puerto del comprador. Se aplica ISO 14067:2018 con los potenciales de calentamiento de la serie IPCC AR6.';
+ case 'estructura': return 'El estudio lo elabora '+(D.responsable||perV('responsable')||'el responsable del estudio')+'. Lo revisa '+(D.revisor||'el auditor interno')+', que no participó en la captura de los datos, y lo aprueba '+(D.comite||'el comité de aprobación')+'. La aplicación impide que quien elabora el informe lo revise o lo apruebe, y registra cada firma con su nombre y fecha.\n\nQuienes intervienen declaran no tener conflicto de interés con los resultados. Todo cambio de dato o de factor queda en la bitácora con el valor anterior y el nuevo.';
+ case 'competencia': return 'El equipo del estudio conoce ISO 14067:2018, las Directrices del IPCC aplicables y el protocolo del programa. '+(D.competencia||'Detalle aquí la formación de cada integrante, las fechas y las constancias que la respaldan.');
+ case 'inventario': var ex=exclusiones(); return 'El inventario cuantifica '+plural(X.filas.length,'fuente','fuentes')+' dentro del límite del estudio, que suman '+fmt(X.total,2)+' t CO₂e. '+(ex.length?('Se declaran '+plural(ex.length,'exclusión','exclusiones')+': '+ex.map(function(e){return e.fuente+(e.peso?(' ('+e.peso+' %)'):'');}).join('; ')+'.'):'No hay exclusiones declaradas.')+' El criterio de corte es del '+fmt(umbralMaterialidad(),0)+' % del total.';
+ case 'datos': var pend=arcPendientesLista().filter(function(x){return x.estado!=='resuelto';}), cg=arcCongelados(); var conD=0; X.filas.forEach(function(r){ if(r.nFact>0||r.nDocs>0)conD+=r.t; });
+  return 'El '+fmt(X.total>0?conD/X.total*100:0,0)+' % de la huella tiene dato de actividad respaldado por factura, registro o documento del archivo de evidencias. Quedan '+fmt(X.tSin,2)+' t CO₂e anotadas sin factura y '+plural(pend.length,'pendiente abierto','pendientes abiertos')+' con responsable y fecha.\n\n'+(cg.length?('El archivo se congeló por última vez el '+String(cg[cg.length-1].fecha).slice(0,10)+', con '+cg[cg.length-1].n+' documentos y sello '+cg[cg.length-1].sello+'.'):'El archivo de evidencias aún no se ha congelado; se congela al aprobar este informe.');
+ case 'factores': return 'Cada factor lleva su fuente, año, unidad y nivel en la hoja de factores del estudio. Los combustibles, el compostaje, las aguas mieles, la combustión de biomasa, los lubricantes y el nitrógeno del compost aplicado en fincas se declaran por gas (CO₂, CH₄ y N₂O) con la serie AR6. La electricidad usa el factor nacional de la Secretaría de Energía; el Balance Energético Nacional 2023 permite calcular 0,652 t CO₂e/MWh, que se presenta en el análisis de sensibilidad.';
+ case 'significancia': return plural(top.length,'fuente de magnitud alta reúne','fuentes de magnitud alta reúnen')+' el '+fmt(top.reduce(function(a,r){return a+r.pct;},0),1)+' % de la huella: '+top.map(function(r){return r.et.toLowerCase()+' ('+fmt(r.pct,1)+' %, calidad '+r.cal+')';}).join('; ')+'.\n\nLa intensidad del estudio es de '+fmt(X.porKg,3)+' kg CO₂e por kg de café oro. Por gas, el CH₄ biogénico aporta '+fmt(X.gas.ch4b,1)+' t, el N₂O '+fmt(X.gas.n2o,1)+' t y el CO₂ fósil '+fmt(X.gas.co2,1)+' t; '+fmt(X.gas.sin,1)+' t corresponden a fuentes sin desglose por gas.';
+ case 'sensibilidad': return SS.length?('Los supuestos de mayor efecto son: '+SS.slice(0,3).map(function(x){return x.s.nom.toLowerCase()+' (de '+fmt(x.dLo,1)+' a +'+fmt(x.dHi,1)+' t CO₂e)';}).join('; ')+'. Con ellos, la huella podría ir de '+fmt(SS[0].kLo,3)+' a '+fmt(SS[0].kHi,3)+' kg CO₂e/kg solo por el primero.\n\nLos rangos son los publicados por el IPCC o los de la fuente de cada supuesto, y cada uno se mueve por separado.'):'No hay supuestos con efecto calculable.';
+ case 'biogenico': return 'El CO₂ biogénico de la combustión de leña y casulla y del compostaje suma '+fmt(X.bio,1)+' t; se cuantifica y se informa aparte, sin sumarlo a la huella. El metano de origen biológico sí se suma, con su potencial de 27.\n\nNo hubo cambio directo de uso del suelo en las fincas del estudio, según las visitas técnicas y la evaluación de no deforestación del Reglamento (UE) 2023/1115. El carbono almacenado en la sombra de las fincas se informa por separado y no se resta de la huella.';
+ case 'asignacion': var kgN=numDe(P.ventaNacionalKg); return 'Regla de asignación: '+(P.asignacion||'por masa')+', con el '+fmt(HP.asig,0)+' % de las emisiones asignado al café oro. Coproductos: '+pv('asig_coproductos','pulpa y cascarilla, que vuelven al sistema como compost')+'.\n\n'+(isFinite(kgN)&&kgN>0?('En el período se vendieron '+fmt(kgN,0)+' kg de café oro en el mercado nacional; su tratamiento en el denominador se declara en el estudio.'):'La venta nacional del período debe declararse para decidir si entra en el denominador o recibe una parte de las emisiones.');
+ case 'escenarios': if(!E)return 'Declare las presentaciones y los destinos en el Estudio ISO 14067 para calcular los escenarios.';
+  return 'Escenario A, de la finca a Puerto Cortés: '+E.A.map(function(p){return 'el '+p.nom.toLowerCase()+' genera '+fmt(p.porU,1)+' kg CO₂e por unidad ('+fmt(p.kgkg,3)+' kg CO₂e/kg)';}).join('; ')+'.\n\nEscenario B, hasta el puerto de destino: al escenario A se suma el flete marítimo de cada ruta. '+E.A.map(function(p){return p.dest.map(function(x){return p.nom.toLowerCase()+' a '+(x.dest.nom||'')+': '+fmt(x.porU,1)+' kg CO₂e por unidad';}).join('; ');}).join('; ')+'.';
+ case 'comparativo': return 'Las referencias internacionales para café convencional van de 0,38 a 15,33 kg CO₂e por kg de café verde según CBI, con una mediana de 2,18 en la revisión publicada en Environmental Reviews en 2025, y un promedio mundial de 28,53 kg CO₂e por kg de café cuando se incluye el cambio de uso del suelo (Poore y Nemecek, 2018). En América Latina, los policultivos con sombra registran 6,2 a 7,3 kg CO₂e por kg de pergamino frente a 9,0 a 10,8 de los monocultivos (van Rikxoort et al., 2014).\n\nEste café orgánico bajo manejo agroforestal resulta en '+fmt(E&&E.A.length?E.A[0].kgkg:X.porKg,3)+' kg CO₂e por kg de café oro hasta Puerto Cortés y '+fmt(X.porKg,3)+' hasta el puerto de destino. La comparación es referencial: los estudios difieren en límite, unidad, potenciales de calentamiento y tratamiento del uso del suelo, e ISO 14067 no admite afirmaciones comparativas sin una misma regla de categoría de producto y revisión crítica.';
+ case 'instalaciones': var A=areasH(), v=AREAS_HUELLA.filter(function(a){return A[a[0]].estado&&A[a[0]].estado!=='sin verificar';}), nf=AREAS_HUELLA.filter(function(a){return (A[a[0]].adjuntos||[]).length;}).length;
+  return 'Se verificaron '+v.length+' de '+AREAS_HUELLA.length+' áreas del alcance de la medición, y '+nf+' cuentan con evidencia fotográfica. '+(v.filter(function(a){return A[a[0]].estado!=='conforme';}).length?('Áreas con observación o no conformidad: '+v.filter(function(a){return A[a[0]].estado!=='conforme';}).map(function(a){return a[1]+' ('+A[a[0]].estado+')';}).join('; ')+'.'):'Todas las áreas verificadas están conformes.');
+ case 'medicion': var ins=instrumentos(); return ins.length?('Se comprobaron '+plural(ins.length,'instrumento','instrumentos')+' de medición: '+ins.map(function(i){return (i.nombre||i.tipo)+(i.fecha?(' el '+i.fecha):'')+(i.resultado?(' ('+i.resultado+')'):'');}).join('; ')+'.'):'No hay comprobaciones de instrumentos registradas en el ciclo. Registre la comprobación de las básculas de recepción y de despacho y de los medidores eléctricos.';
+ case 'hallazgos': var nc=S.nc||[], ab=ncAbiertas(); return nc.length?('Se registraron '+plural(nc.length,'hallazgo','hallazgos')+', de los cuales '+plural(ab.length,'sigue abierto','siguen abiertos')+'. El detalle, con responsable, plazo y estado, está en la tabla de hallazgos.'):'No se registraron hallazgos internos en el ciclo.';
+ case 'seguimiento': return D.seguimiento||'Es el primer ciclo del estudio con este alcance; no hay pendientes de un ciclo anterior. En los ciclos siguientes se verificará aquí el cierre de las recomendaciones y hallazgos de este informe.';
+ case 'cambios': var bit=(S.bitacora||[]).filter(function(b){return /factor/i.test(b.tipo||'')||/Factor por gas|factor/i.test(b.que||'');}), rc=recalculos();
+  return 'En el ciclo se registraron '+plural(bit.length,'cambio de factor','cambios de factor')+' en la bitácora'+(rc.length?(' y '+plural(rc.length,'recálculo','recálculos')):'')+'.'+(bit.some(function(b){return /Factor por gas/.test(b.que||'');})?' Entre ellos, la declaración de los factores por gas con la serie AR6, cuyo efecto queda registrado en la bitácora con el valor anterior y el nuevo.':'');
+ case 'reduccion': return 'Las medidas se ordenan por las fuentes de magnitud alta: '+top.slice(0,4).map(function(r){return r.et.toLowerCase();}).join(', ')+'. '+(D.reduccion||'Detalle aquí las medidas aprobadas, su responsable, su plazo y la reducción esperada.');
+ case 'comite': return D.fechaComite?('El comité de aprobación sesionó el '+fechaLarga(D.fechaComite)+(D.actaComite?(', según el acta '+D.actaComite):'')+', y resolvió: '+(I.dictamen.resultado||'pendiente')+'.'):'El comité de aprobación aún no ha sesionado. Registre la fecha, el acta y lo resuelto.';
+ case 'conclusiones': return 'El estudio cumple '+LC.ok+' de '+LC.total+' requisitos de la lista de cierre ISO 14067. '+(LC.items.filter(function(x){return x.estado!=='ok';}).length?('Quedan por atender: '+LC.items.filter(function(x){return x.estado!=='ok';}).map(function(x){return x.t.toLowerCase();}).join('; ')+'.'):'No quedan requisitos pendientes.')+'\n\nEl principal riesgo para la declaración es la dependencia de factores por defecto en las fuentes de mayor peso, en particular el compostaje.';
+ case 'recomendaciones': return 'Las recomendaciones de la tabla se derivan de la matriz de significancia, de los pendientes de evidencia y de la verificación de las áreas. Cada una tiene responsable, plazo y prioridad.';
+ case 'dictamen': return 'Con base en la revisión de este informe, el control interno dictamina que el estudio está: '+(I.dictamen.resultado||'[seleccione el dictamen]')+'. '+(I.dictamen.condiciones?('Condiciones: '+I.dictamen.condiciones+'.'):'')+'\n\nEl dictamen da paso al acta de aprobación interna y a la emisión del informe ISO 14067.';
+ }
+ return '';
+}
+/* Bloques de datos, tablas y gráficos de cada sección (pantalla e impresión) */
+function iciBloque(id,imp){
+ var X=sxDatos(), cls=imp?'datos':'tabla sx-tab', I=ici(), L=sxLineas();
+ function tab(cab,filas,num){ return '<table class="'+cls+'"><thead><tr>'+cab.map(function(c,i){return '<th'+((num||[]).indexOf(i)>=0?' class="n num"':'')+'>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+filas.map(function(f){return '<tr>'+f.map(function(c,i){return '<td'+((num||[]).indexOf(i)>=0?' class="n num"':'')+'>'+c+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>'; }
+ function fig(t,s){ return '<figure class="ici-fig">'+s+'<figcaption>'+esc(t)+'</figcaption></figure>'; }
+ switch(id){
+ case 'terminologia': return tab(['Término','Definición'],ICI_GLOS.map(function(g){return ['<b>'+esc(g[0])+'</b>',esc(g[1])];}))+
+  tab(['Nivel','Criterio','Tratamiento'],[['Magnitud alta','≥ '+fmt(X.U.alta,0)+' % de la huella','Dato primario y factor documentado; prioridad de mejora'],['Magnitud media',fmt(X.U.baja,0)+' % a '+fmt(X.U.alta,0)+' %','Revisión en el ciclo'],['Magnitud baja','< '+fmt(X.U.baja,0)+' %','Basta declararla; puede excluirse si se justifica'],['Calidad alta','4 a 5 puntos','Se mantiene'],['Calidad media','2 a 3 puntos','Mejorar el dato'],['Calidad baja','0 a 1 punto','Medir o documentar antes de declarar']]);
+ case 'datos': var conD=0,conF=0; X.filas.forEach(function(r){ if(r.nFact>0||r.nDocs>0)conD+=r.t; if(r.docFactor)conF+=r.t; });
+  return fig('Cobertura documental de la huella, % de las t CO₂e',svgBarras([{et:'Dato de actividad respaldado',v:X.total?conD/X.total*100:0,lab:fmt(X.total?conD/X.total*100:0,0)+' %',color:'#1f3a5f'},{et:'Fuente del factor documentada',v:X.total?conF/X.total*100:0,lab:fmt(X.total?conF/X.total*100:0,0)+' %',color:'#3b8e6b'},{et:'Anotado sin factura',v:X.total?X.tSin/X.total*100:0,lab:fmt(X.total?X.tSin/X.total*100:0,1)+' %',color:'#b8452f'}],{et:230}));
+ case 'factores': return tab(['Fuente','CO₂','CH₄','N₂O','kg CO₂e por unidad','Nivel'],X.filas.map(function(r){ var x=L[r.id], g=null; try{ var rg=regDe(x.l); g=(rg&&gasValido(rg.gas))?rg.gas:null; }catch(e){}
+   return [esc(r.et),g?fmt(gasNum(g,'co2'),4):'—',g?fmt(gasNum(g,'ch4'),6):'—',g?fmt(gasNum(g,'n2o'),6):'—',(function(){try{return fmt(origenFactor(x.l).f,4);}catch(e){return '—';}})(),esc(r.niv)]; }),[1,2,3,4]);
+ case 'significancia':
+  var cats={}; X.filas.forEach(function(r){ cats[r.cat]=(cats[r.cat]||0)+r.t; });
+  return fig('Huella por fuente, t CO₂e',svgBarras(X.filas.slice(0,12).map(function(r,i){return {et:r.et,v:r.t,lab:fmt(r.t,1)+' t · '+fmt(r.pct,1)+' %',color:r.mag==='alta'?'#1f3a5f':(r.mag==='media'?'#4f86b5':'#9fb3c8')};}),{et:250,val:110}))+
+   '<div class="ici-2col">'+fig('Emisiones por categoría ISO 14064-1',svgDona(Object.keys(cats).map(function(c){ var C=(typeof CATS!=='undefined'?CATS:[]).filter(function(k){return String(k.n)===String(c);})[0]; return {et:'Categoría '+c+(C?(' · '+C.t.split(',')[0]):''),v:cats[c]}; }),{titulo:'Categorías',centro:fmt(X.total,0)}))+
+   fig('Emisiones por gas',svgDona([{et:'CH₄ biogénico',v:X.gas.ch4b,color:'#3b8e6b'},{et:'N₂O',v:X.gas.n2o,color:'#c9993d'},{et:'CO₂ fósil',v:X.gas.co2,color:'#1f3a5f'},{et:'CH₄ fósil',v:X.gas.ch4f,color:'#7a5c99'},{et:'Sin desglose',v:X.gas.sin,color:'#9aa39d'}].filter(function(x){return x.v>0.005;}),{centro:fmt(X.total,0)}))+'</div>'+
+   fig('Matriz de significancia: magnitud frente a calidad del dato',svgMatriz(X))+
+   tab(['Fuente','t CO₂e','%','kg CO₂e/kg oro','Nivel','Calidad','Observación del revisor'],X.filas.map(function(r){ return [esc(r.et),fmt(r.t,2),fmt(r.pct,1),fmt(r.kgkg,4),r.mag,r.cal,
+    (!imp&&iciEditable())?'<input type="text" data-iciobs="'+esc(r.id)+'" value="'+esc(I.obsFuentes[r.id]||'')+'">':esc(I.obsFuentes[r.id]||'')]; }),[1,2,3]);
+ case 'sensibilidad': var SS=sxSensibilidad(); return SS.length?(fig('Sensibilidad de la huella a cada supuesto, t CO₂e',svgTornado(SS))+tab(['Supuesto','Rango y fuente','Efecto, t CO₂e','Huella, kg CO₂e/kg'],SS.map(function(x){return [esc(x.s.nom),esc(x.s.fue),fmt(x.dLo,2)+' a +'+fmt(x.dHi,2),fmt(x.kLo,3)+' a '+fmt(x.kHi,3)];}),[2,3])):'';
+ case 'escenarios': var E=escenariosHuella(); if(!E)return ''; var T=tablaEscenarios(E,cls);
+  return '<h4 class="ici-h4">Escenario A · de la finca a Puerto Cortés</h4>'+T.a+'<h4 class="ici-h4">Escenario B · hasta el puerto de destino</h4>'+T.b+fig('Huella por unidad funcional: hasta Puerto Cortés (azul) y hasta el puerto de destino (dorado), kg CO₂e por unidad',graficoEscenarios(E));
+ case 'comparativo': return fig('Huella de este estudio frente a referencias internacionales (gris: convencional o mixto; verde: orgánico o agroforestal)',graficoComparativo())+
+  tab(['Referencia','Valor','Unidad','Sistema','Límite','Fuente'],REF_HUELLA.map(function(r){return [esc(r.et),(r.v0!=null?fmt(r.v0,2)+' a ':'')+fmt(r.v,2),esc(r.u),esc(r.sis),esc(r.lim),esc(r.cita)+(imp?'':' <a href="'+esc(r.url)+'" target="_blank" rel="noopener">abrir</a>')];}));
+ case 'instalaciones': var A=areasH(); return tab(['Área','t CO₂e','Estado','Fecha','Verificó','Hallazgo','Acción','Fotos'],AREAS_HUELLA.map(function(a){ var o=A[a[0]]; var t=areaT(a); return [esc(a[1]),t>0?fmt(t,2):'—',esc(o.estado||'sin verificar'),esc(o.fecha||'—'),esc(o.verifico||'—'),esc(o.hallazgo||'—'),esc(o.accion||'—'),String((o.adjuntos||[]).length)]; }),[1])+(imp?'':'<div class="acciones"><button type="button" class="mini" data-vista="fot">Abrir la evidencia fotográfica</button></div>');
+ case 'medicion': var ins=instrumentos(); return ins.length?tab(['Instrumento','Marca y serie','Fecha','Contra','Resultado'],ins.map(function(i){return [esc(i.nombre||i.tipo),esc((i.marca||'')+' '+(i.serie||'')),esc(i.fecha||'—'),esc(i.contra||'—'),esc(i.resultado||'—')];})):'';
+ case 'hallazgos': var nc=S.nc||[]; return nc.length?tab(['Hallazgo','Origen','Responsable','Plazo','Estado'],nc.map(function(n){return [esc(n.titulo),esc(n.origen),esc(n.responsable||'—'),esc(n.plazo||'—'),esc(n.estado)];})):'';
+ case 'cambios': var bit=(S.bitacora||[]).filter(function(b){return /factor/i.test((b.tipo||'')+' '+(b.que||''));}).slice(-15); return bit.length?tab(['Fecha','Quién','Cambio','Antes','Después'],bit.map(function(b){return [esc(String(b.t).slice(0,10)),esc(b.u),esc(b.que),esc(String(b.de).slice(0,60)),esc(String(b.a).slice(0,60))];})):'';
+ case 'recomendaciones': var R=I.recomendaciones, ed=!imp&&iciEditable();
+  var h=tab(['Recomendación','Responsable','Plazo','Prioridad','Estado'].concat(ed?['']:[]),R.map(function(r,i){ if(!ed)return [esc(r.texto),esc(r.resp||'—'),esc(r.plazo||'—'),esc(r.prio||'—'),esc(r.estado||'abierta')];
+   return ['<input type="text" data-icirec="'+i+'" data-campo="texto" value="'+esc(r.texto||'')+'">','<input type="text" data-icirec="'+i+'" data-campo="resp" value="'+esc(r.resp||'')+'">','<input type="date" data-icirec="'+i+'" data-campo="plazo" value="'+esc(r.plazo||'')+'">',
+    '<select data-icirec="'+i+'" data-campo="prio">'+ICI_PRIO.map(function(p){return '<option'+(p===r.prio?' selected':'')+'>'+p+'</option>';}).join('')+'</select>','<select data-icirec="'+i+'" data-campo="estado">'+['abierta','en curso','cerrada'].map(function(p){return '<option'+(p===(r.estado||'abierta')?' selected':'')+'>'+p+'</option>';}).join('')+'</select>',
+    '<button type="button" class="mini" data-ici="rec-quitar" data-i="'+i+'">Quitar</button>']; }));
+  if(ed)h+='<div class="acciones"><button type="button" class="mini" data-ici="rec-nueva">Agregar recomendación</button><button type="button" class="mini" data-ici="rec-sugerir">Proponer desde la matriz y los pendientes</button></div>';
+  return h;
+ case 'dictamen': var ed2=!imp&&iciEditable();
+  if(!ed2)return '<p><b>Dictamen:</b> '+esc(I.dictamen.resultado||'sin dictamen')+(I.dictamen.condiciones?('. Condiciones: '+esc(I.dictamen.condiciones)):'')+'</p>';
+  return '<div class="campos"><div class="campo"><label>Dictamen</label><select data-icidic="resultado"><option value="">Seleccione</option>'+ICI_DICT.map(function(d){return '<option'+(d===I.dictamen.resultado?' selected':'')+'>'+d+'</option>';}).join('')+'</select></div>'+
+   '<div class="campo ancho"><label>Condiciones</label><input type="text" data-icidic="condiciones" value="'+esc(I.dictamen.condiciones||'')+'" placeholder="solo si es apto con condiciones"></div></div>';
+ }
+ return '';
+}
+function iciDocsSel(id){
+ var I=ici(), ds=arcDocs().slice().sort(function(a,b){ return String(a.carpeta).localeCompare(String(b.carpeta),'es',{numeric:true})||String(a.nombre).localeCompare(String(b.nombre)); });
+ var sug={organizacion:'01',inventario:'02',datos:'02',factores:'03',significancia:'04',sensibilidad:'03',escenarios:'02.4',instalaciones:'02.2',medicion:'06',hallazgos:'06',reduccion:'07',comite:'00',estructura:'00',dictamen:'06'}[id]||'';
+ if(sug)ds.sort(function(a,b){ return (String(b.carpeta).indexOf(sug)===0)-(String(a.carpeta).indexOf(sug)===0); });
+ return '<select data-icidoc="'+id+'"'+(iciEditable()?'':' disabled')+'><option value="">Sin documento de soporte</option>'+ds.slice(0,250).map(function(d){return '<option value="'+esc(d.id)+'"'+(I.docs[id]===d.id?' selected':'')+'>'+esc(d.carpeta+' · '+(d.nombre||'documento'))+'</option>';}).join('')+'</select>';
+}
+var ICI_EST={BORRADOR:'Borrador',EN_REVISION:'En revisión',APROBADO:'Aprobado'};
+function vistaInformeInterno(){
+ var I=ici(), fl=I.flujo, ed=iciEditable(), D=I.datos, LC=listaCierre();
+ var vacias=ICI_SEC.filter(function(s){ return !String(I.redaccion[s[0]]||'').trim(); });
+ var h=cabModulo('ici','<p class="vista-sub">El informe interno de control del estudio: se revisa sección por sección con los datos del estudio, se firma por quien elabora, quien revisa y quien aprueba, y termina en el dictamen y el acta de aprobación interna.</p>');
+ h+='<dl class="cifras">'+tarjetaCifra('Estado','<span class="ici-est ici-'+fl.estado+'">'+ICI_EST[fl.estado]+'</span>','versión '+String(fl.version||0).padStart(2,'0'))+
+  tarjetaCifra('Secciones redactadas',(ICI_SEC.length-vacias.length)+' de '+ICI_SEC.length,vacias.length?'faltan '+vacias.length:'completo')+
+  tarjetaCifra('Lista de cierre',LC.ok+' de '+LC.total,'requisitos ISO 14067')+
+  tarjetaCifra('Dictamen',esc(I.dictamen.resultado||'—'),I.acta&&I.acta.numero?('acta '+I.acta.numero):'sin acta')+'</dl>';
+ if(fl.observaciones)h+='<p class="aviso"><b>Devuelto con observaciones:</b> '+esc(fl.observaciones)+'</p>';
+ /* flujo y firmas */
+ var q=quienEdita();
+ h+='<div class="tarjeta"><h3>Flujo y firmas <small>'+esc(I.codigo)+' · '+esc(I.formato)+'</small></h3><div class="cuerpo">'+
+  '<table class="tabla sx-tab"><thead><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr></thead><tbody><tr>'+
+  [fl.elaboro,fl.reviso,fl.aprobo].map(function(f){return '<td>'+(f?('<b>'+esc(f.nombre)+'</b><br><small>'+esc(String(f.fecha).slice(0,16).replace('T',' '))+'</small>'):'—')+'</td>';}).join('')+'</tr></tbody></table><div class="acciones">'+
+  '<button type="button" class="primario" data-ici="imprimir">Vista previa e impresión</button>'+
+  (fl.estado==='BORRADOR'&&puedeEditar()?'<button type="button" data-ici="borradores">Completar las secciones vacías con los datos</button><button type="button" data-ici="enviar">Enviar a revisión</button>':'')+
+  (fl.estado==='EN_REVISION'&&!fl.reviso&&puedeGestionar()?'<button type="button" data-ici="revisar">Firmar la revisión</button>':'')+
+  (fl.estado==='EN_REVISION'&&fl.reviso?'<button type="button" data-ici="aprobar">Aprobar el informe</button>':'')+
+  (fl.estado!=='BORRADOR'&&puedeGestionar()?'<button type="button" data-ici="devolver">Devolver a borrador</button>':'')+
+  (fl.estado==='APROBADO'?'<button type="button" data-ici="acta">Acta de aprobación interna</button>':'')+
+  '</div><p class="pista">Quien elabora no puede revisar ni aprobar. La revisión la firma el auditor interno o un responsable distinto; la aprobación, un aprobador o un responsable que no haya elaborado ni revisado. Al aprobar se congela el archivo de evidencias. Usted está como: <b>'+esc(q)+'</b>.</p></div></div>';
+ /* datos generales */
+ var dis=ed?'':' disabled';
+ function cd(k,et,tipo,ph){ return '<div class="campo'+(tipo==='ancho'?' ancho':'')+'"><label>'+et+'</label><input type="'+(tipo==='date'?'date':'text')+'" data-icidato="'+k+'" value="'+esc(D[k]||'')+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+dis+'></div>'; }
+ h+='<div class="tarjeta" id="ici-datos"><h3>Datos generales</h3><div class="cuerpo"><div class="campos">'+
+  cd('responsable','Responsable del estudio','',perV('responsable'))+cd('revisor','Revisor (auditor interno)','')+cd('comite','Comité de aprobación','ancho','nombres y cargos')+'</div><div class="campos">'+
+  cd('fechaComite','Fecha de la sesión del comité','date')+cd('actaComite','Acta del comité','')+cd('verificador','Organismo verificador previsto','')+'</div><div class="campos">'+
+  '<div class="campo"><label>Código</label><input type="text" data-icicod="codigo" value="'+esc(I.codigo)+'"'+dis+'></div><div class="campo"><label>Formato</label><input type="text" data-icicod="formato" value="'+esc(I.formato)+'"'+dis+'></div>'+
+  cd('competencia','Competencia del equipo (resumen)','ancho')+'</div></div></div>';
+ /* índice */
+ h+='<nav class="ici-indice" aria-label="Índice del informe">'+ICI_SEC.map(function(s,i){ var ok=String(I.redaccion[s[0]]||'').trim(); return '<a href="#ici-'+s[0]+'" class="'+(ok?'ok':'')+'">'+(i+1)+'. '+esc(s[1])+'</a>'; }).join('')+'</nav>';
+ /* secciones */
+ ICI_SEC.forEach(function(s,i){
+  var txt=I.redaccion[s[0]]; if(txt==null)txt='';
+  h+='<section class="tarjeta ici-sec" id="ici-'+s[0]+'"><h3>'+(i+1)+'. '+esc(s[1])+(String(txt).trim()?' <span class="sx-niv sx-calta">redactada</span>':' <span class="sx-niv sx-baja">vacía</span>')+'</h3><div class="cuerpo">'+
+   '<p class="pista">'+esc(s[2])+'</p>'+
+   '<textarea rows="'+Math.min(14,Math.max(4,Math.ceil(String(txt).length/110)+1))+'" data-icired="'+s[0]+'" spellcheck="true" lang="es"'+(ed?'':' disabled')+' placeholder="Escriba o use «Actualizar con los datos»">'+esc(txt)+'</textarea>'+
+   (ed?'<div class="acciones"><button type="button" class="mini" data-ici="regenerar" data-sec="'+s[0]+'">Actualizar con los datos</button><button type="button" class="mini" data-ici="seguir" data-sec="'+s[0]+'">Guardar y seguir</button></div>':'')+
+   '<div class="campos"><div class="campo ancho"><label>Documento de soporte</label>'+iciDocsSel(s[0])+'</div></div>'+
+   iciBloque(s[0],false)+'</div></section>';
+ });
+ return h;
+}
+function iciTextoHTML(t){ return String(t||'').split(/\n{2,}/).filter(function(p){return p.trim();}).map(function(p){return '<p>'+esc(p.trim()).replace(/\n/g,'<br>')+'</p>';}).join(''); }
+function iciCssDoc(){
+ return '@page{size:letter;margin:22mm 20mm 20mm 22mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+  'body{font:12pt/1.5 "Times New Roman",Times,serif;color:#1d2522;margin:0;background:#fff}main{max-width:176mm;margin:0 auto;padding:10mm 0}'+
+  'p{text-align:justify;margin:0 0 8pt;hyphens:auto}h1,h2,h3,h4{font-family:"Times New Roman",Times,serif;color:#1f3a5f;text-align:left;border:0;text-decoration:none;page-break-after:avoid;break-after:avoid}'+
+  'h2{font-size:14pt;margin:20pt 0 8pt}h3{font-size:12.5pt;margin:14pt 0 6pt}.ici-h4,h4{font-size:12pt;margin:12pt 0 4pt;color:#2f4a6f}'+
+  '.control{display:grid;grid-template-columns:1.3fr 1.9fr 1.35fr;border-top:3px solid #1f3a5f;border-bottom:1.5px solid #c9993d;margin:0 0 18pt}'+
+  '.control>div{padding:8pt 10pt;border-right:1px solid #d9dfdb;font-size:9.5pt;line-height:1.3}.control>div:last-child{border-right:0;background:#f4f7f5}'+
+  '.control .c{text-align:center;display:flex;flex-direction:column;justify-content:center}.control .c b{font-size:12.5pt}.control dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2pt 8pt}.control dt{font-weight:700;color:#5f6b66}.control dd{margin:0;text-align:right;font-weight:700}'+
+  '.control img{max-height:46px;max-width:120px;display:block;margin-bottom:4pt}'+
+  '.portada{text-align:center;padding:30pt 10pt 30pt;border:1px solid #d9dfdb;border-top:6px solid #1f3a5f;border-radius:6px;page-break-after:always;break-after:page}'+
+  '.portada img{max-height:110px;max-width:260px;margin:10pt 0 14pt}.portada .org{font-size:16pt;font-weight:700;margin:0}.portada .sis{letter-spacing:.08em;text-transform:uppercase;font-size:10pt;color:#5f6b66;margin:2pt 0 26pt}'+
+  '.portada h1{font-size:24pt;line-height:1.2;margin:0 0 10pt}.portada .sub{font-size:12pt;margin:0 0 4pt;text-align:center}.portada .per{font-size:11pt;color:#5f6b66;margin:0 0 26pt;text-align:center}'+
+  '.portada table{width:84%;margin:0 auto 12pt;border-collapse:collapse;font-size:10pt}.portada th,.portada td{border:1px solid #d9dfdb;padding:5pt 7pt;text-align:left}.portada th{background:#f4f7f5;color:#5f6b66;font-size:9pt;text-transform:uppercase}'+
+  '.portada .firmas td{height:50px;vertical-align:bottom;text-align:center;width:33%}'+
+  '.indice{page-break-after:always;break-after:page}.indice ol{list-style:none;padding:0;margin:0}.indice li{padding:4pt 0;border-bottom:1px dotted #c9d1cc}.indice li span{display:inline-block;width:28pt;color:#1f3a5f;font-weight:700}'+
+  'table.datos,table.ficha{width:100%;border-collapse:collapse;margin:6pt 0 10pt;font:9.5pt/1.35 "Times New Roman",Times,serif}'+
+  'table.datos th{background:#1f3a5f;color:#fff;font-weight:700;padding:4pt 5pt;text-align:left;border:1px solid #1f3a5f}table.datos td{padding:3pt 5pt;border:1px solid #d9dfdb;vertical-align:top}table.datos tbody tr:nth-child(even) td{background:#fafbfa}'+
+  'table.ficha th{background:#f4f7f5;color:#5f6b66;width:22%;text-align:left;padding:4pt 6pt;border:1px solid #d9dfdb}table.ficha td{padding:4pt 6pt;border:1px solid #d9dfdb}.num,.n{text-align:right;white-space:nowrap}'+
+  '.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6pt;margin:6pt 0 12pt}.kpis div{border:1px solid #d9dfdb;border-left:4px solid #1f3a5f;border-radius:4px;padding:6pt 8pt;background:#fafbfa}.kpis b{display:block;font-size:15pt;color:#1f3a5f}.kpis span{font-size:9pt;color:#5f6b66}'+
+  '.ici-fig{margin:8pt 0 12pt;page-break-inside:avoid;break-inside:avoid}.ici-fig figcaption{font-size:10pt;color:#5f6b66;text-align:center;font-style:italic;margin-top:3pt}.ici-2col{display:grid;grid-template-columns:1fr 1fr;gap:10pt}'+
+  '.sec{margin-bottom:6pt}.fotos{display:grid;grid-template-columns:1fr 1fr;gap:8pt}.fotos figure{margin:0;page-break-inside:avoid;break-inside:avoid;border:1px solid #d9dfdb;padding:4pt}.fotos img{width:100%;height:190px;object-fit:cover;display:block}.fotos figcaption{font-size:9pt;color:#5f6b66;margin-top:3pt}'+
+  '.firmas-fin{display:grid;grid-template-columns:repeat(3,1fr);gap:24pt;margin:40pt 0 10pt;page-break-inside:avoid}.firmas-fin div{border-top:1px solid #1d2522;padding-top:5pt;font-size:10pt;text-align:center}'+
+  '.borrador{position:fixed;top:40%;left:0;right:0;text-align:center;font:700 90pt Arial;color:rgba(166,61,47,.07);transform:rotate(-24deg);z-index:0;pointer-events:none}'+
+  '.leyenda{font-size:9.5pt;color:#6b5a1e;background:#fbf4dc;border:1px solid #efe1a8;padding:5pt 8pt;border-radius:4px;text-align:justify}'+
+  '.barra{position:sticky;top:0;background:#1f3a5f;color:#fff;padding:8px 14px;display:flex;gap:10px;align-items:center;font:14px Arial}.barra button{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid #fff;background:transparent;color:#fff;cursor:pointer}'+
+  '@media print{.barra{display:none}main{padding:0}}a{color:#1f3a5f}';
+}
+function iciCabControl(titulo,sub){
+ var I=ici(), fl=I.flujo, lg=iciLogo(), org=perV('razon')||S.perfil.organizacion||'';
+ return '<div class="control"><div>'+(lg?'<img src="'+esc(lg)+'" alt="Logo">':'')+'<b>'+esc(org)+'</b><br><span>'+esc([perV('depto'),perV('pais')].filter(Boolean).join(', '))+'</span></div>'+
+  '<div class="c"><b>'+esc(titulo)+'</b><span>'+esc(sub)+'</span></div>'+
+  '<div><dl><dt>FORMATO:</dt><dd>'+esc(I.formato)+'</dd><dt>CÓDIGO:</dt><dd>'+esc(I.codigo)+'</dd><dt>VERSIÓN:</dt><dd>'+String(fl.version||0).padStart(2,'0')+'</dd><dt>FECHA:</dt><dd>'+esc((fl.aprobo||fl.reviso||fl.elaboro||{fecha:new Date().toISOString()}).fecha.slice(0,10))+'</dd></dl></div></div>';
+}
+async function iciImprimir(){
+ var I=ici(), fl=I.flujo, X=sxDatos(), D=I.datos, org=perV('razon')||S.perfil.organizacion||'', lg=iciLogo(), A=areasH();
+ var fotos=[]; for(var k=0;k<AREAS_HUELLA.length;k++){ var a=AREAS_HUELLA[k]; var ad=(A[a[0]].adjuntos||[]).filter(function(m){return String(m.mime||'').indexOf('image/')===0;});
+  for(var j=0;j<ad.length;j++){ var u=''; try{ u=await fuenteAdjunto(ad[j]); }catch(e){} if(u)fotos.push({u:u,a:a[1],m:ad[j]}); } }
+ var E=escenariosHuella(), per=(pv('per_inicio')&&pv('per_fin'))?(fechaLarga(pv('per_inicio'))+' al '+fechaLarga(pv('per_fin'))):('Ciclo '+(S.perfil.ciclo||''));
+ var h='<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>'+esc(I.codigo)+' · Informe interno de control</title><style>'+iciCssDoc()+'</style></head><body>'+
+  '<div class="barra"><b style="flex:1">'+esc(I.codigo)+' · '+ICI_EST[fl.estado]+'</b><button onclick="window.print()">Imprimir o guardar en PDF</button></div>'+
+  (fl.estado!=='APROBADO'?'<div class="borrador">BORRADOR</div>':'')+'<main>';
+ h+='<section class="portada">'+(lg?'<img src="'+esc(lg)+'" alt="Logo">':'')+'<p class="org">'+esc(org)+'</p><p class="sis">Control interno del estudio de huella de carbono</p>'+
+  '<h1>Informe interno de control<br>Huella de carbono de producto · '+esc(I.anio)+'</h1><p class="sub">'+esc(pv('producto','Café verde oro'))+' · ISO 14067:2018</p><p class="per">Período: '+esc(per)+'</p>'+
+  '<table><tbody><tr><th>Código</th><td>'+esc(I.codigo)+'</td><th>Formato</th><td>'+esc(I.formato)+'</td></tr><tr><th>Versión</th><td>'+String(fl.version||0).padStart(2,'0')+'</td><th>Estado</th><td>'+ICI_EST[fl.estado]+'</td></tr></tbody></table>'+
+  '<table class="firmas"><thead><tr><th>Elaboró</th><th>Revisó</th><th>Aprobó</th></tr></thead><tbody><tr>'+[fl.elaboro,fl.reviso,fl.aprobo].map(function(f){return '<td>'+(f?('<b>'+esc(f.nombre)+'</b><br>'+esc(f.fecha.slice(0,10))):'—')+'</td>';}).join('')+'</tr></tbody></table>'+
+  '<p class="leyenda">Medición propia de la organización, sin verificación de un organismo de certificación independiente. No constituye declaración de neutralidad de carbono.</p></section>';
+ h+='<section class="indice">'+iciCabControl('INFORME INTERNO DE CONTROL '+I.anio,'Estudio de huella de carbono de producto')+'<h2>Contenido</h2><ol><li><span></span>Datos generales</li><li><span></span>Resumen ejecutivo</li>'+ICI_SEC.map(function(s,i){return '<li><span>'+(i+1)+'.</span>'+esc(s[1])+'</li>';}).join('')+'<li><span></span>Anexo 1 · Evidencia fotográfica de las áreas del alcance</li><li><span></span>Control de firmas</li></ol></section>';
+ h+=iciCabControl('INFORME INTERNO DE CONTROL '+I.anio,'Estudio de huella de carbono de producto');
+ h+='<h2>Datos generales</h2><table class="ficha"><tbody>'+
+  '<tr><th>Organización</th><td>'+esc(org)+'</td><th>Producto</th><td>'+esc(pv('producto','Café verde oro'))+'</td></tr>'+
+  '<tr><th>Período</th><td>'+esc(per)+'</td><th>Producción base</th><td>'+fmt(X.kg/1000,1)+' t de café oro</td></tr>'+
+  '<tr><th>Responsable del estudio</th><td>'+esc(D.responsable||perV('responsable')||'—')+'</td><th>Revisor</th><td>'+esc(D.revisor||'—')+'</td></tr>'+
+  '<tr><th>Comité de aprobación</th><td>'+esc(D.comite||'—')+'</td><th>Sesión del comité</th><td>'+esc(D.fechaComite||'—')+(D.actaComite?(' · '+esc(D.actaComite)):'')+'</td></tr>'+
+  '<tr><th>Norma</th><td>ISO 14067:2018 · IPCC 2006 y Refinamiento 2019 · AR6</td><th>Verificador previsto</th><td>'+esc(D.verificador||'—')+'</td></tr></tbody></table>';
+ var LC=listaCierre();
+ h+='<h2>Resumen ejecutivo</h2><div class="kpis"><div><b>'+fmt(X.total,1)+'</b><span>t CO₂e en el límite</span></div><div><b>'+fmt(X.porKg,3)+'</b><span>kg CO₂e por kg de café oro, a destino</span></div><div><b>'+(E&&E.A.length?fmt(E.A[0].kgkg,3):'—')+'</b><span>kg CO₂e por kg, a Puerto Cortés</span></div><div><b>'+LC.ok+'/'+LC.total+'</b><span>requisitos de cierre ISO 14067</span></div></div>'+
+  '<figure class="ici-fig">'+svgBarras(X.filas.slice(0,8).map(function(r){return {et:r.et,v:r.t,lab:fmt(r.t,1)+' t · '+fmt(r.pct,1)+' %',color:r.mag==='alta'?'#1f3a5f':'#4f86b5'};}),{et:250,val:110})+'<figcaption>Las ocho fuentes de mayor peso en la huella, t CO₂e</figcaption></figure>';
+ ICI_SEC.forEach(function(s,i){
+  var t=I.redaccion[s[0]]; if(!String(t||'').trim())t=iciBorrador(s[0]);
+  var dsop=I.docs[s[0]]?arcDe(I.docs[s[0]]):null;
+  h+='<section class="sec"><h2>'+(i+1)+'. '+esc(s[1])+'</h2>'+iciTextoHTML(t)+iciBloque(s[0],true)+
+   (dsop?'<p style="font-size:10pt;color:#5f6b66">Documento de soporte: '+esc(dsop.carpeta+' · '+(dsop.nombre||''))+(driveUrl(dsop)?' (<a href="'+esc(driveUrl(dsop))+'">enlace</a>)':'')+'</p>':'')+'</section>';
+ });
+ h+='<section class="sec" style="page-break-before:always"><h2>Anexo 1 · Evidencia fotográfica de las áreas del alcance</h2>'+
+  (fotos.length?'<div class="fotos">'+fotos.map(function(f){ var m=f.m; return '<figure><img src="'+esc(f.u)+'" alt="'+esc(f.a)+'"><figcaption><b>'+esc(f.a)+'</b><br>'+esc(String(m.fecha||'').slice(0,10))+(m.tecnico?(' · '+esc(m.tecnico)):'')+(m.lat!=null?(' · '+Number(m.lat).toFixed(5)+', '+Number(m.lon).toFixed(5)):'')+'</figcaption></figure>'; }).join('')+'</div>':'<p>No hay fotografías cargadas en el módulo de evidencia fotográfica.</p>')+'</section>';
+ h+='<section class="sec"><h2>Control de firmas</h2><div class="firmas-fin">'+[['Elaboró',fl.elaboro],['Revisó',fl.reviso],['Aprobó',fl.aprobo]].map(function(x){return '<div><b>'+x[0]+'</b><br>'+(x[1]?esc(x[1].nombre)+'<br>'+esc(x[1].fecha.slice(0,10)):'&nbsp;<br>&nbsp;')+'</div>';}).join('')+'</div>'+
+  '<p class="leyenda">Medición propia de la organización, sin verificación de un organismo de certificación independiente. No constituye declaración de neutralidad de carbono.</p></section>';
+ h+='</main></body></html>';
+ var w=window.open('','_blank'); if(!w){ msg('El navegador bloqueó la ventana: permita las ventanas emergentes'); return; }
+ w.document.open(); w.document.write(h); w.document.close();
+}
+function iciActa(){
+ var I=ici(), fl=I.flujo, X=sxDatos(), E=escenariosHuella(), org=perV('razon')||S.perfil.organizacion||'', D=I.datos;
+ var h='<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Acta '+esc((I.acta||{}).numero||'')+'</title><style>'+iciCssDoc()+'</style></head><body>'+
+  '<div class="barra"><b style="flex:1">Acta de aprobación interna '+esc((I.acta||{}).numero||'')+'</b><button onclick="window.print()">Imprimir o guardar en PDF</button></div><main>'+
+  iciCabControl('ACTA DE APROBACIÓN INTERNA N.º '+((I.acta||{}).numero||''),'Estudio de huella de carbono de producto '+I.anio)+
+  '<p>En '+esc(perV('depto')||'Honduras')+', el '+fechaLarga(String((fl.aprobo||{}).fecha||hoy()).slice(0,10))+', '+esc(D.comite||'el comité de aprobación')+' de '+esc(org)+' revisó el informe interno de control '+esc(I.codigo)+', versión '+String(fl.version||0).padStart(2,'0')+', del estudio de huella de carbono del '+esc(pv('producto','café verde oro'))+'.</p>'+
+  '<p>El estudio cuantifica '+fmt(X.total,2)+' t CO₂e dentro de su límite, equivalentes a '+fmt(X.porKg,3)+' kg CO₂e por kg de café oro puesto en el puerto de destino'+(E&&E.A.length?(' y '+fmt(E.A[0].kgkg,3)+' kg CO₂e por kg hasta Puerto Cortés'):'')+'. El CO₂ biogénico, de '+fmt(X.bio,1)+' t, se informa aparte.</p>'+
+  '<p><b>Dictamen:</b> '+esc(I.dictamen.resultado||'sin dictamen')+(I.dictamen.condiciones?('. Condiciones: '+esc(I.dictamen.condiciones)):'')+'.</p>'+
+  '<p>El resultado se presenta como medición propia de la organización, sin verificación de un organismo de certificación independiente, y no constituye declaración de neutralidad. El archivo de evidencias quedó congelado con el sello '+esc(((arcCongelados().slice(-1)[0])||{}).sello||'—')+'.</p>'+
+  '<div class="firmas-fin">'+[['Elaboró',fl.elaboro],['Revisó',fl.reviso],['Aprobó',fl.aprobo]].map(function(x){return '<div><b>'+x[0]+'</b><br>'+(x[1]?esc(x[1].nombre)+'<br>'+esc(x[1].fecha.slice(0,10)):'')+'</div>';}).join('')+'</div></main></body></html>';
+ var w=window.open('','_blank'); if(!w){ msg('El navegador bloqueó la ventana: permita las ventanas emergentes'); return; }
+ w.document.open(); w.document.write(h); w.document.close();
+}
+function iciGuardar(que,de,a){ marcar('gestion/ici'); anotar('dato','Informe interno de control · '+que,de==null?'':String(de).slice(0,120),a==null?'':String(a).slice(0,120)); guardarLocal(); }
+document.addEventListener('click',function(ev){
+ var b=ev.target.closest&&ev.target.closest('[data-ici]'); if(!b)return;
+ var I=ici(), fl=I.flujo, a=b.dataset.ici, q=quienEdita();
+ if(a==='imprimir'){ iciImprimir(); return; }
+ if(a==='acta'){ iciActa(); return; }
+ if(a==='regenerar'){ if(!iciEditable())return; var s=b.dataset.sec; I.redaccion[s]=iciBorrador(s); iciGuardar('sección actualizada con los datos',s,''); pintar(); setTimeout(function(){ var e=$('ici-'+s); if(e)e.scrollIntoView({block:'start'}); },40); return; }
+ if(a==='seguir'){ var k=ICI_SEC.findIndex(function(x){return x[0]===b.dataset.sec;}); var sg=ICI_SEC[k+1]; msg('Sección '+(k+1)+' guardada'+(sg?'; siga con la '+(k+2):'')); if(sg){ var e2=$('ici-'+sg[0]); if(e2)e2.scrollIntoView({block:'start'}); } return; }
+ if(a==='borradores'){ if(!iciEditable())return; var n=0; ICI_SEC.forEach(function(s){ if(!String(I.redaccion[s[0]]||'').trim()){ I.redaccion[s[0]]=iciBorrador(s[0]); n++; } }); iciGuardar('secciones vacías completadas',String(n),''); msg(n+' secciones completadas con los datos'); pintar(); return; }
+ if(a==='enviar'){ if(!iciEditable())return; var vac=ICI_SEC.filter(function(s){return !String(I.redaccion[s[0]]||'').trim();}); if(vac.length){ msg('Complete las secciones: '+vac.map(function(s){return s[1];}).join(', ')); return; }
+  if(!I.dictamen.resultado){ msg('Seleccione el dictamen antes de enviar'); return; }
+  fl.estado='EN_REVISION'; fl.elaboro=iciFirma(); fl.reviso=null; fl.aprobo=null; fl.observaciones=''; iciGuardar('enviado a revisión','BORRADOR','EN_REVISION'); pintar(); return; }
+ if(a==='revisar'){ if(fl.estado!=='EN_REVISION')return; if(fl.elaboro&&fl.elaboro.nombre===q){ msg('Quien elaboró el informe no puede revisarlo'); return; } if(!puedeGestionar()){ msg('Su rol no permite firmar la revisión'); return; }
+  fl.reviso=iciFirma(); iciGuardar('revisión firmada','',q); pintar(); return; }
+ if(a==='aprobar'){ if(fl.estado!=='EN_REVISION'||!fl.reviso){ msg('El informe debe estar revisado antes de aprobarlo'); return; }
+  if((fl.elaboro&&fl.elaboro.nombre===q)||(fl.reviso&&fl.reviso.nombre===q)){ msg('Quien elaboró o revisó el informe no puede aprobarlo'); return; }
+  if(SES&&SES.rol&&['aprobador','responsable'].indexOf(SES.rol)<0&&SES.tipo!=='portal'){ msg('La aprobación la firma un aprobador o un responsable'); return; }
+  fl.estado='APROBADO'; fl.aprobo=iciFirma(); fl.version=(fl.version||0)+1;
+  var an=I.anio||String(new Date().getFullYear()); if(!(I.acta&&I.acta.numero)){ I.acta={numero:an+'-001',fecha:hoy()}; }
+  try{ arcCongelar('Aprobación del informe interno '+I.codigo+' v'+String(fl.version).padStart(2,'0')); }catch(e){}
+  iciGuardar('aprobado','EN_REVISION','APROBADO v'+fl.version); msg('Informe aprobado; acta '+I.acta.numero+' y archivo congelado'); pintar(); return; }
+ if(a==='devolver'){ var ob=window.prompt('Observaciones para devolver el informe a borrador:',''); if(ob==null)return; fl.estado='BORRADOR'; fl.reviso=null; fl.aprobo=null; fl.observaciones=ob; iciGuardar('devuelto a borrador','',ob); pintar(); return; }
+ if(a==='rec-nueva'){ if(!iciEditable())return; I.recomendaciones.push({texto:'',resp:'',plazo:'',prio:'media',estado:'abierta'}); iciGuardar('recomendación agregada','',''); pintar(); return; }
+ if(a==='rec-quitar'){ if(!iciEditable())return; var r=I.recomendaciones.splice(+b.dataset.i,1)[0]; iciGuardar('recomendación quitada',r&&r.texto,''); pintar(); return; }
+ if(a==='rec-sugerir'){ if(!iciEditable())return; var X=sxDatos(), ya={}; I.recomendaciones.forEach(function(r){ya[r.texto]=1;});
+  X.filas.filter(function(r){return r.mag==='alta'&&r.cal!=='alta';}).forEach(function(r){ var t='Mejorar el dato de '+r.et.toLowerCase()+' (magnitud alta, calidad '+r.cal+'): medición primaria o factor documentado'; if(!ya[t])I.recomendaciones.push({texto:t,resp:'',plazo:'',prio:'alta',estado:'abierta'}); });
+  arcPendientesLista().filter(function(x){return x.estado!=='resuelto'&&x.t>1;}).slice(0,8).forEach(function(x){ var t=x.fuente+': '+x.falta.toLowerCase(); if(!ya[t])I.recomendaciones.push({texto:t,resp:x.resp||'',plazo:x.fecha||'',prio:'media',estado:'abierta'}); });
+  iciGuardar('recomendaciones propuestas','',String(I.recomendaciones.length)); pintar(); return; }
+});
+document.addEventListener('change',function(ev){
+ var t=ev.target; if(!t||!t.dataset)return; var I;
+ if(t.dataset.area){ if(!puedeEditar())return; var A=areasH(), o=A[t.dataset.area]; var antes=o[t.dataset.campo]||''; o[t.dataset.campo]=t.value; o._m=Date.now(); marcar('gestion/archivo'); anotar('dato','Área '+t.dataset.area+' · '+t.dataset.campo,antes,t.value); guardarLocal(); return; }
+ if(!(t.dataset.icired||t.dataset.icidato||t.dataset.icicod||t.dataset.iciobs||t.dataset.icirec||t.dataset.icidic||t.dataset.icidoc))return;
+ if(!iciEditable()){ msg('El informe no está en borrador'); return; }
+ I=ici();
+ if(t.dataset.icired){ var s=t.dataset.icired, a0=I.redaccion[s]||''; I.redaccion[s]=String(t.value).slice(0,20000); iciGuardar('redacción · '+s,a0.length+' caracteres',I.redaccion[s].length+' caracteres'); return; }
+ if(t.dataset.icidato){ var k=t.dataset.icidato, a1=I.datos[k]||''; I.datos[k]=String(t.value).slice(0,600); iciGuardar('dato · '+k,a1,I.datos[k]); return; }
+ if(t.dataset.icicod){ var k2=t.dataset.icicod, a2=I[k2]; I[k2]=String(t.value).slice(0,40)||a2; iciGuardar(k2,a2,I[k2]); return; }
+ if(t.dataset.iciobs){ var a3=I.obsFuentes[t.dataset.iciobs]||''; I.obsFuentes[t.dataset.iciobs]=String(t.value).slice(0,400); iciGuardar('observación · '+t.dataset.iciobs,a3,t.value); return; }
+ if(t.dataset.icirec){ var r=I.recomendaciones[+t.dataset.icirec]; if(!r)return; var a4=r[t.dataset.campo]||''; r[t.dataset.campo]=String(t.value).slice(0,400); iciGuardar('recomendación · '+t.dataset.campo,a4,t.value); return; }
+ if(t.dataset.icidic){ var a5=I.dictamen[t.dataset.icidic]||''; I.dictamen[t.dataset.icidic]=String(t.value).slice(0,600); iciGuardar('dictamen · '+t.dataset.icidic,a5,t.value); return; }
+ if(t.dataset.icidoc){ var a6=I.docs[t.dataset.icidoc]||''; if(t.value)I.docs[t.dataset.icidoc]=t.value; else delete I.docs[t.dataset.icidoc]; iciGuardar('documento de soporte · '+t.dataset.icidoc,a6,t.value); return; }
+});
+
 ICO.sig='<path d="M4 20h16"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16V5"/>';
 var NAV_GRUPOS=[
  ['Definir el estudio',[
@@ -27029,19 +27515,20 @@ var NAV_GRUPOS=[
  ['Capturar datos',[
   ['cap','Facturas y registros',['cap','cds']],
   ['ben','Fuentes de emisión',['ben','fincas','ins']],
-  ['arc','Archivo de evidencias',['arc']]]],
+  ['arc','Archivo de evidencias',['arc','fot']]]],
  ['Resultados',[
   ['calc','Calculadora',['calc']],
   ['sig','Intensidad y significancia',['sig']],
+  ['ici','Informe interno de control',['ici']],
   ['inf','Informe ISO 14067',['inf']],
   ['ver','Verificación externa',['ver','con']]]]
 ];
 var NAV_MAS=[['ods','Vinculación con los ODS'],['rep','Otros reportes'],['aju','Ajustes']];
 var SUBPEST_NOM={hcp:'Estudio',per:'Perfil de la organización',cfg:'Configuración del cálculo',cap:'Subir facturas',cds:'Conciliar sustentos',
- ben:'Beneficio y planta',fincas:'Fincas y productores',ins:'Emisiones de la finca',ver:'Verificación',con:'Control de la medición'};
+ arc:'Documentos',fot:'Evidencia fotográfica',ben:'Beneficio y planta',fincas:'Fincas y productores',ins:'Emisiones de la finca',ver:'Verificación',con:'Control de la medición'};
 function navMiembroVisible(id){
  if(id==='fincas'||id==='ins')return moduloVisible(id)&&(S.fincas||[]).length>0;
- if(id==='sig')return true;
+ if(id==='sig'||id==='ici'||id==='fot')return true;
  return moduloVisible(id);
 }
 function navItemDe(v){
@@ -27288,6 +27775,9 @@ function vistaSignificancia(){
   tarjetaCifra('Emisiones en el límite',fmt(X.total,2),'t CO₂e')+
   tarjetaCifra('CO₂ biogénico',fmt(X.bio,1),'t, se informa aparte y no se suma')+
   '</dl>';
+ h+='<div class="tarjeta"><h3>La huella en gráficos</h3><div class="cuerpo"><div class="ici-2col"><figure class="ici-fig">'+svgBarras(X.filas.slice(0,10).map(function(r){return {et:r.et,v:r.t,lab:fmt(r.t,1)+' t · '+fmt(r.pct,1)+' %',color:r.mag==='alta'?'#1f3a5f':(r.mag==='media'?'#4f86b5':'#9fb3c8')};}),{et:230,val:110,ancho:620})+'<figcaption>Fuentes de mayor peso, t CO₂e</figcaption></figure>'+
+  '<figure class="ici-fig">'+svgDona([{et:'CH₄ biogénico',v:X.gas.ch4b,color:'#3b8e6b'},{et:'N₂O',v:X.gas.n2o,color:'#c9993d'},{et:'CO₂ fósil',v:X.gas.co2,color:'#1f3a5f'},{et:'CH₄ fósil',v:X.gas.ch4f,color:'#7a5c99'},{et:'Sin desglose',v:X.gas.sin,color:'#9aa39d'}].filter(function(x){return x.v>0.005;}),{centro:fmt(X.total,0)})+'<figcaption>Emisiones por gas</figcaption></figure></div>'+
+  '<figure class="ici-fig">'+svgMatriz(X)+'<figcaption>Matriz de significancia</figcaption></figure></div></div>';
  /* 1 · por fuente */
  var nA=X.filas.filter(function(r){return r.mag==='alta';});
  var pA=nA.reduce(function(a,r){return a+r.pct;},0);
@@ -27372,6 +27862,7 @@ function listaCierre(){ return memo('lcierre',function(){
  var ab=arcPendientesLista().filter(function(x){return x.estado!=='resuelto';});
  out.push({cl:'M3.6',t:'Evidencia recuperable de cada dato',estado:X.tSin>0.005?'aviso':(ab.length?'aviso':'ok'),nota:fmt(X.tSin,2)+' t CO₂e sin factura · '+plural(ab.length,'pendiente abierto','pendientes abiertos')+'.',ir:'arc'});
  out.push({cl:'7',t:'Archivo de evidencias congelado para la declaración',estado:arcCongelados().length?'ok':'aviso',nota:arcCongelados().length?('Última copia: '+String(arcCongelados()[arcCongelados().length-1].fecha).slice(0,10)):'Sin copia congelada.',ir:'arc'});
+ try{ var Ic=ici(); out.push({cl:'Control interno',t:'Informe interno de control aprobado',estado:Ic.flujo.estado==='APROBADO'?'ok':'aviso',nota:ICI_EST[Ic.flujo.estado]+(Ic.dictamen.resultado?(' · '+Ic.dictamen.resultado):''),ir:'ici'}); }catch(e){}
  var ok=out.filter(function(x){return x.estado==='ok';}).length;
  return {items:out,ok:ok,total:out.length};
 }); }
@@ -27435,6 +27926,8 @@ function pintarBase(){
  else if(vista==='org')$('v-org').innerHTML=vistaOrganizaciones();
  else if(vista==='calc')$('v-calc').innerHTML=vistaCalculadora();
  else if(vista==='sig')$('v-sig').innerHTML=vistaSignificancia();
+ else if(vista==='ici')$('v-ici').innerHTML=vistaInformeInterno();
+ else if(vista==='fot')$('v-fot').innerHTML=vistaFotos();
  else if(vista==='ing')$('v-ing').innerHTML=vistaIngreso();
  else if(vista==='per')$('v-per').innerHTML=vistaPerfil();
  else if(vista==='hcp')$('v-hcp').innerHTML=vistaEstudio();
