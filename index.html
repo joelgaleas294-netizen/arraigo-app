@@ -25770,6 +25770,7 @@ function vistaEstudio(){
   campoSel('Límite del ciclo de vida','prod.limites',LIMITES_PROD.map(function(x){return x[0];}),P.limites||'De la cuna al puerto de destino')+
   (String(P.limites||'')==='Parcial declarado'?hcpArea('Qué queda fuera del límite parcial y por qué','limitesParcial','',3):'')+
   hcpArea('Ámbito geográfico','lim_geografico','',2,1)+
+  hcpTx('n_fincas',['Fincas bajo el alcance del proyecto',fincasAlcance()?String(fincasAlcance()):'','num'])+
   hcpArea('Procesos excluidos y justificación','lim_excluidos','',4,1)+
   '</div><p><b>Etapas incluidas según el límite elegido:</b> '+esc(etap.join('; '))+'.</p>'+
   '<p class="pista">Las exclusiones de fuentes concretas con su estimación se registran en «Configuración del cálculo» y se trasladan al informe ('+exclusiones().length+' registradas).</p></div></div>';
@@ -26016,6 +26017,7 @@ function infSecciones(){
  sec('lim','3.2','Límite del sistema','7.3 b) y o)',ok(pv('lim_excluidos')),[
   {p:'El límite del sistema es '+lim.toLowerCase()+' e incluye: '+etap.join(', ')+'. '+(P.limites==='Parcial declarado'&&pv('limitesParcial')?pv('limitesParcial'):'')},
   {p:'Ámbito geográfico: '+minus(pv('lim_geografico',hcpBase('lim_geografico')))},
+  fincasAlcance()>0?{p:'El alcance del proyecto comprende '+fx(fincasAlcance(),0)+' fincas de productores, todas incluidas en el límite del sistema del estudio.'}:null,
   {p:'Procesos excluidos: '+minus(pv('lim_excluidos','[pendiente]'))},
   {p:'Las entradas del sistema son insumos agrícolas, combustibles, electricidad, materiales de empaque y servicios de transporte; las salidas consideradas son las emisiones de gases de efecto invernadero a la atmósfera, el producto y sus coproductos.'}
  ],pv('lim_excluidos')?[]:['procesos excluidos']);
@@ -26052,6 +26054,8 @@ function infSecciones(){
  ]);
  sec('cor','4.4','Criterios de corte y exclusiones','7.3 g)',ok(pv('corte_desc')),[
   {p:pv('corte_desc',hcpBase('corte_desc'))},
+  {p:excTextoInforme()},
+  excTablaInforme().f.length>1?{tabla:excTablaInforme()}:null,
   D.EX.length?{tabla:{c:['Fuente excluida','Ámbito','Estimación, % del total','Justificación'],f:D.EX.map(function(x){return [x.fuente,x.ambito,x.peso||'—',x.razon||'—'];})}}:{p:'No se registraron exclusiones de fuentes dentro del límite del sistema.'}
  ]);
  sec('asi','4.5','Asignación','7.3 h)',ok(pv('asig_justif')),[
@@ -27591,6 +27595,64 @@ var EXC_CAND=[
  {id:'puertos',et:'Manejo en los puertos de embarque y destino',etapa:'14. Exportación',lineas:[],guia:'Se suele excluir por criterio de corte, declarándolo.'},
  {id:'aguas_abajo',et:'Tostado, uso y fin de vida del producto y del empaque',etapa:'Después del puerto de destino',lineas:['tostado_ext','preparacion','fin_empaque','producto_term'],guia:'Fuera de un límite de la cuna al puerto de destino.'}
 ];
+/* Límite del total de exclusiones del estudio de huella: 1 % de la huella salvo que se declare otro */
+function limExclTotal(){ var v=numDe((S.prod||{}).exclLim); return v>0?v:1; }
+/* Estimadores del peso de los flujos excluidos: dato del período por factor citado, en t CO₂e */
+var EXC_EST={
+ viajes_personal:{campos:[['n','Personas que se trasladan'],['km','Km de ida y vuelta por día y persona'],['dias','Días laborados en el período'],['modo','Medio principal','modo','moto']],
+  t:function(v){ return numDe(v.n)*numDe(v.km)*numDe(v.dias)*(FE_KM[v.modo||'moto']||FE_KM.moto).f/1000; },
+  met:function(v){ var F=FE_KM[v.modo||'moto']||FE_KM.moto; return fmt(numDe(v.n),0)+' personas × '+fmt(numDe(v.km),1)+' km × '+fmt(numDe(v.dias),0)+' días × '+fmt(F.f,4)+' kg CO₂e/km ('+F.nom.toLowerCase()+', una persona por vehículo; '+F.or+')'; }},
+ viajes_negocio:{campos:[['km','Km recorridos en el período'],['modo','Medio principal','modo','pickup']],
+  t:function(v){ return numDe(v.km)*(FE_KM[v.modo||'pickup']||FE_KM.pickup).f/1000; },
+  met:function(v){ var F=FE_KM[v.modo||'pickup']||FE_KM.pickup; return fmt(numDe(v.km),0)+' km × '+fmt(F.f,4)+' kg CO₂e/km ('+F.nom.toLowerCase()+'; '+F.or+')'; }},
+ quimicos:{campos:[['kg','Kg comprados en el período'],['f','Factor, kg CO₂e por kg (ficha o declaración ambiental)']],
+  t:function(v){ return numDe(v.kg)*numDe(v.f)/1000; },
+  met:function(v){ return fmt(numDe(v.kg),1)+' kg × '+fmt(numDe(v.f),3)+' kg CO₂e/kg, factor de la ficha o declaración ambiental del producto'; }},
+ residuos:{campos:[['lb','Libras entregadas al servicio de recolección'],['f','Factor, kg CO₂e por t (635,3 por defecto)']],
+  t:function(v){ return numDe(v.lb)*0.45359237/1000*(numDe(v.f)>0?numDe(v.f):635.3)/1000; },
+  met:function(v){ return fmt(numDe(v.lb),0)+' lb ('+fmt(numDe(v.lb)*0.45359237/1000,3)+' t) × '+fmt(numDe(v.f)>0?numDe(v.f):635.3,1)+' kg CO₂e/t, residuo general en relleno sin captación de metano (Ministry for the Environment de Nueva Zelanda, 2026, sección 10)'; }},
+ extintores:{campos:[['kg','Kg de CO₂ recargados']],
+  t:function(v){ return numDe(v.kg)/1000; },
+  met:function(v){ return fmt(numDe(v.kg),1)+' kg de CO₂ liberado, potencial 1'; }}
+};
+function excEstLleno(fid,v){ var E=EXC_EST[fid]; return !!E&&E.campos.every(function(c){ return c[2]==='modo'||(fid==='residuos'&&c[0]==='f')||isFinite(numDe(v[c[0]]))&&String(v[c[0]]||'').trim()!==''; }); }
+function excEstimadores(D){
+ var ed=puedeEditar(), h='<h2 class="calc-h2">Estimar el peso de los flujos excluidos</h2><p class="tg-leyenda">Con el dato del período y un factor citado, ARRAIGO calcula las t CO₂e del flujo y las pasa a la tabla. El total de lo excluido se compara con el límite de '+fmt(D.u5,0)+' % de la huella y se declara en los informes.</p>';
+ D.filas.filter(function(f){ return EXC_EST[f.c.id]&&f.est!=='incluida'&&f.est!=='no_ocurre'&&f.est!=='fuera'; }).forEach(function(f){
+  var E=EXC_EST[f.c.id], v=(f.e&&f.e.calc)||{};
+  h+='<div class="tarjeta"><h3>'+esc(f.c.et)+'</h3><div class="cuerpo"><div class="campos">'+E.campos.map(function(c){
+   if(c[2]==='modo')return '<div class="campo"><label>'+esc(c[1])+'</label><select data-excest="'+f.c.id+'.'+c[0]+'"'+(ed?'':' disabled')+'>'+['moto','bus','auto','pickup'].map(function(k){return '<option value="'+k+'"'+((v.modo||c[3])===k?' selected':'')+'>'+esc(FE_KM[k].nom)+'</option>';}).join('')+'</select></div>';
+   return '<div class="campo"><label>'+esc(c[1])+'</label><input type="text" inputmode="decimal" data-excest="'+f.c.id+'.'+c[0]+'" value="'+esc(v[c[0]]||'')+'"'+(ed?'':' disabled')+'></div>'; }).join('')+'</div>'+
+   (excEstLleno(f.c.id,v)?'<p class="pista">'+esc(E.met(v))+' = <b>'+fmt(E.t(v),3)+' t CO₂e</b>'+(D.X.total>0?(', '+fmt(E.t(v)/D.X.total*100,3)+' % de la huella'):'')+'.'+(f.est!=='excluida'?' Marque el flujo como «Excluido por criterio de corte» para que cuente.':'')+'</p>':'<p class="pista">'+esc(f.c.guia)+'</p>')+'</div></div>';
+ });
+ h+='<div class="campos"><div class="campo"><label>Límite del total de exclusiones, % de la huella</label><input type="text" inputmode="decimal" data-excest="_lim" value="'+esc((S.prod||{}).exclLim||'1')+'"'+(ed?'':' disabled')+'></div></div>';
+ return h;
+}
+document.addEventListener('change',function(ev){ var t=ev.target; if(!t.dataset||!t.dataset.excest||!puedeEditar())return;
+ var k=t.dataset.excest; S.prod=S.prod||{};
+ if(k==='_lim'){ var a0=S.prod.exclLim||''; S.prod.exclLim=t.value.trim(); anotar('dato','Límite del total de exclusiones',a0,S.prod.exclLim); marcar('gestion/declaraciones'); guardarLocal(); pintar(); return; }
+ var pr=k.split('.'), fid=pr[0], e=excDe(fid), calc=Object.assign({},(e&&e.calc)||{}); calc[pr[1]]=t.value.slice(0,60);
+ excGuardar(fid,'calc',calc);
+ if(excEstLleno(fid,calc)){ var E=EXC_EST[fid]; excGuardar(fid,'t',String(+E.t(calc).toFixed(4))); excGuardar(fid,'metodo',E.met(calc)); }
+ anotar('dato','Estimación de flujo excluido · '+fid+' · '+pr[1],'',t.value);
+ pintar(); });
+/* Declaración del peso de las exclusiones en los informes */
+function excTextoInforme(){
+ var D=excDatos(), ex=D.ex, X=D.X;
+ if(!ex.length&&!D.filas.some(function(f){return f.est==='no_ocurre';}))return 'No quedan flujos excluidos por criterio de corte dentro del límite del sistema.';
+ var con=ex.filter(function(f){return isFinite(f.t);}), sin=ex.filter(function(f){return !isFinite(f.t);});
+ var txt=con.length?('Los flujos excluidos por criterio de corte se estimaron con su dato del período y un factor citado para demostrar que no son materiales: '+con.map(function(f){return f.c.et.toLowerCase()+', '+fmt(f.t,3)+' t CO₂e ('+fmt(f.pct,3)+' %)';}).join('; ')+'. '):'';
+ if(sin.length)txt+='Falta estimar el peso de: '+sin.map(function(f){return f.c.et.toLowerCase();}).join('; ')+'. ';
+ txt+='En conjunto, lo excluido suma '+fmt(D.tEx,3)+' t CO₂e, el '+fmt(D.pEx,3)+' % de la huella del estudio ('+fmt(X.total,2)+' t CO₂e), '+(D.pEx<=D.u5?'por debajo':'por encima')+' del límite de '+fmt(D.u5,0)+' % fijado para el total de exclusiones, y ningún flujo excluido '+(D.sobre1?'cumple':'supera')+' el '+fmt(D.u1,0)+' % por flujo'+(D.sobre1?' (hay '+D.sobre1+' por encima)':'')+'.';
+ var no=D.filas.filter(function(f){return f.est==='no_ocurre';}); if(no.length)txt+=' No ocurren en el período: '+no.map(function(f){return f.c.et.toLowerCase();}).join('; ')+'.';
+ return txt;
+}
+function excTablaInforme(){
+ var D=excDatos(), F=D.filas.filter(function(f){return f.est==='excluida'||f.est==='no_ocurre';});
+ return {c:['Flujo','Estado','Método de estimación','t CO₂e','% de la huella'],f:F.map(function(f){ var e=f.e||{};
+  return [f.c.et,f.est==='excluida'?'Excluido por corte':'No ocurre',e.metodo||e.razon||'—',f.est==='no_ocurre'?'0':(isFinite(f.t)?fmt(f.t,3):'sin estimar'),f.est==='no_ocurre'?'0':(isFinite(f.pct)?fmt(f.pct,3)+' %':'—')]; })
+  .concat([['Total excluido','','',fmt(D.tEx,3),fmt(D.pEx,3)+' % (límite '+fmt(D.u5,0)+' %)']])};
+}
 function excDe(fid){ return exclusionesTodas().filter(function(x){return x.flujo===fid;})[0]||null; }
 function excDatos(){
  var X=sxDatos(), porId={}; X.filas.forEach(function(r){ porId[r.id]=(porId[r.id]||0)+r.t; });
@@ -27609,7 +27671,7 @@ function excDatos(){
   pend:filas.filter(function(f){return f.est==='pendiente';}).length,
   sinRazon:filas.filter(function(f){return (f.est==='excluida'||f.est==='no_ocurre'||f.est==='fuera')&&!String((f.e&&f.e.razon)||'').trim();}).length,
   sobre1:ex.filter(function(f){return isFinite(f.pct)&&f.pct>umbralSignificancia();}).length,
-  u1:umbralSignificancia(), u5:umbralMaterialidad()};
+  u1:umbralSignificancia(), u5:limExclTotal()};
 }
 function excGuardar(fid,campo,valor){
  if(!puedeEditar())return;
@@ -27655,6 +27717,7 @@ function vistaExclusiones(){
      ('<textarea rows="2" data-exc-f="'+esc(c.id)+'" data-exc-c="razon" placeholder="'+esc(f.est==='pendiente'?'Qué falta: '+c.guia:'Por qué')+'"'+dis+'>'+esc(e.razon||'')+'</textarea>'))+'</td></tr>';
  });
  h+='</tbody></table></div>';
+ h+=excEstimadores(D);
  h+='<p class="tg-leyenda">Un flujo excluido necesita su razón y su peso estimado en t CO₂e; ARRAIGO calcula el porcentaje frente al total. «No ocurre» se respalda con un documento (por ejemplo, una constancia de que no hubo recargas). La evidencia va en la carpeta 02.5 del archivo.</p>';
  h+='<h2 class="calc-h2">Documentos de la carpeta 02.5</h2>';
  h+=D.docs.length?('<div class="tg-wrap"><table class="tg"><thead><tr><th>Documento</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>'+D.docs.map(function(d){ var u=driveUrl(d); return '<tr><td>'+(u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'</a>':esc(d.nombre||'documento'))+'</td><td>'+esc(d.fecha||'')+'</td><td>'+esc(d.estado||'')+'</td></tr>'; }).join('')+'</tbody></table></div>'):'<p class="tg-leyenda">Todavía no hay documentos en la carpeta 02.5.</p>';
@@ -27702,10 +27765,14 @@ function incResumen(){ return memo('incres',function(){
 function incTablaFilas(R){ return R.casos.map(function(c){ var k=c.kgU||1;
  return [c.x.pres.nom+' · '+c.x.dest.nom,fmt(c.I.tot,3),'±'+fmt(c.I.u,1)+' %',fmt(c.I.inf,3)+' a '+fmt(c.I.sup,3),fmt(c.I.tot*k,1)+' ('+fmt(c.I.inf*k,1)+' a '+fmt(c.I.sup*k,1)+')',c.I.cumple?'Sí':'No']; }); }
 var INC_CAB=['Presentación y destino','kg CO₂e/kg','Incertidumbre','Intervalo, kg CO₂e/kg','kg CO₂e por unidad (intervalo)','En objetivo'];
+/* Fincas bajo el alcance del proyecto: lo declarado en el Estudio ISO 14067; si falta, 547 para CAFICO (dato del
+   responsable: las 52 parcelas permanentes representan las 547 fincas del proyecto) o las fincas cargadas. */
+function fincasAlcance(){ var n=numDe(pv('n_fincas')); if(n>0)return n; if(siglasOrg()==='CAFICO')return 547; return (S.fincas||[]).length; }
 function incParrafo(R){
  if(!R)return 'La incertidumbre no se pudo estimar: faltan la producción o las presentaciones del estudio.';
  return 'La incertidumbre se estimó por los dos enfoques de las Directrices del IPCC de 2006 (volumen 1, capítulo 3): propagación de errores y simulación de Monte Carlo con '+fmt(R.N,0)+' corridas y semilla fija ('+R.semilla+'), de modo que el resultado es reproducible. Se informa el mayor de los dos. '+
   'Con un nivel de confianza del '+R.conf+' %, la incertidumbre del resultado va de ±'+fmt(R.uMin,1)+' % a ±'+fmt(R.uMax,1)+' % según la presentación y el destino, frente a un objetivo de precisión de ±'+fmt(R.obj,0)+' %. '+
+  (function(){ var K=incCfg(); return 'Cada renglón lleva la incertidumbre de su dato de actividad ('+fmt(K.ad,0)+' % con factura o registro) y la de su factor de emisión ('+fmt(K.efN,0)+' % factor nacional, '+fmt(K.efR,0)+' % regional, '+fmt(K.efD,0)+' % valor por defecto del IPCC, '+fmt(Math.min(K.efD,7),0)+' % CO₂ de combustibles fósiles, '+fmt(K.efS,0)+' % compostaje y nitrógeno en el suelo, '+fmt(K.fleteF,0)+' % flete marítimo), combinadas como raíz cuadrada de la suma de sus cuadrados; en la propagación, la incertidumbre total es la raíz de la suma de los cuadrados de cada renglón por su incertidumbre, dividida entre el total, más el '+fmt(K.prod,0)+' % de la producción del denominador. En Monte Carlo, el intervalo se lee entre los percentiles '+fmt(2.5,1)+' y '+fmt(97.5,1)+' de las corridas. '; })()+
   'El grado de confianza del resultado es '+R.grado.toLowerCase()+'. '+R.gradoTxt+
   (R.top.length?(' Lo que más aporta a la incertidumbre es: '+R.top.slice(0,3).map(function(c){return String(c.t).replace(/^Tramo común · /,'').toLowerCase()+' ('+fmt(c.peso,0)+' % de la varianza)';}).join('; ')+'.'):'');
 }
@@ -27960,10 +28027,10 @@ function iciBorrador(id){
  switch(id){
  case 'introduccion': return 'Este informe documenta el control interno del estudio de huella de carbono del '+pv('producto','café verde oro')+' de '+org+', correspondiente al período '+per+'. Su objetivo es revisar que el estudio cumpla los requisitos de ISO 14067:2018 y del protocolo del programa antes de declarar el resultado y de someterlo a la verificación de un organismo independiente.\n\nSe dirige al comité de aprobación de la organización y, en su momento, al organismo verificador. El resultado se presenta como medición propia de la organización.';
  case 'terminologia': return 'Las definiciones de este informe siguen ISO 14067:2018 y las Directrices del IPCC. La tabla de terminología reúne los términos usados en el estudio.\n\nCada fuente se clasifica por su magnitud y por la calidad de su dato. La magnitud es alta cuando la fuente aporta el '+fmt(X.U.alta,0)+' % o más de la huella, media entre el '+fmt(X.U.baja,0)+' % y el '+fmt(X.U.alta,0)+' %, y baja por debajo del '+fmt(X.U.baja,0)+' %. La calidad suma el nivel del factor (nacional 2, regional 1, por defecto 0), el respaldo con factura del dato (95 % o más 2, 70 % o más 1) y la documentación de la fuente del factor en el archivo de evidencias (1); es alta de 4 a 5 puntos, media de 2 a 3 y baja de 0 a 1. Una fuente de magnitud alta y calidad baja es prioridad de mejora antes de declarar.';
- case 'organizacion': return org+(perV('registro')?(', con registro '+perV('registro')):'')+', estudia la huella de carbono de '+pv('producto','café verde oro')+', expresada por '+(HP.unidad||'quintal de café oro')+' y por kilogramo. El período es '+per+' y la producción base es de '+fmt(X.kg/1000,1)+' t de café oro.\n\nEl límite del sistema va de la finca al puerto de embarque, Puerto Cortés, y en el escenario de destino incluye el flete marítimo hasta el puerto del comprador. Se aplica ISO 14067:2018 con los potenciales de calentamiento de la serie IPCC AR6.';
+ case 'organizacion': return org+(perV('registro')?(', con registro '+perV('registro')):'')+', estudia la huella de carbono de '+pv('producto','café verde oro')+', expresada por '+(HP.unidad||'quintal de café oro')+' y por kilogramo. El período es '+per+' y la producción base es de '+fmt(X.kg/1000,1)+' t de café oro.'+(fincasAlcance()>0?(' El alcance del proyecto comprende '+fmt(fincasAlcance(),0)+' fincas de productores que entregan su café a '+org+', todas dentro del límite del estudio.'):'')+'\n\nEl límite del sistema va de la finca al puerto de embarque, Puerto Cortés, y en el escenario de destino incluye el flete marítimo hasta el puerto del comprador. Se aplica ISO 14067:2018 con los potenciales de calentamiento de la serie IPCC AR6.';
  case 'estructura': return 'El estudio lo elabora '+(D.responsable||perV('responsable')||'el responsable del estudio')+'. Lo revisa '+(D.revisor||'el auditor interno')+', que no participó en la captura de los datos, y lo aprueba '+(D.comite||'el comité de aprobación')+'. La aplicación impide que quien elabora el informe lo revise o lo apruebe, y registra cada firma con su nombre y fecha.\n\nQuienes intervienen declaran no tener conflicto de interés con los resultados. Todo cambio de dato o de factor queda en la bitácora con el valor anterior y el nuevo.';
  case 'competencia': return 'El equipo del estudio conoce ISO 14067:2018, las Directrices del IPCC aplicables y el protocolo del programa. '+(D.competencia||'Detalle aquí la formación de cada integrante, las fechas y las constancias que la respaldan.');
- case 'inventario': var ex=exclusiones(); return 'El inventario cuantifica '+plural(X.filas.length,'fuente','fuentes')+' dentro del límite del estudio, que suman '+fmt(X.total,2)+' t CO₂e. '+(ex.length?('Se declaran '+plural(ex.length,'exclusión','exclusiones')+': '+ex.map(function(e){return e.fuente+(e.peso?(' ('+e.peso+' %)'):'');}).join('; ')+'.'):'No hay exclusiones declaradas.')+' El criterio de corte es del '+fmt(umbralMaterialidad(),0)+' % del total.';
+ case 'inventario': var ex=exclusiones(); return 'El inventario cuantifica '+plural(X.filas.length,'fuente','fuentes')+' dentro del límite del estudio, que suman '+fmt(X.total,2)+' t CO₂e. '+(ex.length?('Se declaran '+plural(ex.length,'exclusión','exclusiones')+': '+ex.map(function(e){return e.fuente+(e.peso?(' ('+e.peso+' %)'):'');}).join('; ')+'.'):'No hay exclusiones declaradas.')+' El criterio de corte es del '+fmt(umbralSignificancia(),0)+' % por fuente y del '+fmt(limExclTotal(),0)+' % para el total de exclusiones.\n\n'+excTextoInforme();
  case 'datos': var pend=arcPendientesLista().filter(function(x){return x.estado!=='resuelto';}), cg=arcCongelados(); var conD=0; X.filas.forEach(function(r){ if(r.nFact>0||r.nDocs>0)conD+=r.t; });
   return 'El '+fmt(X.total>0?conD/X.total*100:0,0)+' % de la huella tiene dato de actividad respaldado por factura, registro o documento del archivo de evidencias. Quedan '+fmt(X.tSin,2)+' t CO₂e anotadas sin factura y '+plural(pend.length,'pendiente abierto','pendientes abiertos')+' con responsable y fecha.\n\n'+(cg.length?('El archivo se congeló por última vez el '+String(cg[cg.length-1].fecha).slice(0,10)+', con '+cg[cg.length-1].n+' documentos y sello '+cg[cg.length-1].sello+'.'):'El archivo de evidencias aún no se ha congelado; se congela al aprobar este informe.');
  case 'factores': return 'Cada factor lleva su fuente, año, unidad y nivel en la hoja de factores del estudio. Los combustibles, el compostaje, las aguas mieles, la combustión de biomasa, los lubricantes y el nitrógeno del compost aplicado en fincas se declaran por gas (CO₂, CH₄ y N₂O) con la serie AR6. La electricidad usa el factor nacional de la Secretaría de Energía; el Balance Energético Nacional 2023 permite calcular 0,652 t CO₂e/MWh, que se presenta en el análisis de sensibilidad.';
@@ -28011,6 +28078,7 @@ function iciBloque(id,imp){
    fig('Matriz de significancia: magnitud frente a calidad del dato',svgMatriz(X))+
    tab(['Fuente','t CO₂e','%','kg CO₂e/kg oro','Nivel','Calidad','Observación del revisor'],X.filas.map(function(r){ return [esc(r.et),fmt(r.t,2),fmt(r.pct,1),fmt(r.kgkg,4),r.mag,r.cal,
     (!imp&&iciEditable())?'<input type="text" data-iciobs="'+esc(r.id)+'" value="'+esc(I.obsFuentes[r.id]||'')+'">':esc(I.obsFuentes[r.id]||'')]; }),[1,2,3]);
+ case 'inventario': var TX=excTablaInforme(); return TX.f.length>1?tab(TX.c.map(esc),TX.f.map(function(r){return r.map(esc);}),[3,4]):'';
  case 'incertidumbre': var IR=incResumen(); if(!IR)return '';
   return tab(INC_CAB,incTablaFilas(IR).map(function(f){return f.map(esc);}),[1,2])+tab(['Grado de confianza','Criterio del programa'],INC_GRADO.map(function(g,i){return [(g[1]===IR.grado?'<b>':'')+esc(g[1])+(g[1]===IR.grado?' (este estudio)</b>':''),esc(i<2?('Incertidumbre hasta ±'+g[0]+' %'):'Más de ±30 %')+' (criterio del programa ARRAIGO)'+'. '+esc(g[2])];}))+
    (IR.top.length?tab(['Renglón que más aporta','Incertidumbre','Aporte a la varianza'],IR.top.map(function(c){return [esc(String(c.t).replace(/^Tramo común · /,'')),'±'+fmt(c.u,0)+' %',fmt(c.peso,1)+' %'];}),[1,2]):'');
@@ -28140,6 +28208,7 @@ async function iciImprimir(){
  h+='<h2>Datos generales</h2><table class="ficha"><tbody>'+
   '<tr><th>Organización</th><td>'+esc(org)+'</td><th>Producto</th><td>'+esc(pv('producto','Café verde oro'))+'</td></tr>'+
   '<tr><th>Período</th><td>'+esc(per)+'</td><th>Producción base</th><td>'+fmt(X.kg/1000,1)+' t de café oro</td></tr>'+
+  '<tr><th>Alcance del proyecto</th><td>'+(fincasAlcance()>0?fmt(fincasAlcance(),0)+' fincas de productores':'—')+'</td><th>Exclusiones</th><td>'+(function(){ var E=excDatos(); return fmt(E.pEx,3)+' % de la huella (límite '+fmt(E.u5,0)+' %)'; })()+'</td></tr>'+
   '<tr><th>Responsable del estudio</th><td>'+esc(D.responsable||perV('responsable')||'—')+'</td><th>Revisor</th><td>'+esc(D.revisor||'—')+'</td></tr>'+
   '<tr><th>Comité de aprobación</th><td>'+esc(D.comite||'—')+'</td><th>Sesión del comité</th><td>'+esc(D.fechaComite||'—')+(D.actaComite?(' · '+esc(D.actaComite)):'')+'</td></tr>'+
   '<tr><th>Norma</th><td>ISO 14067:2018 · IPCC 2006 y Refinamiento 2019 · AR6</td><th>Verificador previsto</th><td>'+esc(D.verificador||'—')+'</td></tr></tbody></table>';
