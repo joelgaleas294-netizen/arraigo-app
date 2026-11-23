@@ -25831,7 +25831,7 @@ function infDatos(){
 function filasHojaTodo(){ var g={hojaFinca:sel.hojaFinca,hojaCat:sel.hojaCat,hojaSolo:sel.hojaSolo}; sel.hojaFinca='';sel.hojaCat='';sel.hojaSolo='';
  try{ return filasHoja().filter(function(x){return x.q;}); } finally { sel.hojaFinca=g.hojaFinca; sel.hojaCat=g.hojaCat; sel.hojaSolo=g.hojaSolo; } }
 function minus(t){ t=String(t||'').trim(); return /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(t)?t.charAt(0).toLowerCase()+t.slice(1):t; }
-function infCodDef(){ return 'INF-HCP-'+String(S.perfil.ciclo||'').replace(/\D/g,'').slice(0,4); }
+function infCodDef(){ return 'INF-HCP-'+anioEstudio(); }
 var INF_GRUPOS={'3':'Alcance del estudio','4':'Datos del inventario','5':'Método de cuantificación','6':'Resultados','7':'Interpretación'};
 function fx(n,d){ return fmt(n,d==null?2:d); }
 function fechaLarga(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||'')); if(!m)return ''; var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return (+m[3])+' de '+M[+m[2]-1]+' de '+m[1]; }
@@ -27933,9 +27933,19 @@ var ICI_GLOS=[
 ];
 function ici(){
  S.ici=S.ici||{}; var I=S.ici;
- if(!I.codigo){ var an=String((pv('per_fin')||hoy()).slice(0,4)); I.anio=an; I.codigo='INF-CI-'+an; I.formato=(siglasOrg()||'ORG')+'-HCP-FOR-001'; I.creado=new Date().toISOString(); }
+ if(!I.codigo){ var an=anioEstudio(); I.anio=an; I.codigo='INF-CI-'+an; I.formato=(siglasOrg()||'ORG')+'-HCP-FOR-001'; I.creado=new Date().toISOString(); }
+ /* El año del informe es el de los datos (fin del período del estudio), no el de la fecha en que se abrió el informe.
+    Mientras no esté aprobado se ajusta solo: código, año y número de acta. */
+ var aE=anioEstudio(); if(I.anio!==aE && !(I.flujo&&I.flujo.estado==='APROBADO')){ var aV=I.anio; I.anio=aE; I.codigo='INF-CI-'+aE; if(I.acta&&I.acta.numero&&/^\d{4}-/.test(I.acta.numero))I.acta.numero=aE+I.acta.numero.slice(4); try{ anotar('dato','Informe interno de control · año del informe',aV||'',aE); }catch(e){} }
  I.datos=I.datos||{}; I.redaccion=I.redaccion||{}; I.docs=I.docs||{}; I.obsFuentes=I.obsFuentes||{}; I.recomendaciones=I.recomendaciones||[];
  I.dictamen=I.dictamen||{}; I.flujo=I.flujo||{estado:'BORRADOR'}; return I;
+}
+/* Año de los datos del estudio: el del fin del período declarado; si no hay período, el último año del ciclo
+   («2024-2025» → 2025); solo si no hay ninguno, el año en curso. */
+function anioEstudio(){
+ var f=String(pv('per_fin')||'').slice(0,4); if(/^\d{4}$/.test(f))return f;
+ var c=String((S.perfil&&S.perfil.ciclo)||'').match(/\d{4}/g); if(c&&c.length)return c[c.length-1];
+ return String(hoy()).slice(0,4);
 }
 function siglasOrg(){ var o=perV('razon')||S.perfil.organizacion||''; if(/cafico/i.test(o))return 'CAFICO'; return o.split(/\s+/).filter(function(w){return /^[A-ZÁÉÍÓÚÑ]/.test(w)&&w.length>2;}).map(function(w){return w.charAt(0);}).join('').slice(0,6).toUpperCase(); }
 function iciEditable(){ return puedeEditar()&&ici().flujo.estado==='BORRADOR'; }
@@ -28181,7 +28191,7 @@ document.addEventListener('click',function(ev){
   if((fl.elaboro&&fl.elaboro.nombre===q)||(fl.reviso&&fl.reviso.nombre===q)){ msg('Quien elaboró o revisó el informe no puede aprobarlo'); return; }
   if(SES&&SES.rol&&['aprobador','responsable'].indexOf(SES.rol)<0&&SES.tipo!=='portal'){ msg('La aprobación la firma un aprobador o un responsable'); return; }
   fl.estado='APROBADO'; fl.aprobo=iciFirma(); fl.version=(fl.version||0)+1;
-  var an=I.anio||String(new Date().getFullYear()); if(!(I.acta&&I.acta.numero)){ I.acta={numero:an+'-001',fecha:hoy()}; }
+  var an=I.anio||anioEstudio(); if(!(I.acta&&I.acta.numero)){ I.acta={numero:an+'-001',fecha:hoy()}; }
   try{ arcCongelar('Aprobación del informe interno '+I.codigo+' v'+String(fl.version).padStart(2,'0')); }catch(e){}
   iciGuardar('aprobado','EN_REVISION','APROBADO v'+fl.version); msg('Informe aprobado; acta '+I.acta.numero+' y archivo congelado'); pintar(); return; }
  if(a==='devolver'){ var ob=window.prompt('Observaciones para devolver el informe a borrador:',''); if(ob==null)return; fl.estado='BORRADOR'; fl.reviso=null; fl.aprobo=null; fl.observaciones=ob; iciGuardar('devuelto a borrador','',ob); pintar(); return; }
