@@ -2012,7 +2012,7 @@ table.tg-kv td{white-space:nowrap}
 .dsh-bar i.dsh-b-ok{background:var(--ok)}.dsh-bar i.dsh-b-aviso{background:#d9a441}.dsh-bar i.dsh-b-falta{background:var(--grave)}
 @media (max-width:900px){.dsh-g{grid-template-columns:1fr}}
 @media print{body.dsh-imprimiendo .dsh-c{break-inside:avoid}body.dsh-imprimiendo .dsh-g{grid-template-columns:1fr 1fr}}
-.flu-lienzo{padding:10px}.flu-lienzo svg{display:block;width:100%;height:auto}.tg-exc select{font:inherit;font-size:12px;padding:4px 4px;width:205px;max-width:205px}.tg-exc textarea{width:100%;min-width:220px;font:inherit;font-size:12.5px;padding:5px 7px;resize:vertical}.tg tr.tg-pend td{background:#fffaf0!important}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
+.flu-lienzo{padding:10px}.flu-lienzo svg{display:block;width:100%;height:auto}.tg-exc select{font:inherit;font-size:12px;padding:4px 4px;width:205px;max-width:205px}.tg-exc textarea{width:100%;min-width:220px;font:inherit;font-size:12.5px;padding:5px 7px;resize:vertical}.tg tr.tg-pend td{background:#fffaf0!important}#v-ici .sx-tab td{white-space:normal}#v-ici .sx-tab td.num{white-space:nowrap}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
 .tg-est{font-weight:700;text-align:center;width:1%}
 .tg-est.ok{color:var(--ok)}.tg-est.aviso{color:var(--aviso)}.tg-est.falta{color:var(--grave)}
 .rejilla2 .tarjeta .cuerpo>.tg{margin-top:2px}
@@ -6208,7 +6208,7 @@ function pintarNav(){ if(typeof pintarNavNuevo==='function')return pintarNavNuev
   if(!fp){ c.innerHTML='<b>Sin proyecto abierto</b> · dé de alta la primera empresa'; }
   else c.innerHTML='<span class="etq">'+esc(fp.codigo)+'</span> '+
    (S.perfil.organizacion?('<b>'+esc(S.perfil.organizacion)+'</b> · '):(fp.empresa?('<b>'+esc(fp.empresa)+'</b> · '):''))+
-   'ciclo '+esc(S.perfil.ciclo||'sin declarar');}
+   esc(periodoTxt());}
 }
 
 /* ====== datos de ejemplo, solo hasta la primera captura real ====== */
@@ -7283,7 +7283,7 @@ function repCFPPresentaciones(){
  var INC=(C.kgTot>0)?C.res.map(function(x){ return {x:x,I:incertidumbreCaso(x,C)}; }):[];
  var par=function(t){ return String(t||'').split(/\n\s*\n/).map(function(q){return '<p>'+esc(q.trim())+'</p>';}).join(''); };
  var h=encabezadoRep('Huella de carbono de producto por presentación, puesta en puerto de destino',
-  'Informe del estudio conforme a ISO 14067:2018 · '+org+' · ciclo '+ciclo);
+  'Informe del estudio conforme a ISO 14067:2018 · '+org+' · '+periodoTxt());
  /* resumen */
  h+='<h2 class="rep-h2">Resumen</h2>';
  if(INC.length){
@@ -7359,6 +7359,7 @@ function repCFPPresentaciones(){
  h+='<h2 class="rep-h2">Análisis de sensibilidad</h2>';
  if(C.kgTot>0)h+=tabla(['Presentación','Destino','Resultado','Mínimo','Máximo'],C.res.map(function(x){return [x.pres.nom,x.dest.nom,fmt(x.tot,4),fmt(x.min,4),fmt(x.max,4)];}));
  h+='<p>El mínimo toma el factor de hilado y tejido del yute en cero y la distancia marítima un 15 % menor; el máximo duplica ese factor y aumenta la distancia un 15 %.</p>';
+ try{ h+='<h2 class="rep-h2">Vinculación con los Objetivos de Desarrollo Sostenible</h2><p>'+esc(odsParrafo(null))+'</p>'+tabla(ODS_CAB,odsFilasInforme(null)); }catch(e){}
  h+='<h2 class="rep-h2">Interpretación</h2>'+par(narr('nInterpretacion',C));
  h+='<h2 class="rep-h2">Revisión requisito por requisito</h2>';
  h+=tabla(['ISO 14067','Requisito','Estado','Observación'],revisionPresentaciones(C).map(function(x){return [x.cl,x.t,EST_NOM[x.estado]||x.estado,x.nota];}));
@@ -24348,9 +24349,12 @@ function capCambiarAmbito(P,v){
  var ids=capLineas(P.cat).map(function(l){return l.id;});
  P.datos.items.forEach(function(it){ if(ids.indexOf(it.linea)<0){ it.linea=capSugerir(it.desc,P.cat); it.incluir=!!it.linea; } });
 }
+function capEnPeriodo(x){ var P=S.prod||{}, ini=String(P.per_inicio||'').slice(0,10), fin=String(P.per_fin||'').slice(0,10), f=String(x.fecha||'').slice(0,10);
+ if(!ini||!fin||!/^\d{4}-\d{2}-\d{2}$/.test(f))return true; return f>=ini&&f<=fin; }
 function capSumaRef(ref){
  var p=partesRef(ref); if(!p)return 0;
- return registros().filter(function(x){ return x.estado!=='anulado'&&x.linea===p.l.id&&x.cat===p.cat&&String(x.fid||'')===String(p.fid||''); })
+ /* Solo suman las facturas con fecha dentro del período del estudio; las de fuera quedan registradas pero no cuentan */
+ return registros().filter(function(x){ return x.estado!=='anulado'&&x.linea===p.l.id&&x.cat===p.cat&&String(x.fid||'')===String(p.fid||'')&&capEnPeriodo(x); })
   .reduce(function(a,x){return a+(numDe(x.cantidadLinea)||0);},0);
 }
 /* El valor del renglón = lo anotado fuera de la captura + la suma de facturas */
@@ -25733,7 +25737,7 @@ function vistaEstudio(){
  var P=S.prod||{}, f=pryActual(), HP=huellaProducto(), SEC=hcpSecciones();
  var tot=SEC.reduce(function(a,x){return a+x.de;},0), ok=SEC.reduce(function(a,x){return a+x.ok;},0);
  var h=cabModulo('hcp','<p class="vista-sub">Objetivo y alcance del estudio de la huella de carbono del producto, conforme al apartado 6.3 de ISO 14067:2018. Estas definiciones gobiernan el cálculo y se trasladan al informe.</p>');
- h+='<div class="hcp-pry"><span>Proyecto abierto: <b>'+esc((f&&f.codigo)||'ninguno')+'</b> · ciclo '+esc(S.perfil.ciclo||'sin declarar')+'</span>'+
+ h+='<div class="hcp-pry"><span>Proyecto abierto: <b>'+esc((f&&f.codigo)||'ninguno')+'</b> · '+esc(periodoTxt())+'</span>'+
   '<button type="button" class="mini" data-vista="pry">Cambiar de proyecto o de ciclo</button></div>';
  h+='<dl class="cifras">'+
   tarjetaCifra('Definición del estudio',Math.round(ok*100/Math.max(1,tot))+' %',ok+' de '+tot+' elementos')+
@@ -26072,6 +26076,7 @@ function infSecciones(){
  var tot=HP.porU;
  sec('res','6.1','Huella de carbono del producto','7.2',HP.prod>0?'cumple':'falta',[
   {p:(G0.flete?'Hasta el puerto de destino, la huella':'La huella')+' de carbono '+(parcial?'parcial ':'')+'de '+pv('producto','café verde').toLowerCase()+' es de '+fx(tot,2)+' kg CO₂e por '+u+', equivalente a '+fx(HP.porKg,3)+' kg CO₂e por kilogramo, para el período y el límite del sistema declarados.'},
+  (function(){ var R=incResumen(); return R?{p:'Con un nivel de confianza del '+R.conf+' %, la incertidumbre del resultado es de ±'+fx(R.uMin,1)+' % a ±'+fx(R.uMax,1)+' % según la presentación y el destino, y el grado de confianza del resultado es '+R.grado.toLowerCase()+'. El intervalo de cada presentación se presenta en el apartado 7.1.'}:null; })(),
   (D.PC&&D.PC.res.length&&G0.flete)?{p:'Para cada presentación de venta y destino, la huella puesta en el puerto de destino es la siguiente. Se compone de la huella del café hasta el puerto de embarque, el empaque de la presentación y el flete marítimo de la masa bruta.'}:null,
   (D.PC&&D.PC.res.length&&G0.flete)?{tabla:{c:['Presentación','Destino','kg CO₂e por unidad','kg CO₂e por kg de café oro','Hasta embarque','Empaque','Flete marítimo'],f:D.PC.res.map(function(x){return [x.pres.nom,x.dest.nom,fx(x.porU,2),fx(x.tot,4),fx(x.base,4),fx(x.emp,4),fx(x.flete,4)];})}}:null,
   {tabla:{c:['Concepto','Valor','Unidad'],f:[['Emisiones del sistema dentro del límite',fx(HP.emis,3),'t CO₂e'],['Asignado al producto principal',fx(HP.emisAsig,3),'t CO₂e'],['Producción del período',fx(HP.prod,2),u],['Huella por unidad',fx(tot,2),'kg CO₂e por '+u],['Huella por kilogramo',fx(HP.porKg,3),'kg CO₂e por kg']]}}
@@ -26095,10 +26100,11 @@ function infSecciones(){
  if(D.G.total>0&&!D.G.mismaSerie)sens.push('Con los potenciales de la serie '+D.G.serieOrigen+' en lugar de '+D.G.serieDecl+', el resultado cambiaría en '+fx(D.G.pctDif,1)+' %.');
  if(D.procesos.length)sens.push('El proceso de mayor aporte es '+D.procesos[0].et.toLowerCase()+', con el '+fx(D.procesos[0].pct,1)+' % del total; una variación del 10 % en su dato de actividad o en su factor cambia la huella en '+fx(D.procesos[0].pct/10,1)+' %.');
  if(niv.defecto>0&&totF>0)sens.push('El '+fx(niv.defecto/totF*100,1)+' % del resultado se calculó con factores por defecto internacionales, que son la principal fuente de incertidumbre.');
- var incF=[]; if(D.PC&&D.PC.res.length&&G0.flete)D.PC.res.forEach(function(x){ var I=incertidumbreCaso(x,D.PC); if(I)incF.push([x.pres.nom,x.dest.nom,fx(x.porU,2),'±'+fx(I.u,1)+' %',fx(I.inf*nv(x.pres.kg),2)+' a '+fx(I.sup*nv(x.pres.kg),2)]); });
+ var INCR=incResumen();
  sec('sen','7.1','Análisis de sensibilidad e incertidumbre','7.3 k)',sens.length?'cumple':'falta',[{p:sens.join(' ')||'[Sin resultados de sensibilidad: falta el cálculo.]'},
-  incF.length?{p:'La incertidumbre se estimó por propagación de errores y por simulación de Monte Carlo (10 000 corridas), al 95 % de confianza; se informa el mayor de los dos resultados.'}:null,
-  incF.length?{tabla:{c:['Presentación','Destino','kg CO₂e por unidad','Incertidumbre','Intervalo, kg CO₂e por unidad'],f:incF}}:null]);
+  {p:incParrafo(INCR)},
+  INCR?{tabla:{c:INC_CAB,f:incTablaFilas(INCR)}}:null,
+  INCR&&INCR.top.length?{tabla:{c:['Lo que más aporta a la incertidumbre','Incertidumbre del renglón','Aporte a la varianza'],f:INCR.top.map(function(c){return [String(c.t).replace(/^Tramo común · /,''),'±'+fx(c.u,0)+' %',fx(c.peso,1)+' %'];})}}:null]);
  var concl=D.etapas.length?('La etapa de '+D.etapas.slice().sort(function(a,b){return b.tco2-a.tco2;})[0].t.toLowerCase()+' concentra la mayor parte de las emisiones. '):'';
  sec('con','7.2','Conclusiones y limitaciones','7.3 m)',ok(pv('limitaciones')),[
   {p:pv('inf_conclusiones',concl+'Las acciones de reducción con mayor efecto son las que actúan sobre los procesos de mayor aporte señalados en el apartado 3.3.')},
@@ -26110,6 +26116,7 @@ function infSecciones(){
   {p:pv('rev_tipo',HCP_OPC.rev[2])===HCP_OPC.rev[2]?('El estudio se somete a verificación por tercera parte independiente'+(pv('rev_organismo')?(' a cargo de '+pv('rev_organismo')):'')+'. Hasta que concluya, el resultado es la medición propia de la organización.'):(pv('rev_tipo')+'. El resultado es la medición propia de la organización.')},
   {p:'El estudio se elaboró siguiendo los requisitos de ISO 14067:2018 aplicables a una huella de carbono '+(parcial?'parcial ':'')+'de producto. El anexo A presenta, requisito por requisito, el apartado del informe que lo atiende.'}
  ]);
+ sec('ods','10','Vinculación con los Objetivos de Desarrollo Sostenible','complementario',odshResumen(S7)>0?'cumple':'falta',[{p:odsParrafo(S7)},{tabla:{c:ODS_CAB,f:odsFilasInforme(S7)}}],odshResumen(S7)>0?[]:['indicadores de los ODS']);
  /* figuras desde la Calculadora */
  var porId={}; S7.forEach(function(x){porId[x.id]=x;});
  var fE=null, fC=null, fM=null; try{ fE=figEtapas(); }catch(e){} try{ fC=figCategorias(); }catch(e){} try{ fM=figMeses(); }catch(e){}
@@ -27360,6 +27367,7 @@ function vistaDashboard(){
  h+=dshTile('Café oro del período',HP.prod>0?fmt(HP.prod*HP.kgU/1000,1):'—','toneladas','','hcp')+
   dshTile('CO₂ biogénico',fmt(X.bio,1),'t CO₂, se informa aparte','dsh-k-bio','sig')+
   dshTile('Respaldo con factura',fmt(resp,0)+' %',fmt(sinT,1)+' t CO₂e sin respaldo',resp>=95?'dsh-k-ok':(resp>=80?'dsh-k-av':'dsh-k-mal'),'calc')+
+  (function(){ var R=incResumen(); return R?dshTile('Incertidumbre al '+R.conf+' %','±'+fmt(R.uMax,1)+' %','grado de confianza '+R.grado.toLowerCase(),R.cumple?'dsh-k-ok':(R.grado==='Bajo'?'dsh-k-mal':'dsh-k-av'),'inf'):''; })()+
   dshTile('Lista de cierre',LC.ok+' de '+LC.total,'requisitos ISO 14067 listos',LC.ok===LC.total?'dsh-k-ok':'dsh-k-av','ver')+
   dshTile('Facturas y registros',fmt(regs.length,0),r48?(r48+' cargados en 48 h'):'cargados en el estudio','','cap')+
  '</div>';
@@ -27659,7 +27667,56 @@ document.addEventListener('change',function(ev){
  if(el.dataset.excC==='estado'||el.dataset.excC==='t')pintar();
 });
 
-function pintar(){ migrarLitros(); pintarBase.apply(this,arguments); try{ ponSubpestanas(); }catch(e){} try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
+/* Período del estudio: si cambia, se recalculan todos los renglones alimentados por facturas */
+function capRecalcularTodo(){ var vistos={}; registros().forEach(function(r){ if(r.estado==='anulado')return; var l=capLinea(r.cat,r.linea); if(!l)return; var ref=refLinea(l,r.cat==='org'?'org':r.cat,r.cat==='org'?null:(r.fid||null)); if(vistos[ref])return; vistos[ref]=1; try{ capRecalcular(ref); }catch(e){} }); }
+function periodoVigilar(){
+ if(!PRY||!S.prod)return; var P=S.prod;
+ /* Corrección pedida por el responsable de CAFICO el 22/11/2026: la huella se calcula por año calendario (2025), no por ciclo */
+ if(PRY==='pry-mvhnkafmlxpbj'&&String(P.per_inicio||'').slice(0,10)==='2024-12-01'&&String(P.per_fin||'').slice(0,10)==='2025-11-30'&&puedeEditar()){
+  P.per_inicio='2025-01-01'; P.per_fin='2025-12-31';
+  P.per_justi='Año calendario 2025, del 1 de enero al 31 de diciembre, el mismo período del inventario de emisiones de la organización (CAFICO-INF-09-003).';
+  S.perfil.ciclo='2025';
+  anotar('dato','Período del estudio','2024-12-01 a 2025-11-30','2025-01-01 a 2025-12-31','pedido del responsable: la huella de carbono se calcula por año calendario');
+  marcar('gestion/declaraciones'); marcar('org/perfil');
+ }
+ var sig=String(P.per_inicio||'')+'|'+String(P.per_fin||'');
+ if(S.capPer!==sig){ S.capPer=sig; capRecalcularTodo(); }
+}
+function periodoTxt(){ var P=S.prod||{}, a=String(P.per_inicio||'').slice(0,10), b=String(P.per_fin||'').slice(0,10);
+ if(/^\d{4}-01-01$/.test(a)&&b===a.slice(0,4)+'-12-31')return 'año '+a.slice(0,4);
+ return 'ciclo '+(S.perfil.ciclo||'sin declarar'); }
+/* ====== Incertidumbre y nivel de confianza, y vinculación con los ODS, para los informes (22/11/2026) ====== */
+var INC_GRADO=[[15,'Alto','La incertidumbre es baja: el resultado es apto para comunicar con su intervalo.'],[30,'Medio','La incertidumbre es moderada: el resultado se comunica con su intervalo y con las fuentes que la explican.'],[1e9,'Bajo','La incertidumbre es alta: el resultado se comunica como orden de magnitud hasta mejorar los datos que la explican.']];
+function incResumen(){ return memo('incres',function(){
+ var C=null; try{ C=presentacionesCalc(); }catch(e){}
+ if(!C||!(C.kgTot>0)||!C.res||!C.res.length)return null;
+ var K=incCfg(), casos=[];
+ C.res.forEach(function(x){ var I=incertidumbreCaso(x,C); if(I)casos.push({x:x,I:I,kgU:nv(x.pres.kg)||x.kgU||0}); });
+ if(!casos.length)return null;
+ var us=casos.map(function(c){return c.I.u;}), uMax=Math.max.apply(null,us), uMin=Math.min.apply(null,us);
+ var g=INC_GRADO.filter(function(z){return uMax<=z[0];})[0];
+ var top={}; casos[0].I.contrib.slice(0,5).forEach(function(c){ top[c.t]=c.peso; });
+ return {casos:casos,uMax:uMax,uMin:uMin,conf:K.conf,obj:K.obj,cumple:casos.every(function(c){return c.I.cumple;}),grado:g[1],gradoTxt:g[2],
+  top:casos[0].I.contrib.slice(0,5),N:casos[0].I.N,semilla:casos[0].I.semilla};
+}); }
+function incTablaFilas(R){ return R.casos.map(function(c){ var k=c.kgU||1;
+ return [c.x.pres.nom+' · '+c.x.dest.nom,fmt(c.I.tot,3),'±'+fmt(c.I.u,1)+' %',fmt(c.I.inf,3)+' a '+fmt(c.I.sup,3),fmt(c.I.tot*k,1)+' ('+fmt(c.I.inf*k,1)+' a '+fmt(c.I.sup*k,1)+')',c.I.cumple?'Sí':'No']; }); }
+var INC_CAB=['Presentación y destino','kg CO₂e/kg','Incertidumbre','Intervalo, kg CO₂e/kg','kg CO₂e por unidad (intervalo)','En objetivo'];
+function incParrafo(R){
+ if(!R)return 'La incertidumbre no se pudo estimar: faltan la producción o las presentaciones del estudio.';
+ return 'La incertidumbre se estimó por los dos enfoques de las Directrices del IPCC de 2006 (volumen 1, capítulo 3): propagación de errores y simulación de Monte Carlo con '+fmt(R.N,0)+' corridas y semilla fija ('+R.semilla+'), de modo que el resultado es reproducible. Se informa el mayor de los dos. '+
+  'Con un nivel de confianza del '+R.conf+' %, la incertidumbre del resultado va de ±'+fmt(R.uMin,1)+' % a ±'+fmt(R.uMax,1)+' % según la presentación y el destino, frente a un objetivo de precisión de ±'+fmt(R.obj,0)+' %. '+
+  'El grado de confianza del resultado es '+R.grado.toLowerCase()+'. '+R.gradoTxt+
+  (R.top.length?(' Lo que más aporta a la incertidumbre es: '+R.top.slice(0,3).map(function(c){return String(c.t).replace(/^Tramo común · /,'').toLowerCase()+' ('+fmt(c.peso,0)+' % de la varianza)';}).join('; ')+'.'):'');
+}
+/* ODS */
+function odsFilasInforme(S7){ return ODSH.map(function(f){ var e=odshEstado(f,S7);
+ return ['ODS '+f.ods,f.meta,f.tit,f.ind,e.est==='aplica'?e.val:(e.est==='no'?('No aplica'+(e.nota?': '+e.nota:'')):'Sin dato del período'),e.est==='aplica'?'Se vincula':(e.est==='no'?'No aplica':'Pendiente')]; }); }
+var ODS_CAB=['Objetivo','Meta','Descripción de la meta','Indicador del estudio','Valor del período','Estado'];
+function odsParrafo(S7){ var n=odshResumen(S7), L=ODSH.filter(function(f){return odshEstado(f,S7).est==='aplica';});
+ return 'El estudio se vincula con '+n+' de '+ODSH.length+' metas de los Objetivos de Desarrollo Sostenible'+(L.length?(': '+L.map(function(f){return 'meta '+f.meta+' (ODS '+f.ods+')';}).join(', ')):'')+'. Una meta se vincula solo cuando su indicador tiene dato del período; las demás se declaran sin dato o como no aplicables, con su justificación. La vinculación es informativa: no cambia la huella ni constituye una declaración de impacto.'; }
+
+function pintar(){ migrarLitros(); try{ periodoVigilar(); }catch(e){} pintarBase.apply(this,arguments); try{ ponSubpestanas(); }catch(e){} try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
 function ponSubpestanas(){
  var cv=document.getElementById('v-'+vista); if(!cv||vista==='portada')return;
  var html=subPestanas()+leyendaMedicion(); if(!html)return;
@@ -27836,7 +27893,8 @@ var ICI_SEC=[
  ['datos','Datos de actividad y evidencia','Cobertura con facturas y registros, datos sin factura, pendientes con responsable y copia congelada del archivo.'],
  ['factores','Factores de emisión','Jerarquía aplicada, citas, antigüedad, desglose por gas y serie de potenciales de calentamiento.'],
  ['significancia','Significancia e intensidad por fuente','Peso de cada fuente, intensidad por kilo de café oro, matriz de magnitud y calidad, reparto por gas.'],
- ['sensibilidad','Sensibilidad e incertidumbre','Efecto de cada supuesto dentro de su rango publicado sobre la huella declarada.'],
+ ['sensibilidad','Análisis de sensibilidad','Efecto de cada supuesto dentro de su rango publicado sobre la huella declarada.'],
+ ['incertidumbre','Incertidumbre y nivel de confianza','Incertidumbre de cada resultado al 95 % de confianza, intervalo, grado de confianza y renglones que más la explican.'],
  ['biogenico','CO₂ biogénico, uso del suelo y almacenamiento','CO₂ biogénico informado aparte, cambio directo de uso del suelo y carbono almacenado.'],
  ['asignacion','Asignación y venta nacional','Regla de asignación, coproductos y tratamiento del café vendido en el país.'],
  ['escenarios','Escenarios por unidad funcional','Huella hasta Puerto Cortés y hasta los puertos de destino, por saco de yute de 69 kg y por big bag de 1 t de café oro.'],
@@ -27847,6 +27905,7 @@ var ICI_SEC=[
  ['seguimiento','Seguimiento del ciclo anterior','Cierre de lo pendiente del ciclo anterior y verificación de su eficacia.'],
  ['cambios','Cambios de método y recálculos','Cambios de factor o de método del ciclo, con su efecto, según la bitácora.'],
  ['reduccion','Plan de reducción','Medidas sobre las fuentes significativas, con responsable y plazo.'],
+ ['ods','Vinculación con los Objetivos de Desarrollo Sostenible','Metas de los ODS con las que se vincula el estudio, con su indicador y su valor del período.'],
  ['comite','Decisión del comité','Fecha y acta del comité, criterio de decisión y lo resuelto.'],
  ['conclusiones','Conclusiones y riesgos','Solidez del estudio, riesgos para la declaración y prioridades del próximo ciclo.'],
  ['recomendaciones','Recomendaciones','Recomendaciones con responsable, plazo y prioridad.'],
@@ -27899,6 +27958,8 @@ function iciBorrador(id){
   return 'El '+fmt(X.total>0?conD/X.total*100:0,0)+' % de la huella tiene dato de actividad respaldado por factura, registro o documento del archivo de evidencias. Quedan '+fmt(X.tSin,2)+' t CO₂e anotadas sin factura y '+plural(pend.length,'pendiente abierto','pendientes abiertos')+' con responsable y fecha.\n\n'+(cg.length?('El archivo se congeló por última vez el '+String(cg[cg.length-1].fecha).slice(0,10)+', con '+cg[cg.length-1].n+' documentos y sello '+cg[cg.length-1].sello+'.'):'El archivo de evidencias aún no se ha congelado; se congela al aprobar este informe.');
  case 'factores': return 'Cada factor lleva su fuente, año, unidad y nivel en la hoja de factores del estudio. Los combustibles, el compostaje, las aguas mieles, la combustión de biomasa, los lubricantes y el nitrógeno del compost aplicado en fincas se declaran por gas (CO₂, CH₄ y N₂O) con la serie AR6. La electricidad usa el factor nacional de la Secretaría de Energía; el Balance Energético Nacional 2023 permite calcular 0,652 t CO₂e/MWh, que se presenta en el análisis de sensibilidad.';
  case 'significancia': return plural(top.length,'fuente de magnitud alta reúne','fuentes de magnitud alta reúnen')+' el '+fmt(top.reduce(function(a,r){return a+r.pct;},0),1)+' % de la huella: '+top.map(function(r){return r.et.toLowerCase()+' ('+fmt(r.pct,1)+' %, calidad '+r.cal+')';}).join('; ')+'.\n\nLa intensidad del estudio es de '+fmt(X.porKg,3)+' kg CO₂e por kg de café oro. Por gas, el CH₄ biogénico aporta '+fmt(X.gas.ch4b,1)+' t, el N₂O '+fmt(X.gas.n2o,1)+' t y el CO₂ fósil '+fmt(X.gas.co2,1)+' t; '+fmt(X.gas.sin,1)+' t corresponden a fuentes sin desglose por gas.';
+ case 'incertidumbre': return incParrafo(incResumen());
+ case 'ods': return odsParrafo(null);
  case 'sensibilidad': return SS.length?('Los supuestos de mayor efecto son: '+SS.slice(0,3).map(function(x){return x.s.nom.toLowerCase()+' (de '+fmt(x.dLo,1)+' a +'+fmt(x.dHi,1)+' t CO₂e)';}).join('; ')+'. Con ellos, la huella podría ir de '+fmt(SS[0].kLo,3)+' a '+fmt(SS[0].kHi,3)+' kg CO₂e/kg solo por el primero.\n\nLos rangos son los publicados por el IPCC o los de la fuente de cada supuesto, y cada uno se mueve por separado.'):'No hay supuestos con efecto calculable.';
  case 'biogenico': return 'El CO₂ biogénico de la combustión de leña y casulla y del compostaje suma '+fmt(X.bio,1)+' t; se cuantifica y se informa aparte, sin sumarlo a la huella. El metano de origen biológico sí se suma, con su potencial de 27.\n\nNo hubo cambio directo de uso del suelo en las fincas del estudio, según las visitas técnicas y la evaluación de no deforestación del Reglamento (UE) 2023/1115. El carbono almacenado en la sombra de las fincas se informa por separado y no se resta de la huella.';
  case 'asignacion': var kgN=numDe(P.ventaNacionalKg); return 'Regla de asignación: '+(P.asignacion||'por masa')+', con el '+fmt(HP.asig,0)+' % de las emisiones asignado al café oro. Coproductos: '+pv('asig_coproductos','pulpa y cascarilla, que vuelven al sistema como compost')+'.\n\n'+(isFinite(kgN)&&kgN>0?('En el período se vendieron '+fmt(kgN,0)+' kg de café oro en el mercado nacional; su tratamiento en el denominador se declara en el estudio.'):'La venta nacional del período debe declararse para decidir si entra en el denominador o recibe una parte de las emisiones.');
@@ -27940,6 +28001,10 @@ function iciBloque(id,imp){
    fig('Matriz de significancia: magnitud frente a calidad del dato',svgMatriz(X))+
    tab(['Fuente','t CO₂e','%','kg CO₂e/kg oro','Nivel','Calidad','Observación del revisor'],X.filas.map(function(r){ return [esc(r.et),fmt(r.t,2),fmt(r.pct,1),fmt(r.kgkg,4),r.mag,r.cal,
     (!imp&&iciEditable())?'<input type="text" data-iciobs="'+esc(r.id)+'" value="'+esc(I.obsFuentes[r.id]||'')+'">':esc(I.obsFuentes[r.id]||'')]; }),[1,2,3]);
+ case 'incertidumbre': var IR=incResumen(); if(!IR)return '';
+  return tab(INC_CAB,incTablaFilas(IR).map(function(f){return f.map(esc);}),[1,2])+tab(['Grado de confianza','Criterio del programa'],INC_GRADO.map(function(g,i){return [(g[1]===IR.grado?'<b>':'')+esc(g[1])+(g[1]===IR.grado?' (este estudio)</b>':''),esc(i<2?('Incertidumbre hasta ±'+g[0]+' %'):'Más de ±30 %')+' (criterio del programa ARRAIGO)'+'. '+esc(g[2])];}))+
+   (IR.top.length?tab(['Renglón que más aporta','Incertidumbre','Aporte a la varianza'],IR.top.map(function(c){return [esc(String(c.t).replace(/^Tramo común · /,'')),'±'+fmt(c.u,0)+' %',fmt(c.peso,1)+' %'];}),[1,2]):'');
+ case 'ods': return tab(ODS_CAB,odsFilasInforme(null).map(function(f){return f.map(esc);}));
  case 'sensibilidad': var SS=sxSensibilidad(); return SS.length?(fig('Sensibilidad de la huella a cada supuesto, t CO₂e',svgTornado(SS))+tab(['Supuesto','Rango y fuente','Efecto, t CO₂e','Huella, kg CO₂e/kg'],SS.map(function(x){return [esc(x.s.nom),esc(x.s.fue),fmt(x.dLo,2)+' a +'+fmt(x.dHi,2),fmt(x.kLo,3)+' a '+fmt(x.kHi,3)];}),[2,3])):'';
  case 'escenarios': var E=escenariosHuella(); if(!E)return ''; var T=tablaEscenarios(E,cls);
   return '<h4 class="ici-h4">Escenario A · de la finca a Puerto Cortés</h4>'+T.a+'<h4 class="ici-h4">Escenario B · hasta el puerto de destino</h4>'+T.b+fig('Huella por unidad funcional: hasta Puerto Cortés (azul) y hasta el puerto de destino (dorado), kg CO₂e por unidad',graficoEscenarios(E));
@@ -28220,7 +28285,7 @@ function pintarNavNuevo(){
   if(!fp){ c.innerHTML='<b>Sin proyecto abierto</b> · dé de alta la primera empresa'; }
   else c.innerHTML='<span class="etq">'+esc(fp.codigo)+'</span> '+
    (S.perfil.organizacion?('<b>'+esc(S.perfil.organizacion)+'</b> · '):(fp.empresa?('<b>'+esc(fp.empresa)+'</b> · '):''))+
-   'ciclo '+esc(S.perfil.ciclo||'sin declarar')+(S.perfil.verificado?'':' <span class="ctx-mp" title="Medición propia de la organización, sin verificación independiente">medición propia</span>');}
+   esc(periodoTxt())+(S.perfil.verificado?'':' <span class="ctx-mp" title="Medición propia de la organización, sin verificación independiente">medición propia</span>');}
 }
 
 /* ====== Archivo de evidencias: qué cifra sostiene cada documento ======
