@@ -2012,7 +2012,7 @@ table.tg-kv td{white-space:nowrap}
 .dsh-bar i.dsh-b-ok{background:var(--ok)}.dsh-bar i.dsh-b-aviso{background:#d9a441}.dsh-bar i.dsh-b-falta{background:var(--grave)}
 @media (max-width:900px){.dsh-g{grid-template-columns:1fr}}
 @media print{body.dsh-imprimiendo .dsh-c{break-inside:avoid}body.dsh-imprimiendo .dsh-g{grid-template-columns:1fr 1fr}}
-.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
+.flu-lienzo{padding:10px}.flu-lienzo svg{display:block;width:100%;height:auto}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
 .tg-est{font-weight:700;text-align:center;width:1%}
 .tg-est.ok{color:var(--ok)}.tg-est.aviso{color:var(--aviso)}.tg-est.falta{color:var(--grave)}
 .rejilla2 .tarjeta .cuerpo>.tg{margin-top:2px}
@@ -2134,6 +2134,7 @@ button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text
    <section id="v-org" hidden></section>
    <section id="v-calc" hidden></section>
    <section id="v-dsh" hidden></section>
+   <section id="v-flu" hidden></section>
    <section id="v-sig" hidden></section>
    <section id="v-ici" hidden></section>
    <section id="v-fot" hidden></section>
@@ -5861,6 +5862,8 @@ var MODULOS=[
   des:'Revisión interna del estudio por secciones, con firmas de quien elabora, revisa y aprueba, dictamen y acta de aprobación interna.'},
  {id:'fot',scol:'s7',codigo:'MOD-FOT',nom:'Evidencia fotográfica',col:'m7',etapa:'campo',paso:11.5,
   des:'Fotografías y verificación de cada área del alcance de la medición, con fecha, autor y coordenada.'},
+ {id:'flu',scol:'s5',codigo:'MOD-FLU',nom:'Flujograma de emisiones',col:'m5',etapa:'cerrar',paso:15.1,
+  des:'El diagrama de flujo del proceso de la organización con cada fuente de emisión ubicada en su etapa, rotulada con su lugar y ordenada por peso.'},
  {id:'dsh',scol:'s1',codigo:'MOD-DSH',nom:'Dashboard',col:'m1',etapa:'cerrar',paso:15.2,
   des:'Las cifras del estudio y sus gráficos en una sola pantalla: emisiones, huella por unidad, categorías, etapas, gases, fuentes principales, meses y estado para declarar.'},
  {id:'sig',scol:'s6',codigo:'MOD-SIG',nom:'Intensidad y significancia',col:'m6',etapa:'cerrar',paso:15.5,
@@ -7381,7 +7384,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['calc','dsh','sig','ici','fot','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['calc','dsh','flu','sig','ici','fot','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 var VISTA_HIST=[];
 function ir(v,atras){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
@@ -27343,7 +27346,7 @@ function vistaDashboard(){
  /* encabezado */
  var fpo=pryActual();
  h+='<div class="dsh-cab"><div><span class="dsh-org">'+esc((fpo&&fpo.empresa)||S.perfil.organizacion||'')+'</span><b>Huella de carbono del café oro · ISO 14067</b><small>Período '+esc(pv('per_inicio')||'?')+' a '+esc(pv('per_fin')||'?')+' · '+esc(emisionesEnLimite((S.prod||{}).limites).limite)+' · '+esc(serieDeclarada())+'</small></div>'+
-  '<div class="dsh-acc no-imprimir"><button type="button" class="mini" data-dsh-imp="1">Imprimir</button><button type="button" class="mini" data-vista="calc">Calculadora</button></div></div>';
+  '<div class="dsh-acc no-imprimir"><button type="button" class="mini" data-dsh-imp="1">Imprimir</button><button type="button" class="mini" data-vista="flu">Flujograma de emisiones</button><button type="button" class="mini" data-vista="calc">Calculadora</button></div></div>';
  /* indicadores */
  h+='<div class="dsh-ks">'+
   dshTile('Emisiones dentro del límite',fmt(X.total,1),'t CO₂e','dsh-k-pri','calc')+
@@ -27389,6 +27392,165 @@ function vistaDashboard(){
  return h+'</div>';
 }
 document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-dsh-imp]'); if(b){ document.body.classList.add('dsh-imprimiendo'); setTimeout(function(){ window.print(); document.body.classList.remove('dsh-imprimiendo'); },50); } });
+
+/* ====== Flujograma de puntos de emisión (22/11/2026) ======
+   Las etapas del Diagrama de Flujo del Proceso de CAFICO (CAFICO-MAP-05-001, versión 2.0, tomado de Origen),
+   con las fuentes de emisión de ARRAIGO ubicadas en la etapa donde ocurren y rotuladas con su lugar físico
+   (las áreas de la evidencia fotográfica). Los subproductos (pulpa, aguas mieles, cascarilla y compost en
+   fincas) no figuran en la versión vigente del diagrama: se dibujan como ramales y se señalan como tales. */
+var FLU_DOC={codigo:'CAFICO-MAP-05-001',version:'2.0',nombre:'Diagrama de Flujo del Proceso',vigente:'23/10/2026',drive:'1-bs4v_3txERubKXa8Bm0F9xQgCgQb2ew'};
+var FLU_PASOS=[
+ {id:'fincas',n:'0',t:'Fincas de los productores',tipo:'sub',lado:'izq',area:'fincas',lineas:['n_compost_fincas','poda','cultivo','compost_aplicado','estiercol_aplicado','pulpa_suelo','fert_urea','diesel_finca','gasolina_finca'],nota:'Antes del inicio del diagrama: el compost de CAFICO aplicado al suelo'},
+ {id:'p1',n:'1',t:'Transporte de las fincas a CAFICO',tipo:'act',area:'flota',lineas:['km_acopio','km_interno','km_planta','diesel_org','gasolina_org'],reg:'Guía de transporte y revisión del vehículo'},
+ {id:'p2',n:'2',t:'Recepción y pesado del café',tipo:'act',area:'recepcion',lineas:[],reg:'Nota de peso y recepción de fincas'},
+ {id:'p3',n:'3',t:'Beneficio húmedo: despulpe, fermentación o lavado',tipo:'act',area:'despulpado',lineas:[],reg:'Registro del beneficio húmedo'},
+ {id:'pulpa',n:'3a',t:'Compostera de pulpa',tipo:'sub',lado:'izq',de:'p3',area:'compostera',lineas:['compostaje'],nota:'Ramal no dibujado en la versión vigente'},
+ {id:'mieles',n:'3b',t:'Tratamiento de aguas mieles',tipo:'sub',lado:'izq',de:'p3',area:'aguasmieles',lineas:['aguas_mieles'],nota:'Ramal no dibujado en la versión vigente'},
+ {id:'p4',n:'4',t:'Presecado',tipo:'act',area:'secado',lineas:[],reg:'Bitácora de presecado'},
+ {id:'p5',n:'5',t:'Secado en patios o secado mecánico',tipo:'act',area:'secado',lineas:['lena_secado','cascarilla'],reg:'Bitácora de carga de la secadora'},
+ {id:'p6',n:'6',t:'Pesado del pergamino seco',tipo:'act',area:'recepcion',lineas:[],reg:'Nota de peso'},
+ {id:'p7',n:'7',t:'Almacenamiento en bodega, separado por sello',tipo:'act',area:'bodega',lineas:['polipropileno','refrigerante_org'],reg:'Inventario de bodega por lote'},
+ {id:'p8',n:'8',t:'Orden de procesamiento, purga y traslado a la fosa',tipo:'act',area:'trillado',lineas:[],reg:'Orden de procesamiento y registro de limpieza'},
+ {id:'p9',n:'9',t:'Trillado y clasificación',tipo:'act',area:'trillado',lineas:['elec_org','diesel_gen','lubricantes'],reg:'Registro de trilla'},
+ {id:'casc',n:'9a',t:'Compostera de cascarilla',tipo:'sub',lado:'izq',de:'p9',area:'compostera',lineas:['compostaje_cascarilla'],nota:'Ramal no dibujado en la versión vigente'},
+ {id:'p10',n:'10',t:'Tolva de almacenamiento',tipo:'act',area:'trillado',lineas:[],reg:'Registro de proceso'},
+ {id:'p11',n:'11',t:'Envasado e identificación del lote',tipo:'act',area:'bodega',lineas:['yute','empaque_exp'],reg:'Ficha de empaque por contenedor'},
+ {id:'p12',n:'12',t:'Revisión y limpieza del contenedor',tipo:'act',area:'embarque',lineas:['montacargas'],reg:'Lista de verificación de contenedor'},
+ {id:'p13',n:'13',t:'Carga y envío a Puerto Cortés',tipo:'act',area:'embarque',lineas:['km_puerto'],reg:'Guía de despacho'},
+ {id:'p14',n:'14',t:'Exportación: flete marítimo al destino',tipo:'act',area:'embarque',lineas:['tm_maritimo','tm_aereo'],reg:'Documentos de embarque'},
+ {id:'serv',n:'S',t:'Servicios generales: cocina, taller y oficinas',tipo:'sub',lado:'izq',de:'p2',area:'taller',lineas:['glp'],nota:'Apoyo a todo el proceso'}
+];
+function fluDatos(){
+ var X=sxDatos(), porId={}, usados={};
+ X.filas.forEach(function(r){ porId[r.id]=(porId[r.id]||0)+r.t; });
+ var finca={}; FINCA.forEach(function(l){ finca[l.id]=1; }); finca.poda=1; finca.cultivo=1;
+ var P=FLU_PASOS.map(function(p){ var t=0, fu=[];
+  var ids=p.lineas.slice(); if(p.id==='fincas')X.filas.forEach(function(r){ if(finca[r.id]&&ids.indexOf(r.id)<0)ids.push(r.id); });
+  ids.forEach(function(id){ if(porId[id]>0){ t+=porId[id]; usados[id]=1; var r=X.filas.filter(function(f){return f.id===id;})[0]; fu.push({id:id,et:r?r.et:nombreLinea(id),t:porId[id]}); } });
+  fu.sort(function(a,b){return b.t-a.t;});
+  var ar=AREAS_HUELLA.filter(function(a){return a[0]===p.area;})[0];
+  return {p:p,t:t,pct:X.total>0?t/X.total*100:0,fu:fu,lugar:ar?ar[1]:''}; });
+ var otras=X.filas.filter(function(r){return r.t>0&&!usados[r.id];});
+ var rk=P.filter(function(x){return x.t>0;}).slice().sort(function(a,b){return b.t-a.t;});
+ rk.forEach(function(x,i){ x.rank=i+1; });
+ return {X:X,P:P,otras:otras,rank:rk};
+}
+function fluColor(p){ return p>=20?['#b8452f','#fff']:(p>=5?['#e08a3c','#fff']:(p>=1?['#f3d27a','#3b2f08']:(p>0?['#dfe8d9','#25331f']:['#ffffff','#5f6b66']))); }
+function svgFlujoEmisiones(F){
+ var main=F.P.filter(function(x){return x.p.tipo==='act';}), sub=F.P.filter(function(x){return x.p.tipo==='sub';});
+ var W=980, cx=470, bw=300, bh=40, gap=22, y0=70, H=y0+main.length*(bh+gap)+70;
+ var pos={}; main.forEach(function(x,i){ pos[x.p.id]=y0+i*(bh+gap); });
+ var h='<svg class="svg-g flu-svg" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Flujograma de puntos de emisión" style="font-family:Arial,Helvetica,sans-serif">';
+ h+='<defs><marker id="fluA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6b7a72"/></marker></defs>';
+ h+='<text x="'+cx+'" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1f3a5f">Puntos de emisión en el flujo del proceso · '+esc(FLU_DOC.codigo)+' v'+FLU_DOC.version+'</text>';
+ h+='<rect x="'+(cx-50)+'" y="36" width="100" height="22" rx="11" fill="#1f3a5f"/><text x="'+cx+'" y="51" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">INICIO</text>';
+ h+='<line x1="'+cx+'" y1="58" x2="'+cx+'" y2="'+(y0-2)+'" stroke="#6b7a72" stroke-width="1.4" marker-end="url(#fluA)"/>';
+ var cajaRot=function(x,X0,Y0,anchoC,alto,sub_){
+  var c=fluColor(x.pct), s='';
+  s+='<rect x="'+X0+'" y="'+Y0+'" width="'+anchoC+'" height="'+alto+'" rx="'+(sub_?4:6)+'" fill="'+c[0]+'" stroke="'+(x.t>0?'#7a2c1e':'#9aa59f')+'" stroke-width="'+(x.rank&&x.rank<=3?2.2:1)+'"'+(sub_?' stroke-dasharray="5 3"':'')+'><title>'+esc(x.p.t)+(x.t>0?(': '+fmt(x.t,1)+' t CO₂e ('+fmt(x.pct,1)+' %)'):': sin emisiones cuantificadas')+'</title></rect>';
+  var tx=String(x.p.t), l1=tx, l2='';
+  if(tx.length>38){ var k=tx.lastIndexOf(' ',38); l1=tx.slice(0,k); l2=tx.slice(k+1); }
+  s+='<text x="'+(X0+anchoC/2)+'" y="'+(Y0+(l2?16:24))+'" text-anchor="middle" font-size="11" font-weight="600" fill="'+c[1]+'">'+esc(x.p.n+'. '+l1)+'</text>';
+  if(l2)s+='<text x="'+(X0+anchoC/2)+'" y="'+(Y0+30)+'" text-anchor="middle" font-size="11" font-weight="600" fill="'+c[1]+'">'+esc(l2)+'</text>';
+  if(x.rank){ var bx=X0+anchoC-4, by=Y0-6; s+='<circle cx="'+bx+'" cy="'+by+'" r="11" fill="'+(x.rank<=3?'#7a2c1e':'#1f3a5f')+'" stroke="#fff" stroke-width="1.5"/><text x="'+bx+'" y="'+(by+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+x.rank+'</text>'; }
+  return s;
+ };
+ main.forEach(function(x,i){ var y=pos[x.p.id];
+  h+=cajaRot(x,cx-bw/2,y,bw,bh,false);
+  if(i<main.length-1)h+='<line x1="'+cx+'" y1="'+(y+bh)+'" x2="'+cx+'" y2="'+(y+bh+gap-2)+'" stroke="#6b7a72" stroke-width="1.4" marker-end="url(#fluA)"/>';
+  /* rótulo derecho */
+  var rx=cx+bw/2+14;
+  if(x.t>0){
+   h+='<line x1="'+(cx+bw/2)+'" y1="'+(y+bh/2)+'" x2="'+(rx-2)+'" y2="'+(y+bh/2)+'" stroke="#b8452f" stroke-dasharray="3 2"/>';
+   h+='<text x="'+rx+'" y="'+(y+14)+'" font-size="11.5" font-weight="700" fill="#7a2c1e">'+fmt(x.t,1)+' t CO₂e · '+fmt(x.pct,1)+' %</text>';
+   h+='<text x="'+rx+'" y="'+(y+28)+'" font-size="9.5" fill="#3f4a44">'+esc(x.fu.map(function(f){return f.et.replace(/\s*\(.*?\)/g,'');}).join(' · ').slice(0,74))+'</text>';
+   h+='<text x="'+rx+'" y="'+(y+40)+'" font-size="9" fill="#8a948f">📍 '+esc(x.lugar)+'</text>';
+  } else h+='<text x="'+rx+'" y="'+(y+24)+'" font-size="9.5" fill="#9aa59f">'+esc(x.p.reg||'')+'</text>';
+ });
+ var yf=y0+main.length*(bh+gap)-gap;
+ h+='<line x1="'+cx+'" y1="'+yf+'" x2="'+cx+'" y2="'+(yf+18)+'" stroke="#6b7a72" stroke-width="1.4" marker-end="url(#fluA)"/><rect x="'+(cx-50)+'" y="'+(yf+20)+'" width="100" height="22" rx="11" fill="#1f3a5f"/><text x="'+cx+'" y="'+(yf+35)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">FIN</text>';
+ /* ramales */
+ var sx=20, sw=210, usadosY={};
+ sub=sub.slice().sort(function(a,b){ var ya=a.p.id==='fincas'?-1:(a.p.de?pos[a.p.de]:0), yb=b.p.id==='fincas'?-1:(b.p.de?pos[b.p.de]:0); return ya-yb; });
+ sub.forEach(function(x){
+  var base=x.p.id==='fincas'?y0-4:(x.p.de?pos[x.p.de]:y0), y=Math.max(base,usadosY.ult||-1e9);
+  usadosY.ult=y+bh+6+40;
+  h+=cajaRot(x,sx,y,sw,bh+6,true);
+  var ty=y+bh+18;
+  if(x.t>0){ h+='<text x="'+sx+'" y="'+(y+bh+18)+'" font-size="10.5" font-weight="700" fill="#7a2c1e">'+fmt(x.t,1)+' t CO₂e · '+fmt(x.pct,1)+' %</text>'; ty+=12; }
+  h+='<text x="'+sx+'" y="'+ty+'" font-size="8.8" fill="#8a948f">📍 '+esc(x.lugar)+'</text>';
+  var py=(x.p.de?pos[x.p.de]:y0)+bh/2, my=y+(bh+6)/2;
+  h+='<path d="M'+(cx-bw/2)+','+py+' L'+(sx+sw+18)+','+py+' L'+(sx+sw+18)+','+my+' L'+(sx+sw+2)+','+my+'" fill="none" stroke="#b8452f" stroke-width="1.2" stroke-dasharray="5 3"'+(x.p.id==='fincas'?'':' marker-end="url(#fluA)"')+'/>';
+ });
+ /* leyenda */
+ var ly=H-22, lx=20;
+ [['≥ 20 %',fluColor(25)[0]],['5 a 20 %',fluColor(10)[0]],['1 a 5 %',fluColor(2)[0]],['< 1 %',fluColor(0.5)[0]],['sin emisión',fluColor(0)[0]]].forEach(function(c){ h+='<rect x="'+lx+'" y="'+ly+'" width="14" height="12" fill="'+c[1]+'" stroke="#9aa59f"/><text x="'+(lx+18)+'" y="'+(ly+10)+'" font-size="10" fill="#3f4a44">'+c[0]+'</text>'; lx+=88; });
+ h+='<rect x="'+lx+'" y="'+ly+'" width="22" height="12" fill="#fff" stroke="#9aa59f" stroke-dasharray="4 2"/><text x="'+(lx+26)+'" y="'+(ly+10)+'" font-size="10" fill="#3f4a44">ramal fuera del diagrama vigente</text>';
+ lx+=210; h+='<circle cx="'+(lx+7)+'" cy="'+(ly+6)+'" r="7" fill="#7a2c1e"/><text x="'+(lx+18)+'" y="'+(ly+10)+'" font-size="10" fill="#3f4a44">orden por emisiones</text>';
+ return h+'</svg>';
+}
+function fluTabla(F){
+ var h='<div class="tg-wrap"><table class="tg"><thead><tr><th>#</th><th>Punto del flujograma</th><th>Dónde se encuentra</th><th>Fuentes de emisión</th><th class="n">t CO₂e</th><th class="n">%</th><th>Evidencias</th></tr></thead><tbody>';
+ F.rank.forEach(function(x){ var nEv=0; x.fu.forEach(function(f){ try{ nEv+=arcDocsDeLinea(f.id).length; }catch(e){} });
+  h+='<tr><td class="tg-num"><b>'+x.rank+'</b></td><td><b>'+esc(x.p.n+'. '+x.p.t)+'</b>'+(x.p.tipo==='sub'?'<br><small class="tg-mal">'+esc(x.p.nota||'')+'</small>':'')+'</td><td>'+esc(x.lugar)+'</td>'+
+   '<td><small>'+x.fu.map(function(f){ return esc(f.et)+' · '+fmt(f.t,1)+' t'; }).join('<br>')+'</small></td><td class="n tg-res">'+fmt(x.t,1)+'</td><td class="n">'+fmt(x.pct,1)+'</td>'+
+   '<td><span class="tg-chip '+(nEv?'tg-e-ok':'tg-e-mal')+'">'+nEv+' doc.</span></td></tr>'; });
+ if(F.otras.length)h+='<tr><td></td><td colspan="2"><b>Sin etapa asignada</b></td><td><small>'+F.otras.map(function(r){return esc(r.et)+' · '+fmt(r.t,1)+' t';}).join('<br>')+'</small></td><td class="n">'+fmt(F.otras.reduce(function(a,r){return a+r.t;},0),1)+'</td><td></td><td></td></tr>';
+ return h+'</tbody><tfoot><tr><td></td><td colspan="3">Total dentro del límite</td><td class="n">'+fmt(F.X.total,1)+'</td><td class="n">'+fmt(100,1)+'</td><td></td></tr></tfoot></table></div>';
+}
+function fluDocFijado(){ return arcDocs().filter(function(d){return d.flujo===FLU_DOC.codigo;})[0]||null; }
+function fluRotulacion(F){
+ return F.rank.map(function(x){ return x.rank+'. '+x.p.n+' '+x.p.t+' — '+x.lugar+' — '+fmt(x.t,1)+' t CO₂e ('+fmt(x.pct,1)+' %): '+x.fu.map(function(f){return f.et;}).join(', '); }).join('\n');
+}
+async function fluFijar(silencio){
+ if(!puedeEditar()){ if(!silencio)msg('Su rol no permite modificar el archivo'); return; }
+ var F=fluDatos(); if(!(F.X.total>0)){ if(!silencio)msg('Todavía no hay emisiones para ubicar'); return; }
+ var d=fluDocFijado(), nuevo=!d;
+ if(!d){ d=arcNuevo('01'); d.flujo=FLU_DOC.codigo; arcDocs().push(d); }
+ d.nombre='Flujograma de puntos de emisión · '+FLU_DOC.codigo+' v'+FLU_DOC.version;
+ d.tipo='Diagrama de flujo con puntos de emisión'; d.emisor='CAFICO (diagrama de Origen) y ARRAIGO (ubicación de emisiones)';
+ d.fecha=hoy(); d.periodo=(pv('per_inicio')||'')+' a '+(pv('per_fin')||'');
+ d.referencia=FLU_DOC.codigo+' versión '+FLU_DOC.version+', vigente desde '+FLU_DOC.vigente;
+ d.drive={id:FLU_DOC.drive}; d.estado='vigente';
+ d.lineas=[]; F.rank.forEach(function(x){ x.fu.forEach(function(f){ if(d.lineas.indexOf(f.id)<0)d.lineas.push(f.id); }); });
+ d.nota='Rotulación de los puntos de emisión, de mayor a menor (total '+fmt(F.X.total,1)+' t CO₂e):\n'+fluRotulacion(F)+'\n\nLa pulpa, las aguas mieles, la cascarilla y el compost aplicado en fincas no figuran en la versión vigente del diagrama: se ubicaron como ramales del beneficio húmedo y de la trilla.';
+ /* imagen del flujograma anotado */
+ try{
+  var tmp=document.createElement('div'); tmp.innerHTML=svgFlujoEmisiones(F); var el=tmp.firstChild; el.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  var svg=new XMLSerializer().serializeToString(el), vb0=svg.match(/viewBox="0 0 (\d+) (\d+)"/);
+  svg=svg.replace('width="100%"','width="'+vb0[1]+'" height="'+vb0[2]+'"');
+  var img=new Image(), url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
+  await new Promise(function(ok,no){ img.onload=ok; img.onerror=no; img.src=url; });
+  var vb=svg.match(/viewBox="0 0 (\d+) (\d+)"/), cw=+vb[1]*2, ch=+vb[2]*2, cv=document.createElement('canvas'); cv.width=cw; cv.height=ch;
+  var g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cw,ch); g.drawImage(img,0,0,cw,ch); URL.revokeObjectURL(url);
+  var blob=await new Promise(function(ok){ cv.toBlob(ok,'image/png'); });
+  (d.adjuntos||[]).slice().forEach(function(a){ if(/^flujograma-emisiones/.test(a.nombre||''))quitarAdjunto('arcdoc:'+d.id,a.id); });
+  await adjuntarArchivo('arcdoc:'+d.id,'documento',new File([blob],'flujograma-emisiones-'+hoy()+'.png',{type:'image/png'}));
+ }catch(e){ try{ console.warn('flujograma: imagen no adjuntada',e); }catch(_){} }
+ marcar('gestion/archivo'); guardarLocal(); pintar();
+ if(!silencio)msg(nuevo?'Flujograma fijado en la carpeta 01 del archivo':'Flujograma actualizado en el archivo');
+}
+function vistaFlujoEmisiones(){
+ var h=cabModulo('flu','');
+ if(!PRY)return h+'<p class="calc-vacio">Abra un proyecto.</p>';
+ var F=fluDatos(), d=fluDocFijado();
+ if(!d&&puedeEditar()&&F.X.total>0&&!window.__fluAuto){ window.__fluAuto=1; setTimeout(function(){ fluFijar(true); },400); }
+ h+='<div class="flu">';
+ h+='<dl class="tg-cifras"><div><dt>Documento base</dt><dd style="font-size:15px">'+esc(FLU_DOC.codigo)+' v'+FLU_DOC.version+'</dd></div><div><dt>Etapas del diagrama</dt><dd>'+FLU_PASOS.filter(function(p){return p.tipo==='act';}).length+'</dd></div>'+
+  '<div><dt>Puntos con emisión</dt><dd>'+F.rank.length+'</dd></div><div><dt>Los 3 primeros suman</dt><dd>'+fmt(F.rank.slice(0,3).reduce(function(a,x){return a+x.pct;},0),1)+' %</dd></div>'+
+  '<div><dt>En el archivo</dt><dd style="font-size:15px">'+(d?('Carpeta 01 · '+esc(d.fecha||'')):'sin fijar')+'</dd></div></dl>';
+ h+='<div class="acciones no-imprimir"><button type="button" class="primario" data-flu-fijar="1">'+(d?'Actualizar en el archivo de evidencias':'Fijar en el archivo de evidencias')+'</button>'+
+  '<a class="boton mini" href="https://drive.google.com/file/d/'+FLU_DOC.drive+'/view" target="_blank" rel="noopener">Ver el diagrama original</a>'+
+  '<button type="button" class="mini" data-flu-imp="1">Imprimir</button></div>';
+ h+='<div class="dsh-c flu-lienzo">'+(F.X.total>0?svgFlujoEmisiones(F):'<p class="dsh-vacio">Todavía no hay emisiones calculadas.</p>')+'</div>';
+ h+='<h2 class="calc-h2">Puntos de emisión rotulados, de mayor a menor</h2>'+fluTabla(F);
+ h+='<p class="tg-leyenda">La versión vigente del diagrama no dibuja la pulpa, las aguas mieles, la cascarilla ni el compost aplicado en fincas, que concentran buena parte de la huella. Se muestran como ramales con línea punteada; conviene incluirlos en la próxima versión de '+esc(FLU_DOC.codigo)+'. La electricidad no tiene medición por área: se ubica en la trilla, su mayor consumidor.</p>';
+ return h+'</div>';
+}
+document.addEventListener('click',function(ev){
+ if(ev.target.closest&&ev.target.closest('[data-flu-fijar]')){ fluFijar(false); return; }
+ if(ev.target.closest&&ev.target.closest('[data-flu-imp]')){ var s=document.querySelector('.flu-lienzo'); if(!s)return; var w=window.open('','_blank'); if(!w)return; w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Flujograma de puntos de emisión</title></head><body style="margin:16px">'+s.innerHTML+document.querySelector('.flu .tg-wrap').outerHTML+'</body></html>'); w.document.close(); setTimeout(function(){ w.print(); },400); }
+});
 
 function pintar(){ migrarLitros(); pintarBase.apply(this,arguments); try{ ponSubpestanas(); }catch(e){} try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
 function ponSubpestanas(){
@@ -27873,6 +28035,7 @@ document.addEventListener('change',function(ev){
  if(t.dataset.icidoc){ var a6=I.docs[t.dataset.icidoc]||''; if(t.value)I.docs[t.dataset.icidoc]=t.value; else delete I.docs[t.dataset.icidoc]; iciGuardar('documento de soporte · '+t.dataset.icidoc,a6,t.value); return; }
 });
 
+ICO.flu='<rect x="8" y="2" width="8" height="5" rx="1"/><rect x="8" y="17" width="8" height="5" rx="1"/><path d="M12 7v3M12 14v3"/><path d="M12 10l3 2-3 2-3-2z"/>';
 ICO.dsh='<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>';
 ICO.sig='<path d="M4 20h16"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16V5"/>';
 var NAV_GRUPOS=[
@@ -27882,7 +28045,7 @@ var NAV_GRUPOS=[
  ['Capturar datos',[
   ['cap','Facturas y registros',['cap','cds']],
   ['ben','Fuentes de emisión',['ben','fincas','ins']],
-  ['arc','Archivo de evidencias',['arc','fot']]]],
+  ['arc','Archivo de evidencias',['arc','fot','flu']]]],
  ['Resultados',[
   ['dsh','Dashboard',['dsh']],
   ['calc','Calculadora',['calc']],
@@ -27893,10 +28056,10 @@ var NAV_GRUPOS=[
 ];
 var NAV_MAS=[['ods','Vinculación con los ODS'],['rep','Otros reportes'],['aju','Ajustes']];
 var SUBPEST_NOM={hcp:'Estudio',per:'Perfil de la organización',cfg:'Configuración del cálculo',cap:'Subir facturas',cds:'Conciliar sustentos',
- arc:'Documentos',fot:'Evidencia fotográfica',ben:'Beneficio y planta',fincas:'Fincas y productores',ins:'Emisiones de la finca',ver:'Verificación',con:'Control de la medición'};
+ arc:'Documentos',fot:'Evidencia fotográfica',flu:'Flujograma de emisiones',ben:'Beneficio y planta',fincas:'Fincas y productores',ins:'Emisiones de la finca',ver:'Verificación',con:'Control de la medición'};
 function navMiembroVisible(id){
  if(id==='fincas'||id==='ins')return moduloVisible(id)&&(S.fincas||[]).length>0;
- if(id==='sig'||id==='ici'||id==='fot'||id==='dsh')return true;
+ if(id==='sig'||id==='ici'||id==='fot'||id==='dsh'||id==='flu')return true;
  return moduloVisible(id);
 }
 function navItemDe(v){
@@ -28353,6 +28516,7 @@ function pintarBase(){
  else if(vista==='org')$('v-org').innerHTML=vistaOrganizaciones();
  else if(vista==='calc')$('v-calc').innerHTML=vistaCalculadora();
  else if(vista==='dsh')$('v-dsh').innerHTML=vistaDashboard();
+ else if(vista==='flu')$('v-flu').innerHTML=vistaFlujoEmisiones();
  else if(vista==='sig')$('v-sig').innerHTML=vistaSignificancia();
  else if(vista==='ici')$('v-ici').innerHTML=vistaInformeInterno();
  else if(vista==='fot')$('v-fot').innerHTML=vistaFotos();
