@@ -2012,7 +2012,7 @@ table.tg-kv td{white-space:nowrap}
 .dsh-bar i.dsh-b-ok{background:var(--ok)}.dsh-bar i.dsh-b-aviso{background:#d9a441}.dsh-bar i.dsh-b-falta{background:var(--grave)}
 @media (max-width:900px){.dsh-g{grid-template-columns:1fr}}
 @media print{body.dsh-imprimiendo .dsh-c{break-inside:avoid}body.dsh-imprimiendo .dsh-g{grid-template-columns:1fr 1fr}}
-.flu-lienzo{padding:10px}.flu-lienzo svg{display:block;width:100%;height:auto}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
+.flu-lienzo{padding:10px}.flu-lienzo svg{display:block;width:100%;height:auto}.tg-exc select{font:inherit;font-size:12px;padding:4px 4px;width:205px;max-width:205px}.tg-exc textarea{width:100%;min-width:220px;font:inherit;font-size:12.5px;padding:5px 7px;resize:vertical}.tg tr.tg-pend td{background:#fffaf0!important}.tg-cuenta{font-size:12px;color:var(--ink-3);margin-left:auto}
 .tg-est{font-weight:700;text-align:center;width:1%}
 .tg-est.ok{color:var(--ok)}.tg-est.aviso{color:var(--aviso)}.tg-est.falta{color:var(--grave)}
 .rejilla2 .tarjeta .cuerpo>.tg{margin-top:2px}
@@ -2135,6 +2135,7 @@ button.enlace{background:none;border:0;padding:0;font:inherit;color:inherit;text
    <section id="v-calc" hidden></section>
    <section id="v-dsh" hidden></section>
    <section id="v-flu" hidden></section>
+   <section id="v-exc" hidden></section>
    <section id="v-sig" hidden></section>
    <section id="v-ici" hidden></section>
    <section id="v-fot" hidden></section>
@@ -3833,11 +3834,13 @@ function exclusionesSobreSignif(){
  return exclusiones().filter(function(x){ var v=numDe(x.peso);
   return isFinite(v)&&v>umbralSignificancia()&&!String(x.razon||'').trim(); });
 }
-function exclusiones(){ return S.excl||(S.excl=[]); }
+function exclusionesTodas(){ return S.excl||(S.excl=[]); }
+/* Solo lo que de verdad queda fuera: las decisiones «pendiente» e «incluida» del módulo de exclusiones no cuentan */
+function exclusiones(){ return exclusionesTodas().filter(function(x){ return !x.estado||x.estado==='excluida'||x.estado==='no_ocurre'||x.estado==='fuera'; }); }
 function nuevaExclusion(d){
  var e={id:uid('exc'),fuente:d.fuente||'',ambito:d.ambito||'Finca',razon:d.razon||'',
   peso:d.peso||'',quien:quienEdita(),fecha:new Date().toISOString()};
- exclusiones().push(e); marcar('gestion/declaraciones');
+ exclusionesTodas().push(e); marcar('gestion/declaraciones');
  anotar('exclusion','Exclusión declarada: '+e.fuente,'',e.razon);
  return e;
 }
@@ -5862,6 +5865,8 @@ var MODULOS=[
   des:'Revisión interna del estudio por secciones, con firmas de quien elabora, revisa y aprueba, dictamen y acta de aprobación interna.'},
  {id:'fot',scol:'s7',codigo:'MOD-FOT',nom:'Evidencia fotográfica',col:'m7',etapa:'campo',paso:11.5,
   des:'Fotografías y verificación de cada área del alcance de la medición, con fecha, autor y coordenada.'},
+ {id:'exc',scol:'s2',codigo:'MOD-EXC',nom:'Exclusiones y criterio de corte',col:'m2',etapa:'preparar',paso:3.5,
+  des:'Cada flujo que normalmente existe en la operación, con su estado (incluido, excluido, no ocurre o fuera del límite), su razón y su peso frente al criterio de corte.'},
  {id:'flu',scol:'s5',codigo:'MOD-FLU',nom:'Flujograma de emisiones',col:'m5',etapa:'cerrar',paso:15.1,
   des:'El diagrama de flujo del proceso de la organización con cada fuente de emisión ubicada en su etapa, rotulada con su lugar y ordenada por peso.'},
  {id:'dsh',scol:'s1',codigo:'MOD-DSH',nom:'Dashboard',col:'m1',etapa:'cerrar',paso:15.2,
@@ -7051,8 +7056,8 @@ function revisionPresentaciones(C){
    pres.map(function(x){return '1 kg de café verde oro en '+String(x.nom||'').toLowerCase()+', puesto en puerto de destino';}).join('; ')+'. Se informa también por unidad de empaque y por tonelada.');
  r('6.3.4','Límite del sistema declarado: de la cuna al puerto de destino','ok',
    'Incluye finca, beneficio, bodega y transporte terrestre a puerto de embarque (con la regla de la puerta de embarque), empaque por presentación y flete marítimo. Excluye descarga y transporte en destino, tostado, uso y fin de vida, que quedan fuera del límite declarado.');
- r('6.3.4.3','Criterio de corte y exclusiones declaradas',(typeof exclusionesSobreUmbral==='function'&&exclusionesSobreUmbral().length)?'falta':'ok',
-   'Las fuentes excluidas se declaran en la pestaña de exclusiones con su peso estimado frente al umbral de materialidad.');
+ var EXCc=(typeof excEstadoCierre==='function')?excEstadoCierre():['ok',''];
+ r('6.3.4.3','Criterio de corte y exclusiones declaradas',EXCc[0],EXCc[1]);
  r('6.3.5','Producción del ciclo con respaldo',C.kgTot>0?'ok':'falta',C.kgTot>0?('Base: '+fmt(C.kgTot/1000,1)+' t de café oro. Debe coincidir con el registro de exportación del ciclo.'):'Falta la producción del ciclo: sin ella no hay huella por kilogramo.');
  var masasPend=[]; pres.forEach(function(x){(x.mat||[]).forEach(function(m){ if(/confirmar/i.test(String(m.origen||'')))masasPend.push(x.nom+': '+(MAT_EMP[m.m]||{}).nom); });});
  r('6.3.5','Masa de empaque medida y no estimada',masasPend.length?'aviso':'ok',masasPend.length?('Por confirmar: '+masasPend.join('; ')+'. Pesar al menos 10 unidades y conservar el registro.'):'Masas con respaldo declarado.');
@@ -7384,7 +7389,7 @@ function repCFPPresentaciones(){
 }
 
 /* ====== navegación ====== */
-var VISTAS=['calc','dsh','flu','sig','ici','fot','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
+var VISTAS=['calc','dsh','flu','exc','sig','ici','fot','ing','per','hcp','inf','portada','cap','cds','pre','asi','aju','map','rep','apr','org','pry','pai','bib','cfg','tal','fincas','pod','ins','ben','cal','ods','car','con','evi','arc','dia','res','mit','ver','aui','iai','vqr'];
 var VISTA_HIST=[];
 function ir(v,atras){
  /* Un enlace a un módulo que ya no existe lleva a la portada en lugar de dejar la pantalla en blanco */
@@ -27552,6 +27557,108 @@ document.addEventListener('click',function(ev){
  if(ev.target.closest&&ev.target.closest('[data-flu-imp]')){ var s=document.querySelector('.flu-lienzo'); if(!s)return; var w=window.open('','_blank'); if(!w)return; w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Flujograma de puntos de emisión</title></head><body style="margin:16px">'+s.innerHTML+document.querySelector('.flu .tg-wrap').outerHTML+'</body></html>'); w.document.close(); setTimeout(function(){ w.print(); },400); }
 });
 
+/* ====== Exclusiones y criterio de corte (MOD-EXC, 22/11/2026) ======
+   ISO 14067, 6.3.4.3: cada flujo que normalmente existe en la operación queda en uno de cinco estados, con su
+   razón y su peso estimado. Las decisiones se guardan en la misma lista de exclusiones del proyecto (S.excl),
+   de modo que la revisión previa, el informe y la lista de cierre leen lo mismo. */
+var EXC_ESTADOS=[['pendiente','Pendiente de decidir'],['incluida','Incluida en el cálculo'],['excluida','Excluida por criterio de corte'],['no_ocurre','No ocurre en el período'],['fuera','Fuera del límite del sistema']];
+var EXC_CAND=[
+ {id:'poda_n2o',et:'N₂O de los residuos de poda y hojarasca',etapa:'Fincas',lineas:['residuos_inc'],guia:'Biomasa de poda por manzana y su nitrógeno, o el valor por defecto del IPCC 2019 para residuos de cultivo.'},
+ {id:'dluc',et:'Cambio directo de uso del suelo (20 años)',etapa:'Fincas',lineas:[],guia:'Georreferenciación EUDR e imágenes de los últimos 20 años: si no hubo conversión de bosque, se declara cero con esa evidencia.'},
+ {id:'insumos_finca',et:'Abonos orgánicos y enmiendas en fincas (gallinaza, bocashi, cal)',etapa:'Fincas',lineas:['estiercol_aplicado','cal','compost_comprado','compost_aplicado'],guia:'Encuesta a una muestra de fincas o registros del Sistema Interno de Control.'},
+ {id:'agroquimicos',et:'Fungicidas y otros productos permitidos en orgánico',etapa:'Fincas',lineas:['plaguicidas'],guia:'Litros o kilos comprados por los productores; en orgánico suelen ser cúpricos.'},
+ {id:'acarreo',et:'Traslado de la cereza por los productores',etapa:'1. Transporte a CAFICO',lineas:['km_acopio'],guia:'Viajes y distancia media de las fincas al centro de recepción.'},
+ {id:'compost_fincas',et:'Traslado del compost de CAFICO a las fincas',etapa:'Fincas',lineas:[],guia:'Toneladas distribuidas, viajes y distancia media.'},
+ {id:'wtt',et:'Producción y transporte de los combustibles (aguas arriba)',etapa:'Toda la planta',lineas:[],guia:'Factor de aguas arriba por litro (por ejemplo, DESNZ) sobre el diésel, la gasolina y el GLP ya registrados.'},
+ {id:'perdidas_red',et:'Pérdidas de la red eléctrica',etapa:'9. Trillado y clasificación',lineas:[],guia:'Porcentaje de pérdidas técnicas de transmisión y distribución sobre los kWh consumidos.'},
+ {id:'refrigerantes',et:'Recargas de refrigerante (aire acondicionado y cámaras)',etapa:'7. Bodega y oficinas',lineas:['refrigerante_org','refrigerante_exp'],guia:'Libras recargadas en el período, según las órdenes del taller o del proveedor.'},
+ {id:'extintores',et:'Recarga de extintores de CO₂',etapa:'Toda la planta',lineas:[],guia:'Kilos de CO₂ recargados.'},
+ {id:'carga_cont',et:'Material de carga del contenedor (papel kraft, desecantes, tarimas)',etapa:'12. Contenedor',lineas:[],guia:'Peso por contenedor por número de contenedores.'},
+ {id:'quimicos',et:'Productos químicos y de limpieza de la planta',etapa:'Toda la planta',lineas:['quimicos'],guia:'Kilos comprados en el período.'},
+ {id:'residuos',et:'Desechos sólidos enviados a relleno',etapa:'Toda la planta',lineas:['residuos_terceros'],guia:'Libras entregadas al servicio de recolección.'},
+ {id:'aguas_personal',et:'Aguas residuales domésticas del personal (fosa séptica)',etapa:'Servicios generales',lineas:[],guia:'Personas por días trabajados.'},
+ {id:'viajes_personal',et:'Desplazamiento diario del personal',etapa:'Servicios generales',lineas:['km_personal'],guia:'Encuesta corta: personas, medio de transporte y kilómetros por día.'},
+ {id:'viajes_negocio',et:'Viajes de negocio (nacionales e internacionales)',etapa:'Servicios generales',lineas:['km_viajes','km_intl'],guia:'Kilómetros recorridos y vuelos del período.'},
+ {id:'capital',et:'Bienes de capital (maquinaria y obra civil)',etapa:'Toda la planta',lineas:['capital_org','capital_exp'],guia:'Se suele excluir por criterio de corte, declarándolo.'},
+ {id:'puertos',et:'Manejo en los puertos de embarque y destino',etapa:'14. Exportación',lineas:[],guia:'Se suele excluir por criterio de corte, declarándolo.'},
+ {id:'aguas_abajo',et:'Tostado, uso y fin de vida del producto y del empaque',etapa:'Después del puerto de destino',lineas:['tostado_ext','preparacion','fin_empaque','producto_term'],guia:'Fuera de un límite de la cuna al puerto de destino.'}
+];
+function excDe(fid){ return exclusionesTodas().filter(function(x){return x.flujo===fid;})[0]||null; }
+function excDatos(){
+ var X=sxDatos(), porId={}; X.filas.forEach(function(r){ porId[r.id]=(porId[r.id]||0)+r.t; });
+ var docs=arcDocs().filter(function(d){return String(d.carpeta)==='02.5';});
+ var filas=EXC_CAND.map(function(c){
+  var tCalc=c.lineas.reduce(function(a,id){return a+(porId[id]||0);},0), e=excDe(c.id);
+  var est=e&&e.estado?e.estado:(tCalc>0?'incluida':'pendiente'), auto=!e&&tCalc>0;
+  var t=est==='incluida'?tCalc:(e?numDe(e.t):NaN);
+  return {c:c,e:e,est:est,auto:auto,tCalc:tCalc,t:t,pct:(isFinite(t)&&X.total>0)?t/X.total*100:NaN};
+ });
+ exclusiones().filter(function(x){return !x.flujo;}).forEach(function(x){ var v=numDe(x.peso);
+  filas.push({c:{id:'',et:x.fuente,etapa:x.ambito||'',lineas:[],guia:''},e:x,est:x.estado||'excluida',libre:true,t:numDe(x.t),pct:isFinite(v)?v:NaN}); });
+ var ex=filas.filter(function(f){return f.est==='excluida';}), tEx=0, pEx=0, sinPeso=0;
+ ex.forEach(function(f){ if(isFinite(f.t)){ tEx+=f.t; } if(isFinite(f.pct))pEx+=f.pct; else sinPeso++; });
+ return {X:X,filas:filas,docs:docs,ex:ex,tEx:tEx,pEx:pEx,sinPeso:sinPeso,
+  pend:filas.filter(function(f){return f.est==='pendiente';}).length,
+  sinRazon:filas.filter(function(f){return (f.est==='excluida'||f.est==='no_ocurre'||f.est==='fuera')&&!String((f.e&&f.e.razon)||'').trim();}).length,
+  sobre1:ex.filter(function(f){return isFinite(f.pct)&&f.pct>umbralSignificancia();}).length,
+  u1:umbralSignificancia(), u5:umbralMaterialidad()};
+}
+function excGuardar(fid,campo,valor){
+ if(!puedeEditar())return;
+ var c=EXC_CAND.filter(function(x){return x.id===fid;})[0]; if(!c)return;
+ var e=excDe(fid);
+ if(!e){ e={id:uid('exc'),flujo:fid,fuente:c.et,ambito:c.etapa,razon:'',peso:'',t:'',estado:'pendiente',quien:quienEdita(),fecha:new Date().toISOString()}; exclusionesTodas().push(e); }
+ e[campo]=valor; e.quien=quienEdita(); e.fecha=new Date().toISOString();
+ var X=sxDatos(), t=numDe(e.t);
+ if(e.estado==='no_ocurre'||e.estado==='fuera'){ e.peso='0'; }
+ else if(e.estado==='excluida'){ e.peso=(isFinite(t)&&X.total>0)?String(+(t/X.total*100).toFixed(4)):''; }
+ else e.peso='';
+ if(campo==='estado')anotar('exclusion','Flujo «'+c.et+'»: '+(EXC_ESTADOS.filter(function(s){return s[0]===valor;})[0]||['',valor])[1],'',e.razon||'');
+ marcar('gestion/declaraciones'); guardarLocal();
+}
+function excEstadoCierre(){
+ var D=excDatos();
+ if(D.sobre1||D.pEx>D.u5)return ['falta','Excluido: '+fmt(D.pEx,2)+' % (límite '+fmt(D.u5,1)+' % acumulado y '+fmt(D.u1,1)+' % por flujo). '+(D.sobre1?D.sobre1+' flujo(s) excluido(s) por encima del límite por flujo.':'')];
+ if(D.pend||D.sinRazon||D.sinPeso)return ['aviso',(D.pend?D.pend+' flujos pendientes de decidir. ':'')+(D.sinRazon?D.sinRazon+' sin razón escrita. ':'')+(D.sinPeso?D.sinPeso+' exclusiones sin peso estimado.':'')];
+ return ['ok','Todos los flujos decididos; excluido '+fmt(D.pEx,2)+' % frente al '+fmt(D.u5,1)+' % acumulado.'];
+}
+function vistaExclusiones(){
+ var h=cabModulo('exc','');
+ if(!PRY)return h+'<p class="calc-vacio">Abra un proyecto.</p>';
+ var D=excDatos(), ed=puedeEditar(), cie=excEstadoCierre();
+ h+='<dl class="tg-cifras">'+
+  '<div><dt>Flujos revisados</dt><dd>'+(D.filas.length-D.pend)+' de '+D.filas.length+'</dd></div>'+
+  '<div><dt>Pendientes de decidir</dt><dd'+(D.pend?' class="tg-mal"':'')+'>'+D.pend+'</dd></div>'+
+  '<div><dt>Excluido por corte</dt><dd>'+fmt(D.tEx,1)+' t</dd></div>'+
+  '<div><dt>Peso acumulado excluido</dt><dd'+(D.pEx>D.u5?' class="tg-mal"':'')+'>'+fmt(D.pEx,2)+' %</dd></div>'+
+  '<div><dt>Criterio de corte</dt><dd style="font-size:15px">'+fmt(D.u1,1)+' % por flujo · '+fmt(D.u5,1)+' % acumulado</dd></div>'+
+  '<div><dt>Lista de cierre 6.3.4.3</dt><dd style="font-size:15px" class="'+(cie[0]==='ok'?'':'tg-mal')+'">'+(cie[0]==='ok'?'✓ lista':(cie[0]==='falta'?'✕ no cumple':'! por completar'))+'</dd></div></dl>';
+ h+='<div class="tg-wrap"><table class="tg tg-exc"><thead><tr><th>#</th><th>Flujo</th><th>Estado</th><th class="n">t CO₂e</th><th class="n">%</th><th>Razón y evidencia</th></tr></thead><tbody>';
+ D.filas.forEach(function(f,i){
+  var c=f.c, e=f.e||{}, dis=(!ed||f.libre)?' disabled':'';
+  var alto=f.est==='excluida'&&isFinite(f.pct)&&f.pct>D.u1;
+  var sel='<select data-exc-f="'+esc(c.id)+'" data-exc-c="estado"'+dis+'>'+EXC_ESTADOS.map(function(s){ return '<option value="'+s[0]+'"'+(f.est===s[0]?' selected':'')+'>'+s[1]+'</option>'; }).join('')+'</select>'+(f.auto?'<br><small>detectado en el cálculo</small>':'');
+  var tCel=f.est==='incluida'?('<span class="tg-res">'+fmt(f.tCalc,2)+'</span><br><small>calculado</small>'):
+   (f.est==='excluida'?('<input type="text" inputmode="decimal" data-num="1" data-exc-f="'+esc(c.id)+'" data-exc-c="t" value="'+esc(e.t||'')+'" placeholder="estimado" style="width:90px;text-align:right"'+dis+'>'):'<span class="tg-tenue">—</span>');
+  h+='<tr class="'+(f.est==='pendiente'?'tg-pend':'')+(alto?' tg-fila-mal':'')+'"><td class="tg-num">'+(i+1)+'</td>'+
+   '<td><b>'+esc(c.et)+'</b><br><small>'+esc(c.etapa)+'</small></td>'+
+   '<td>'+sel+'</td><td class="n">'+tCel+'</td><td class="n">'+(isFinite(f.pct)&&f.est!=='no_ocurre'&&f.est!=='fuera'?fmt(f.pct,2):'—')+(alto?'<br><small class="tg-mal">sobre el '+fmt(D.u1,1)+' %</small>':'')+'</td>'+
+   '<td>'+(f.est==='incluida'?'<small>Se calcula con sus facturas y registros.</small>':
+     ('<textarea rows="2" data-exc-f="'+esc(c.id)+'" data-exc-c="razon" placeholder="'+esc(f.est==='pendiente'?'Qué falta: '+c.guia:'Por qué')+'"'+dis+'>'+esc(e.razon||'')+'</textarea>'))+'</td></tr>';
+ });
+ h+='</tbody></table></div>';
+ h+='<p class="tg-leyenda">Un flujo excluido necesita su razón y su peso estimado en t CO₂e; ARRAIGO calcula el porcentaje frente al total. «No ocurre» se respalda con un documento (por ejemplo, una constancia de que no hubo recargas). La evidencia va en la carpeta 02.5 del archivo.</p>';
+ h+='<h2 class="calc-h2">Documentos de la carpeta 02.5</h2>';
+ h+=D.docs.length?('<div class="tg-wrap"><table class="tg"><thead><tr><th>Documento</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>'+D.docs.map(function(d){ var u=driveUrl(d); return '<tr><td>'+(u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(d.nombre||'documento')+'</a>':esc(d.nombre||'documento'))+'</td><td>'+esc(d.fecha||'')+'</td><td>'+esc(d.estado||'')+'</td></tr>'; }).join('')+'</tbody></table></div>'):'<p class="tg-leyenda">Todavía no hay documentos en la carpeta 02.5.</p>';
+ h+='<div class="acciones"><button type="button" data-vista="arc">Ir al archivo de evidencias</button><button type="button" data-vista="calc">Calculadora</button></div>';
+ return h;
+}
+document.addEventListener('change',function(ev){
+ var el=ev.target.closest&&ev.target.closest('[data-exc-f]'); if(!el||!el.dataset.excF)return;
+ excGuardar(el.dataset.excF,el.dataset.excC,el.value);
+ if(el.dataset.excC==='estado'||el.dataset.excC==='t')pintar();
+});
+
 function pintar(){ migrarLitros(); pintarBase.apply(this,arguments); try{ ponSubpestanas(); }catch(e){} try{ limpiarRemo(document.getElementById('v-'+vista)); }catch(e){} }
 function ponSubpestanas(){
  var cv=document.getElementById('v-'+vista); if(!cv||vista==='portada')return;
@@ -28035,12 +28142,13 @@ document.addEventListener('change',function(ev){
  if(t.dataset.icidoc){ var a6=I.docs[t.dataset.icidoc]||''; if(t.value)I.docs[t.dataset.icidoc]=t.value; else delete I.docs[t.dataset.icidoc]; iciGuardar('documento de soporte · '+t.dataset.icidoc,a6,t.value); return; }
 });
 
+ICO.exc='<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>';
 ICO.flu='<rect x="8" y="2" width="8" height="5" rx="1"/><rect x="8" y="17" width="8" height="5" rx="1"/><path d="M12 7v3M12 14v3"/><path d="M12 10l3 2-3 2-3-2z"/>';
 ICO.dsh='<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>';
 ICO.sig='<path d="M4 20h16"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16V5"/>';
 var NAV_GRUPOS=[
  ['Definir el estudio',[
-  ['hcp','Estudio ISO 14067',['hcp','per','cfg']],
+  ['hcp','Estudio ISO 14067',['hcp','per','cfg','exc']],
   ['pai','Factores de emisión',['pai']]]],
  ['Capturar datos',[
   ['cap','Facturas y registros',['cap','cds']],
@@ -28055,11 +28163,11 @@ var NAV_GRUPOS=[
   ['ver','Verificación externa',['ver','con']]]]
 ];
 var NAV_MAS=[['ods','Vinculación con los ODS'],['rep','Otros reportes'],['aju','Ajustes']];
-var SUBPEST_NOM={hcp:'Estudio',per:'Perfil de la organización',cfg:'Configuración del cálculo',cap:'Subir facturas',cds:'Conciliar sustentos',
+var SUBPEST_NOM={exc:'Exclusiones y criterio de corte',hcp:'Estudio',per:'Perfil de la organización',cfg:'Configuración del cálculo',cap:'Subir facturas',cds:'Conciliar sustentos',
  arc:'Documentos',fot:'Evidencia fotográfica',flu:'Flujograma de emisiones',ben:'Beneficio y planta',fincas:'Fincas y productores',ins:'Emisiones de la finca',ver:'Verificación',con:'Control de la medición'};
 function navMiembroVisible(id){
  if(id==='fincas'||id==='ins')return moduloVisible(id)&&(S.fincas||[]).length>0;
- if(id==='sig'||id==='ici'||id==='fot'||id==='dsh'||id==='flu')return true;
+ if(id==='sig'||id==='ici'||id==='fot'||id==='dsh'||id==='flu'||id==='exc')return true;
  return moduloVisible(id);
 }
 function navItemDe(v){
@@ -28442,7 +28550,7 @@ function sxSensInforme(){ return sxSensibilidad().map(function(x){ return [x.s.n
    porcentaje del estudio, que no decía qué faltaba. */
 function listaCierre(){ return memo('lcierre',function(){
  var out=[], C=null;
- try{ C=presentacionesCalc(); revisionPresentaciones(C).forEach(function(x){ out.push({cl:x.cl,t:x.t,estado:x.estado==='ok'?'ok':(x.estado==='falta'?'falta':'aviso'),nota:x.nota,ir:'hcp'}); }); }catch(e){}
+ try{ C=presentacionesCalc(); revisionPresentaciones(C).forEach(function(x){ out.push({cl:x.cl,t:x.t,estado:x.estado==='ok'?'ok':(x.estado==='falta'?'falta':'aviso'),nota:x.nota,ir:x.cl==='6.3.4.3'?'exc':'hcp'}); }); }catch(e){}
  var X=sxDatos(), P=S.prod||{};
  out.push({cl:'6.3.6',t:'Período del estudio declarado',estado:(pv('per_inicio')&&pv('per_fin'))?'ok':'falta',nota:(pv('per_inicio')||'?')+' a '+(pv('per_fin')||'?'),ir:'hcp'});
  out.push({cl:'6.4.9.2',t:'Cambio directo de uso del suelo evaluado',estado:pv('dluc')?'ok':'aviso',nota:pv('dluc','sin declarar'),ir:'hcp'});
@@ -28517,6 +28625,7 @@ function pintarBase(){
  else if(vista==='calc')$('v-calc').innerHTML=vistaCalculadora();
  else if(vista==='dsh')$('v-dsh').innerHTML=vistaDashboard();
  else if(vista==='flu')$('v-flu').innerHTML=vistaFlujoEmisiones();
+ else if(vista==='exc')$('v-exc').innerHTML=vistaExclusiones();
  else if(vista==='sig')$('v-sig').innerHTML=vistaSignificancia();
  else if(vista==='ici')$('v-ici').innerHTML=vistaInformeInterno();
  else if(vista==='fot')$('v-fot').innerHTML=vistaFotos();
