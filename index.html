@@ -25703,7 +25703,7 @@ function hcpBase(k){
   obj_razones:'Responder a la solicitud de información de los compradores sobre el desempeño climático del producto, disponer de una línea base para el seguimiento de las reducciones y sustentar la información que la organización comunica sobre su producto.',
   flujo:'La producción del período, expresada en '+u+', con la que se reparten las emisiones del sistema.',
   lim_geografico:'Las fincas de los productores que entregan el producto y las instalaciones de '+org+' en '+(perV('pais')||'el país de operación')+'.',
-  lim_excluidos:'Quedan fuera los bienes de capital (construcción de instalaciones, maquinaria y vehículos), el desplazamiento del personal entre su vivienda y el trabajo, y las actividades administrativas que no intervienen en la transformación del producto. Su contribución se estima inferior al criterio de corte declarado.',
+  lim_excluidos:'Quedan fuera del límite del sistema, por no ser procesos atribuibles al producto, el desplazamiento diario del personal entre su vivienda y el trabajo, los viajes de negocio y las actividades administrativas y comerciales, así como los bienes de capital (construcción de instalaciones, maquinaria y vehículos). Ninguno interviene en la producción, el beneficiado, la preparación ni el transporte del café (PAS 2050:2011, 6.4; GHG Protocol, Product Life Cycle Accounting and Reporting Standard, 2011, capítulo 7). Estas emisiones se informan en el inventario de gases de efecto invernadero de la organización según ISO 14064-1. Las fuentes que sí pertenecen al producto pero pesan poco se excluyen por criterio de corte, con su peso estimado frente al límite declarado.',
   per_justif:'El período coincide con el ciclo de cosecha y comercialización, que es la unidad de tiempo en que la organización registra la producción, los insumos y los consumos.',
   corte_desc:'Se excluyen las entradas cuya contribución estimada sea inferior al '+fmt(umbralMaterialidad(),0)+' % del total, siempre que la suma de las exclusiones no supere ese mismo porcentaje. Cada exclusión se documenta con su estimación y su justificación.',
   asig_coproductos:'Pulpa, mucílago y cascarilla, que se aprovechan dentro del sistema o se entregan a terceros.',
@@ -26018,7 +26018,8 @@ function infSecciones(){
   {p:'El límite del sistema es '+lim.toLowerCase()+' e incluye: '+etap.join(', ')+'. '+(P.limites==='Parcial declarado'&&pv('limitesParcial')?pv('limitesParcial'):'')},
   {p:'Ámbito geográfico: '+minus(pv('lim_geografico',hcpBase('lim_geografico')))},
   fincasAlcance()>0?{p:'El alcance del proyecto comprende '+fx(fincasAlcance(),0)+' fincas de productores, todas incluidas en el límite del sistema del estudio.'}:null,
-  {p:'Procesos excluidos: '+minus(pv('lim_excluidos','[pendiente]'))},
+  {p:'Procesos excluidos: '+minus(pv('lim_excluidos',hcpBase('lim_excluidos')))},
+  excFueraTexto()?{p:excFueraTexto()}:null,
   {p:'Las entradas del sistema son insumos agrícolas, combustibles, electricidad, materiales de empaque y servicios de transporte; las salidas consideradas son las emisiones de gases de efecto invernadero a la atmósfera, el producto y sus coproductos.'}
  ],pv('lim_excluidos')?[]:['procesos excluidos']);
  sec('pro','3.3','Procesos unitarios importantes','7.3 c)',D.procesos.length?'cumple':'falta',[
@@ -27647,19 +27648,35 @@ function excTextoInforme(){
  var no=D.filas.filter(function(f){return f.est==='no_ocurre';}); if(no.length)txt+=' No ocurren en el período: '+no.map(function(f){return f.c.et.toLowerCase();}).join('; ')+'.';
  return txt;
 }
-function excTablaInforme(){
- var D=excDatos(), F=D.filas.filter(function(f){return f.est==='excluida'||f.est==='no_ocurre';});
- return {c:['Flujo','Estado','Método de estimación','t CO₂e','% de la huella'],f:F.map(function(f){ var e=f.e||{};
-  return [f.c.et,f.est==='excluida'?'Excluido por corte':'No ocurre',e.metodo||e.razon||'—',f.est==='no_ocurre'?'0':(isFinite(f.t)?fmt(f.t,3):'sin estimar'),f.est==='no_ocurre'?'0':(isFinite(f.pct)?fmt(f.pct,3)+' %':'—')]; })
-  .concat([['Total excluido','','',fmt(D.tEx,3),fmt(D.pEx,3)+' % (límite '+fmt(D.u5,0)+' %)']])};
+function excFueraTexto(){
+ var F=excDatos().filas.filter(function(f){return f.est==='fuera';});
+ if(!F.length)return '';
+ return 'Fuentes identificadas fuera del límite del sistema. En la revisión de los flujos de la operación se identificaron '+plural(F.length,'fuente','fuentes')+' que generan emisiones pero no se incluyen en la huella del producto: '+F.map(function(f){return f.c.et.toLowerCase();}).join('; ')+'. '+
+  'Quedan fuera del límite del sistema, y no se cuentan dentro del criterio de corte, porque no son procesos atribuibles al producto: ninguna interviene en la producción en finca, el beneficiado, la preparación para la exportación ni el transporte del café. '+
+  F.map(function(f){ var r=excRazon(f); return r?(f.c.et+': '+r.replace(/^Fuente identificada, pero no atribuible al producto: /,'')):''; }).filter(Boolean).join(' ')+
+  ' Esta decisión sigue a PAS 2050:2011 (6.4) y al GHG Protocol Product Standard (2011, capítulo 7), es coherente con ISO 14067:2018 (6.3.4), que deja al estudio la definición de los procesos unitarios atribuibles, y no oculta emisiones: las de estas fuentes se cuantifican e informan en el inventario de gases de efecto invernadero de la organización según ISO 14064-1.';
 }
+function excTablaInforme(){
+ var D=excDatos(), F=D.filas.filter(function(f){return f.est==='excluida'||f.est==='no_ocurre'||f.est==='fuera';});
+ return {c:['Flujo','Estado','Método de estimación','t CO₂e','% de la huella'],f:F.map(function(f){ var e=f.e||{};
+  if(f.est==='fuera')return [f.c.et,'Fuera del límite del sistema','No atribuible al producto; se informa en el inventario de la organización','no aplica','no cuenta para el corte'];
+  return [f.c.et,f.est==='excluida'?'Excluido por corte':'No ocurre',e.metodo||e.razon||'—',f.est==='no_ocurre'?'0':(isFinite(f.t)?fmt(f.t,3):'sin estimar'),f.est==='no_ocurre'?'0':(isFinite(f.pct)?fmt(f.pct,3)+' %':'—')]; })
+  .concat([['Total excluido por corte','','',fmt(D.tEx,3),fmt(D.pEx,3)+' % (límite '+fmt(D.u5,0)+' %)']])};
+}
+/* Flujos identificados que no son atribuibles al producto: quedan fuera del límite del sistema por defecto, con su razón.
+   Decisión del responsable del estudio (22/11/2026): no intervienen en ninguna etapa del procesamiento del café. */
+var EXC_FUERA={
+ viajes_personal:'Fuente identificada, pero no atribuible al producto: el traslado diario del personal entre su vivienda y el trabajo no interviene en la producción, el beneficiado, la preparación ni el transporte del café. PAS 2050:2011 (6.4) lo excluye expresamente de la huella de producto y el GHG Protocol Product Standard (2011, capítulo 7) lo clasifica como proceso no atribuible. Se informa en el inventario de la organización (ISO 14064-1, categoría 3).',
+ viajes_negocio:'Fuente identificada, pero no atribuible al producto: los viajes de negocio responden a actividades administrativas y comerciales de la organización, no a una etapa del procesamiento del café. El GHG Protocol Product Standard (2011, capítulo 7) clasifica las actividades corporativas como procesos no atribuibles al producto. Se informa en el inventario de la organización (ISO 14064-1, categoría 3).'
+};
+function excRazon(f){ var r=String((f.e&&f.e.razon)||'').trim(); return r||(f.est==='fuera'&&EXC_FUERA[f.c.id])||''; }
 function excDe(fid){ return exclusionesTodas().filter(function(x){return x.flujo===fid;})[0]||null; }
 function excDatos(){
  var X=sxDatos(), porId={}; X.filas.forEach(function(r){ porId[r.id]=(porId[r.id]||0)+r.t; });
  var docs=arcDocs().filter(function(d){return String(d.carpeta)==='02.5';});
  var filas=EXC_CAND.map(function(c){
   var tCalc=c.lineas.reduce(function(a,id){return a+(porId[id]||0);},0), e=excDe(c.id);
-  var est=e&&e.estado?e.estado:(tCalc>0?'incluida':'pendiente'), auto=!e&&tCalc>0;
+  var est=e&&e.estado?e.estado:(tCalc>0?'incluida':(EXC_FUERA[c.id]?'fuera':'pendiente')), auto=!e&&tCalc>0;
   var t=est==='incluida'?tCalc:(e?numDe(e.t):NaN);
   return {c:c,e:e,est:est,auto:auto,tCalc:tCalc,t:t,pct:(isFinite(t)&&X.total>0)?t/X.total*100:NaN};
  });
@@ -27669,7 +27686,7 @@ function excDatos(){
  ex.forEach(function(f){ if(isFinite(f.t)){ tEx+=f.t; } if(isFinite(f.pct))pEx+=f.pct; else sinPeso++; });
  return {X:X,filas:filas,docs:docs,ex:ex,tEx:tEx,pEx:pEx,sinPeso:sinPeso,
   pend:filas.filter(function(f){return f.est==='pendiente';}).length,
-  sinRazon:filas.filter(function(f){return (f.est==='excluida'||f.est==='no_ocurre'||f.est==='fuera')&&!String((f.e&&f.e.razon)||'').trim();}).length,
+  sinRazon:filas.filter(function(f){return (f.est==='excluida'||f.est==='no_ocurre'||f.est==='fuera')&&!excRazon(f);}).length,
   sobre1:ex.filter(function(f){return isFinite(f.pct)&&f.pct>umbralSignificancia();}).length,
   u1:umbralSignificancia(), u5:limExclTotal()};
 }
@@ -27714,7 +27731,7 @@ function vistaExclusiones(){
    '<td><b>'+esc(c.et)+'</b><br><small>'+esc(c.etapa)+'</small></td>'+
    '<td>'+sel+'</td><td class="n">'+tCel+'</td><td class="n">'+(isFinite(f.pct)&&f.est!=='no_ocurre'&&f.est!=='fuera'?fmt(f.pct,2):'—')+(alto?'<br><small class="tg-mal">sobre el '+fmt(D.u1,1)+' %</small>':'')+'</td>'+
    '<td>'+(f.est==='incluida'?'<small>Se calcula con sus facturas y registros.</small>':
-     ('<textarea rows="2" data-exc-f="'+esc(c.id)+'" data-exc-c="razon" placeholder="'+esc(f.est==='pendiente'?'Qué falta: '+c.guia:'Por qué')+'"'+dis+'>'+esc(e.razon||'')+'</textarea>'))+'</td></tr>';
+     ('<textarea rows="2" data-exc-f="'+esc(c.id)+'" data-exc-c="razon" placeholder="'+esc(f.est==='pendiente'?'Qué falta: '+c.guia:'Por qué')+'"'+dis+'>'+esc(excRazon(f))+'</textarea>'))+'</td></tr>';
  });
  h+='</tbody></table></div>';
  h+=excEstimadores(D);
@@ -28030,7 +28047,7 @@ function iciBorrador(id){
  case 'organizacion': return org+(perV('registro')?(', con registro '+perV('registro')):'')+', estudia la huella de carbono de '+pv('producto','café verde oro')+', expresada por '+(HP.unidad||'quintal de café oro')+' y por kilogramo. El período es '+per+' y la producción base es de '+fmt(X.kg/1000,1)+' t de café oro.'+(fincasAlcance()>0?(' El alcance del proyecto comprende '+fmt(fincasAlcance(),0)+' fincas de productores que entregan su café a '+org+', todas dentro del límite del estudio.'):'')+'\n\nEl límite del sistema va de la finca al puerto de embarque, Puerto Cortés, y en el escenario de destino incluye el flete marítimo hasta el puerto del comprador. Se aplica ISO 14067:2018 con los potenciales de calentamiento de la serie IPCC AR6.';
  case 'estructura': return 'El estudio lo elabora '+(D.responsable||perV('responsable')||'el responsable del estudio')+'. Lo revisa '+(D.revisor||'el auditor interno')+', que no participó en la captura de los datos, y lo aprueba '+(D.comite||'el comité de aprobación')+'. La aplicación impide que quien elabora el informe lo revise o lo apruebe, y registra cada firma con su nombre y fecha.\n\nQuienes intervienen declaran no tener conflicto de interés con los resultados. Todo cambio de dato o de factor queda en la bitácora con el valor anterior y el nuevo.';
  case 'competencia': return 'El equipo del estudio conoce ISO 14067:2018, las Directrices del IPCC aplicables y el protocolo del programa. '+(D.competencia||'Detalle aquí la formación de cada integrante, las fechas y las constancias que la respaldan.');
- case 'inventario': var ex=exclusiones(); return 'El inventario cuantifica '+plural(X.filas.length,'fuente','fuentes')+' dentro del límite del estudio, que suman '+fmt(X.total,2)+' t CO₂e. '+(ex.length?('Se declaran '+plural(ex.length,'exclusión','exclusiones')+': '+ex.map(function(e){return e.fuente+(e.peso?(' ('+e.peso+' %)'):'');}).join('; ')+'.'):'No hay exclusiones declaradas.')+' El criterio de corte es del '+fmt(umbralSignificancia(),0)+' % por fuente y del '+fmt(limExclTotal(),0)+' % para el total de exclusiones.\n\n'+excTextoInforme();
+ case 'inventario': var ex=exclusiones(); return 'El inventario cuantifica '+plural(X.filas.length,'fuente','fuentes')+' dentro del límite del estudio, que suman '+fmt(X.total,2)+' t CO₂e. '+(ex.length?('Se declaran '+plural(ex.length,'exclusión','exclusiones')+': '+ex.map(function(e){return e.fuente+(e.peso?(' ('+e.peso+' %)'):'');}).join('; ')+'.'):'No hay exclusiones declaradas.')+' El criterio de corte es del '+fmt(umbralSignificancia(),0)+' % por fuente y del '+fmt(limExclTotal(),0)+' % para el total de exclusiones.\n\n'+excTextoInforme()+(excFueraTexto()?('\n\n'+excFueraTexto()):'');
  case 'datos': var pend=arcPendientesLista().filter(function(x){return x.estado!=='resuelto';}), cg=arcCongelados(); var conD=0; X.filas.forEach(function(r){ if(r.nFact>0||r.nDocs>0)conD+=r.t; });
   return 'El '+fmt(X.total>0?conD/X.total*100:0,0)+' % de la huella tiene dato de actividad respaldado por factura, registro o documento del archivo de evidencias. Quedan '+fmt(X.tSin,2)+' t CO₂e anotadas sin factura y '+plural(pend.length,'pendiente abierto','pendientes abiertos')+' con responsable y fecha.\n\n'+(cg.length?('El archivo se congeló por última vez el '+String(cg[cg.length-1].fecha).slice(0,10)+', con '+cg[cg.length-1].n+' documentos y sello '+cg[cg.length-1].sello+'.'):'El archivo de evidencias aún no se ha congelado; se congela al aprobar este informe.');
  case 'factores': return 'Cada factor lleva su fuente, año, unidad y nivel en la hoja de factores del estudio. Los combustibles, el compostaje, las aguas mieles, la combustión de biomasa, los lubricantes y el nitrógeno del compost aplicado en fincas se declaran por gas (CO₂, CH₄ y N₂O) con la serie AR6. La electricidad usa el factor nacional de la Secretaría de Energía; el Balance Energético Nacional 2023 permite calcular 0,652 t CO₂e/MWh, que se presenta en el análisis de sensibilidad.';
